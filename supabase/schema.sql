@@ -27,6 +27,7 @@ create table if not exists informes_generales (
   )),
   observaciones text,
   observaciones_ia text,
+  maquina_operativa boolean,
   horas_trabajadas numeric(5, 2),
   repuestos_air_power text,
   repuestos_cliente text,

@@ -3,7 +3,14 @@
 import { useEffect, useRef, useState, use } from "react";
 import { useSesion } from "@/lib/useSesion";
 import { db } from "@/lib/db";
-import { cargarAnexa, guardarBorrador, valoresVacios } from "@/lib/informes";
+import {
+  CAMPO_LABELS,
+  CAMPOS_POR_TIPO,
+  cargarAnexa,
+  guardarBorrador,
+  valoresVacios,
+} from "@/lib/informes";
+import { intentarSync } from "@/lib/sync";
 import type { InformeGeneral, ValoresBase } from "@/lib/types";
 import { Divisor } from "@/components/ui";
 import {
@@ -71,16 +78,29 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
     });
   }
 
-  function enviar() {
+  async function enviar() {
     if (timer.current) clearTimeout(timer.current);
     const { informe: inf, valores: val } = estadoRef.current;
     if (!inf) return;
-    if (!inf.cliente_nombre.trim()) {
-      alert("El nombre del cliente es obligatorio.");
+    const faltantes: string[] = [];
+    if (!inf.cliente_nombre.trim()) faltantes.push("Cliente / Empresa");
+    if (inf.horas_trabajadas === null) faltantes.push("Total Horas Trabajadas");
+    if (inf.maquina_operativa === null) faltantes.push("¿La máquina queda operativa?");
+    for (const campo of CAMPOS_POR_TIPO[inf.tipo_equipo]) {
+      if (val[campo] === null) faltantes.push(CAMPO_LABELS[campo]);
+    }
+    const fotos = await db.archivos.where({ informe_id: inf.id, tipo: "foto" }).count();
+    if (fotos === 0) faltantes.push("Registro Fotográfico (mínimo 1 foto)");
+    if (faltantes.length > 0) {
+      alert(`Completá los campos obligatorios:\n- ${faltantes.join("\n- ")}`);
       return;
     }
-    void guardarBorrador({ ...inf, estado_sync: "pendiente" }, val);
-    alert("Informe guardado localmente. Se sincronizará al recuperar conexión.");
+    const guardado = { ...inf, estado_sync: "pendiente" as const };
+    estadoRef.current.informe = guardado;
+    setInforme(guardado);
+    await guardarBorrador(guardado, val);
+    intentarSync();
+    alert("Informe guardado. Si hay conexión, se está sincronizando con el servidor.");
   }
 
   if (!informe) {
@@ -118,20 +138,25 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
           </div>
         </div>
 
-        <SeccionCliente informe={informe} onChange={patchInforme} />
-        <Divisor />
-        <SeccionTrabajos informe={informe} onChange={patchInforme} />
-        <SeccionValores tipo={informe.tipo_equipo} valores={valores} onChange={patchValores} />
-        <Divisor />
-        <SeccionHoras informe={informe} onChange={patchInforme} />
-        <Divisor />
-        <SeccionRepuestos informe={informe} onChange={patchInforme} />
-        <Divisor />
-        <SeccionCotizacion informe={informe} onChange={patchInforme} />
-        <Divisor />
-        <SeccionFotos informeId={informe.id} />
-        <Divisor />
-        <SeccionFirmas informe={informe} onChange={patchInforme} />
+        <fieldset
+          disabled={informe.estado_firma === "firmado"}
+          className="m-0 min-w-0 border-0 p-0"
+        >
+          <SeccionCliente informe={informe} onChange={patchInforme} />
+          <Divisor />
+          <SeccionTrabajos informe={informe} onChange={patchInforme} />
+          <SeccionValores tipo={informe.tipo_equipo} valores={valores} onChange={patchValores} />
+          <Divisor />
+          <SeccionHoras informe={informe} onChange={patchInforme} />
+          <Divisor />
+          <SeccionRepuestos informe={informe} onChange={patchInforme} />
+          <Divisor />
+          <SeccionCotizacion informe={informe} onChange={patchInforme} />
+          <Divisor />
+          <SeccionFotos informeId={informe.id} />
+          <Divisor />
+          <SeccionFirmas informe={informe} onChange={patchInforme} />
+        </fieldset>
       </main>
     </div>
   );

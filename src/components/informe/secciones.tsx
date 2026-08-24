@@ -48,7 +48,24 @@ export function SeccionCliente({
           <div className="flex items-end">
             <button
               type="button"
+              title="Usar mi ubicación actual"
               className="bg-primary-container text-on-primary border border-primary-container rounded px-sm py-1 flex items-center justify-center gap-xs hover:bg-primary transition-colors h-[28px]"
+              onClick={() => {
+                if (!("geolocation" in navigator)) {
+                  alert("Este dispositivo no tiene geolocalización.");
+                  return;
+                }
+                navigator.geolocation.getCurrentPosition(
+                  (pos) => {
+                    const { latitude, longitude } = pos.coords;
+                    onChange({
+                      cliente_direccion: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
+                    });
+                  },
+                  () => alert("No se pudo obtener la ubicación. Revisá los permisos del navegador."),
+                  { enableHighAccuracy: true, timeout: 10000 }
+                );
+              }}
             >
               <span className="material-symbols-outlined text-[16px]">location_on</span>
             </button>
@@ -104,6 +121,25 @@ export function SeccionTrabajos({
             onChange={(e) => onChange({ observaciones_ia: e.target.value || null })}
           />
         ) : null}
+        <div className="flex items-center justify-between bg-surface-container-low p-1 rounded">
+          <span className="text-body-md font-body-md text-[12px]">¿La máquina queda operativa?</span>
+          <div className="dual-option w-24">
+            <button
+              type="button"
+              className={informe.maquina_operativa === true ? "selected-ok" : ""}
+              onClick={() => onChange({ maquina_operativa: true })}
+            >
+              Sí
+            </button>
+            <button
+              type="button"
+              className={informe.maquina_operativa === false ? "selected-error" : ""}
+              onClick={() => onChange({ maquina_operativa: false })}
+            >
+              No
+            </button>
+          </div>
+        </div>
       </div>
     </Seccion>
   );

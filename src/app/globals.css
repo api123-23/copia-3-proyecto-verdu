@@ -6,6 +6,22 @@
   body {
     @apply bg-background font-body-md text-on-surface antialiased;
   }
+  button,
+  select,
+  a {
+    touch-action: manipulation;
+  }
+}
+
+@media (max-width: 767px) {
+  .input-technical,
+  .select-small {
+    font-size: 16px;
+  }
+  .select-small {
+    height: 28px;
+    width: 6.5rem;
+  }
 }
 
 @layer components {

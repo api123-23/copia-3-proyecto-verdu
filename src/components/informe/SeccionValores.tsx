@@ -64,6 +64,9 @@ export default function SeccionValores({
         <h2 className="text-title-md font-title-md font-bold uppercase tracking-wider text-[13px]">
           VALORES
         </h2>
+        {tipo !== "grupo_electrogeno" ? (
+          <span className="required-badge">Obligatorio</span>
+        ) : null}
       </div>
       <div className="p-md space-y-md">
         {tipo === "grupo_electrogeno" ? (

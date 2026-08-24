@@ -41,6 +41,7 @@ export interface InformeGeneral {
   tipo_equipo: TipoEquipo;
   observaciones: string | null;
   observaciones_ia: string | null;
+  maquina_operativa: boolean | null;
   horas_trabajadas: number | null;
   repuestos_air_power: string | null;
   repuestos_cliente: string | null;
@@ -48,6 +49,7 @@ export interface InformeGeneral {
   cotizacion_notas: string | null;
   cotizacion_notas_ia: string | null;
   estado_firma: EstadoFirma;
+  cerrado: boolean;
   firma_tecnico_url: string | null;
   firma_cliente_url: string | null;
   aclaracion_firma: string | null;

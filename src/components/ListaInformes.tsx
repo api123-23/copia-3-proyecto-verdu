@@ -70,7 +70,7 @@ export function ListaInformes() {
                   inf.estado_firma === "firmado" ? "bg-green-100 text-green-700" : "bg-error-container text-on-error-container"
                 }`}
               >
-                {inf.estado_firma === "firmado" ? "Firmado" : "Pendiente de firma"}
+                {inf.estado_firma === "firmado" ? "Firmado por cliente" : "Sin firma de cliente"}
               </span>
               <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase ${sync.clase}`}>
                 {sync.label}

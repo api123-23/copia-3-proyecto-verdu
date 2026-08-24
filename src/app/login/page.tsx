@@ -44,6 +44,7 @@ export default function LoginPage() {
               className="input-technical"
               type="email"
               required
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -54,6 +55,7 @@ export default function LoginPage() {
               className="input-technical"
               type="password"
               required
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
