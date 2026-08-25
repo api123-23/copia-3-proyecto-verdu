@@ -96,9 +96,17 @@ async function ejecutar() {
   }
 }
 
-async function sincronizarInforme(informe: InformeGeneral) {
+async function sincronizarInforme(informeOriginal: InformeGeneral) {
+  let informe = informeOriginal;
   try {
-    await db.informes.update(informe.id, { estado_sync: "subiendo_imagenes" });
+    if (!informe.tecnico_id) {
+      const { data } = await supabase().auth.getSession();
+      const uid = data.session?.user.id ?? null;
+      if (!uid) throw new Error("Informe sin técnico asignado; iniciá sesión.");
+      informe = { ...informe, tecnico_id: uid };
+      await db.informes.update(informe.id, { tecnico_id: uid });
+    }
+    await db.informes.update(informe.id, { estado_sync: "subiendo_imagenes", error_sync: null });
     const archivos = await db.archivos.where("informe_id").equals(informe.id).toArray();
     for (const archivo of archivos) {
       if (archivo.url) {
@@ -191,7 +199,10 @@ async function sincronizarInforme(informe: InformeGeneral) {
       firma_cliente_url: firmaCliente,
     });
   } catch (e) {
-    await db.informes.update(informe.id, { estado_sync: "error" });
+    const mensaje =
+      e instanceof Error ? e.message : typeof e === "object" && e && "message" in e ? String((e as { message: unknown }).message) : "Error desconocido";
+    console.error(`Sync ${informe.id}:`, mensaje);
+    await db.informes.update(informe.id, { estado_sync: "error", error_sync: mensaje });
     throw e;
   }
 }

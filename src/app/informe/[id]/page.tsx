@@ -7,6 +7,7 @@ import {
   CAMPO_LABELS,
   CAMPOS_POR_TIPO,
   cargarAnexa,
+  formatNumero,
   guardarBorrador,
   valoresVacios,
 } from "@/lib/informes";
@@ -95,12 +96,21 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
       alert(`Completá los campos obligatorios:\n- ${faltantes.join("\n- ")}`);
       return;
     }
-    const guardado = { ...inf, estado_sync: "pendiente" as const };
+    const cerrado = inf.estado_firma === "firmado";
+    const guardado = {
+      ...inf,
+      estado_sync: "pendiente" as const,
+      cerrado: inf.cerrado || cerrado,
+    };
     estadoRef.current.informe = guardado;
     setInforme(guardado);
     await guardarBorrador(guardado, val);
     intentarSync();
-    alert("Informe guardado. Si hay conexión, se está sincronizando con el servidor.");
+    alert(
+      cerrado
+        ? "Informe enviado y cerrado. Si hay conexión, se está sincronizando con el servidor."
+        : "Informe guardado sin firma de cliente. Queda editable y se sincronizará con el servidor."
+    );
   }
 
   if (!informe) {
@@ -118,7 +128,7 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
       <header className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin h-12 bg-primary text-on-primary border-b border-primary-container shadow-sm">
         <div className="flex items-center gap-2">
           <h1 className="text-title-md font-title-md font-bold tracking-tight">
-            Informe Técnico № {informe.numero_registro ?? "—"}
+            Informe Técnico № {formatNumero(informe.numero_registro)}
           </h1>
         </div>
         <button
@@ -138,10 +148,7 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
           </div>
         </div>
 
-        <fieldset
-          disabled={informe.estado_firma === "firmado"}
-          className="m-0 min-w-0 border-0 p-0"
-        >
+        <fieldset disabled={informe.cerrado} className="m-0 min-w-0 border-0 p-0">
           <SeccionCliente informe={informe} onChange={patchInforme} />
           <Divisor />
           <SeccionTrabajos informe={informe} onChange={patchInforme} />

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
-import { TIPOS_EQUIPO } from "@/lib/informes";
+import { TIPOS_EQUIPO, formatNumero } from "@/lib/informes";
 import { useSesion } from "@/lib/useSesion";
 
 const BADGE_SYNC: Record<string, { label: string; clase: string }> = {
@@ -58,7 +58,7 @@ export function ListaInformes() {
           >
             <div className="flex justify-between items-center mb-xs">
               <span className="text-title-md font-bold text-primary">
-                Informe № {inf.numero_registro ?? "—"}
+                Informe № {formatNumero(inf.numero_registro)}
               </span>
               <span className="text-[12px] text-on-surface-variant">{fecha}</span>
             </div>
@@ -76,6 +76,9 @@ export function ListaInformes() {
                 {sync.label}
               </span>
             </div>
+            {inf.estado_sync === "error" && inf.error_sync ? (
+              <p className="text-[10px] text-error mt-xs break-words">{inf.error_sync}</p>
+            ) : null}
           </Link>
         );
       })}

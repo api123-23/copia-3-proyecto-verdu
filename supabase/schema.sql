@@ -35,6 +35,7 @@ create table if not exists informes_generales (
   cotizacion_notas text,
   cotizacion_notas_ia text,
   estado_firma text not null default 'pendiente' check (estado_firma in ('pendiente', 'firmado')),
+  cerrado boolean not null default false,
   firma_tecnico_url text,
   firma_cliente_url text,
   aclaracion_firma text,

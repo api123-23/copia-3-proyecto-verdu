@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { MotorSync } from "@/components/MotorSync";
+import { RegistrarSW } from "@/components/RegistrarSW";
 import "./globals.css";
 
 const inter = Inter({
@@ -24,6 +25,11 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "Air Power S.A. — Informe Técnico",
   description: "PWA de informes técnicos con sincronización offline",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/icons/icon-192.png",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -37,6 +43,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="bg-background font-body-md text-on-surface antialiased">
         <MotorSync />
+        <RegistrarSW />
         {children}
       </body>
     </html>

@@ -58,6 +58,7 @@ export interface InformeGeneral {
   actualizado_en: string;
   sincronizado_en: string | null;
   estado_sync: EstadoSync;
+  error_sync: string | null;
 }
 
 export interface ValoresBase {

@@ -44,7 +44,12 @@ export function crearInforme(tecnico_id: string | null): InformeGeneral {
     actualizado_en: ahora,
     sincronizado_en: null,
     estado_sync: "pendiente",
+    error_sync: null,
   };
+}
+
+export function formatNumero(n: number | null): string {
+  return n === null ? "—" : String(n).padStart(6, "0");
 }
 
 export function valoresVacios(): ValoresBase {
