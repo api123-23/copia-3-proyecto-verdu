@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
 import { TIPOS_EQUIPO, formatNumero } from "@/lib/informes";
+import { intentarSync } from "@/lib/sync";
 import { useSesion } from "@/lib/useSesion";
 
 const BADGE_SYNC: Record<string, { label: string; clase: string }> = {
@@ -76,8 +77,23 @@ export function ListaInformes() {
                 {sync.label}
               </span>
             </div>
-            {inf.estado_sync === "error" && inf.error_sync ? (
-              <p className="text-[10px] text-error mt-xs break-words">{inf.error_sync}</p>
+            {inf.estado_sync === "error" ? (
+              <div className="mt-xs">
+                {inf.error_sync ? (
+                  <p className="text-[10px] text-error break-words">{inf.error_sync}</p>
+                ) : null}
+                <button
+                  type="button"
+                  className="mt-xs text-[11px] font-bold text-primary underline"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    intentarSync();
+                  }}
+                >
+                  Reintentar sincronización
+                </button>
+              </div>
             ) : null}
           </Link>
         );

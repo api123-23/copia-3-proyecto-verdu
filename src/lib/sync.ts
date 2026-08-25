@@ -42,6 +42,25 @@ async function hayConexion(): Promise<boolean> {
   }
 }
 
+async function conReintentos<T>(intentos: number, operacion: () => Promise<T>): Promise<T> {
+  let ultimo: unknown = null;
+  for (let i = 0; i < intentos; i++) {
+    try {
+      return await operacion();
+    } catch (e) {
+      ultimo = e;
+      if (i < intentos - 1) await new Promise((r) => setTimeout(r, 1500 * (i + 1)));
+    }
+  }
+  throw ultimo;
+}
+
+function mensajeDe(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  if (typeof e === "object" && e !== null && "message" in e) return String((e as { message: unknown }).message);
+  return "Error desconocido";
+}
+
 function programarReintento() {
   if (timer) clearTimeout(timer);
   timer = setTimeout(() => {
@@ -115,13 +134,17 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       }
       await db.archivos.update(archivo.id, { estado_sync: "subiendo" });
       const path = `${informe.id}/${archivo.id}`;
-      const { error } = await supabase()
-        .storage.from(BUCKET)
-        .upload(path, archivo.blob, {
-          upsert: true,
-          contentType: archivo.blob.type || "application/octet-stream",
-        });
-      if (error) throw error;
+      await conReintentos(3, async () => {
+        const { error } = await supabase()
+          .storage.from(BUCKET)
+          .upload(path, archivo.blob, {
+            upsert: true,
+            contentType: archivo.blob.type || "application/octet-stream",
+          });
+        if (error) throw error;
+      }).catch((e) => {
+        throw new Error(`Subida de imagen (${mensajeDe(e)})`);
+      });
       await db.archivos.update(archivo.id, { url: path, estado_sync: "sincronizado" });
     }
     await db.informes.update(informe.id, { estado_sync: "imagenes_ok" });
@@ -160,12 +183,17 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       actualizado_en: new Date().toISOString(),
       sincronizado_en: new Date().toISOString(),
     };
-    const { data, error } = await supabase()
-      .from("informes_generales")
-      .upsert(payload)
-      .select()
-      .single();
-    if (error) throw error;
+    const data = await conReintentos(3, async () => {
+      const { data: fila, error } = await supabase()
+        .from("informes_generales")
+        .upsert(payload)
+        .select()
+        .single();
+      if (error) throw error;
+      return fila;
+    }).catch((e) => {
+      throw new Error(`Guardado del informe en servidor (${mensajeDe(e)})`);
+    });
 
     const tabla = tablaAnexa(informe.tipo_equipo);
     if (tabla) {
@@ -173,8 +201,12 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       const valores = { ...valoresVacios(), ...anexa };
       const out: Record<string, unknown> = { informe_id: informe.id };
       for (const campo of CAMPOS_POR_TIPO[informe.tipo_equipo]) out[campo] = valores[campo];
-      const { error: e2 } = await supabase().from(tabla).upsert(out);
-      if (e2) throw e2;
+      await conReintentos(3, async () => {
+        const { error: e2 } = await supabase().from(tabla).upsert(out);
+        if (e2) throw e2;
+      }).catch((e) => {
+        throw new Error(`Guardado de valores técnicos (${mensajeDe(e)})`);
+      });
     }
 
     const filasArchivos = archivosOk
@@ -187,8 +219,12 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
         url: a.url,
       }));
     if (filasArchivos.length > 0) {
-      const { error: e3 } = await supabase().from("informe_archivos").upsert(filasArchivos);
-      if (e3) throw e3;
+      await conReintentos(3, async () => {
+        const { error: e3 } = await supabase().from("informe_archivos").upsert(filasArchivos);
+        if (e3) throw e3;
+      }).catch((e) => {
+        throw new Error(`Guardado de archivos en servidor (${mensajeDe(e)})`);
+      });
     }
 
     await db.informes.update(informe.id, {
@@ -199,8 +235,7 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       firma_cliente_url: firmaCliente,
     });
   } catch (e) {
-    const mensaje =
-      e instanceof Error ? e.message : typeof e === "object" && e && "message" in e ? String((e as { message: unknown }).message) : "Error desconocido";
+    const mensaje = mensajeDe(e);
     console.error(`Sync ${informe.id}:`, mensaje);
     await db.informes.update(informe.id, { estado_sync: "error", error_sync: mensaje });
     throw e;
