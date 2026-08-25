@@ -12,6 +12,7 @@ import {
   valoresVacios,
 } from "@/lib/informes";
 import { intentarSync } from "@/lib/sync";
+import { traerInformeRemoto } from "@/lib/remoto";
 import type { InformeGeneral, ValoresBase } from "@/lib/types";
 import { Divisor } from "@/components/ui";
 import {
@@ -39,7 +40,11 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
   useEffect(() => {
     let activo = true;
     (async () => {
-      const inf = await db.informes.get(id);
+      let inf = await db.informes.get(id);
+      if (!inf) {
+        const traido = await traerInformeRemoto(id).catch(() => false);
+        if (traido) inf = await db.informes.get(id);
+      }
       if (!inf || !activo) return;
       const anexa = await cargarAnexa(inf.tipo_equipo, inf.id);
       if (!activo) return;
@@ -160,7 +165,7 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
           <Divisor />
           <SeccionCotizacion informe={informe} onChange={patchInforme} />
           <Divisor />
-          <SeccionFotos informeId={informe.id} />
+          <SeccionFotos informeId={informe.id} cerrado={informe.cerrado} />
           <Divisor />
           <SeccionFirmas informe={informe} onChange={patchInforme} />
         </fieldset>

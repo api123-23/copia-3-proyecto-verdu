@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 import imageCompression from "browser-image-compression";
 import { db } from "@/lib/db";
@@ -13,26 +14,86 @@ const CATEGORIAS: { value: CategoriaFoto; label: string }[] = [
   { value: "falla", label: "Falla" },
 ];
 
-function FotoItem({ archivo }: { archivo: ArchivoLocal }) {
+function Lightbox({
+  url,
+  nombre,
+  onCerrar,
+}: {
+  url: string;
+  nombre: string;
+  onCerrar: () => void;
+}) {
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[70] bg-black/80 flex flex-col items-center justify-center p-margin"
+      onClick={onCerrar}
+    >
+      <img
+        src={url}
+        alt={nombre}
+        className="max-h-[75vh] max-w-full object-contain rounded"
+        onClick={(e) => e.stopPropagation()}
+      />
+      <div className="flex gap-sm mt-md" onClick={(e) => e.stopPropagation()}>
+        <a
+          href={url}
+          download={nombre}
+          className="bg-primary text-on-primary rounded px-md py-1 text-[13px] font-bold uppercase tracking-wider"
+        >
+          Descargar
+        </a>
+        <button
+          type="button"
+          className="border border-outline-variant rounded px-md py-1 text-[13px] text-white"
+          onClick={onCerrar}
+        >
+          Cerrar
+        </button>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+function FotoItem({ archivo, cerrado }: { archivo: ArchivoLocal; cerrado: boolean }) {
   const url = useMemo(() => URL.createObjectURL(archivo.blob), [archivo.blob]);
   useEffect(() => () => URL.revokeObjectURL(url), [url]);
+  const [abierta, setAbierta] = useState(false);
   const categoria = CATEGORIAS.find((c) => c.value === archivo.categoria)?.label ?? "";
   return (
     <div className="relative">
-      {url ? <img src={url} alt={categoria} className="h-20 w-20 object-cover rounded border border-outline-variant" /> : null}
+      {url ? (
+        <img
+          src={url}
+          alt={categoria}
+          className="h-20 w-20 object-cover rounded border border-outline-variant cursor-pointer"
+          onClick={() => setAbierta(true)}
+        />
+      ) : null}
       <span className="block text-[10px] text-on-surface-variant mt-xs">{categoria}</span>
-      <button
-        type="button"
-        className="absolute top-0 right-0 bg-error text-on-error rounded-full w-5 h-5 flex items-center justify-center"
-        onClick={() => db.archivos.delete(archivo.id)}
-      >
-        <span className="material-symbols-outlined text-[14px]">close</span>
-      </button>
+      {!cerrado ? (
+        <button
+          type="button"
+          className="absolute top-0 right-0 bg-error text-on-error rounded-full w-5 h-5 flex items-center justify-center"
+          onClick={() => db.archivos.delete(archivo.id)}
+        >
+          <span className="material-symbols-outlined text-[14px]">close</span>
+        </button>
+      ) : null}
+      {abierta && url ? (
+        <Lightbox url={url} nombre={`informe-${categoria}`} onCerrar={() => setAbierta(false)} />
+      ) : null}
     </div>
   );
 }
 
-export default function SeccionFotos({ informeId }: { informeId: string }) {
+export default function SeccionFotos({
+  informeId,
+  cerrado,
+}: {
+  informeId: string;
+  cerrado: boolean;
+}) {
   const [categoria, setCategoria] = useState<CategoriaFoto>("inicial");
   const [subiendo, setSubiendo] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -107,7 +168,7 @@ export default function SeccionFotos({ informeId }: { informeId: string }) {
           {fotos && fotos.length > 0 ? (
             <div className="flex flex-wrap gap-sm justify-center">
               {fotos.map((f) => (
-                <FotoItem key={f.id} archivo={f} />
+                <FotoItem key={f.id} archivo={f} cerrado={cerrado} />
               ))}
             </div>
           ) : null}

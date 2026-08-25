@@ -11,7 +11,7 @@ let backoff = BACKOFF_INICIAL;
 let timer: ReturnType<typeof setTimeout> | null = null;
 let corriendo = false;
 
-function tablaAnexa(tipo: TipoEquipo): string | null {
+export function tablaAnexa(tipo: TipoEquipo): string | null {
   switch (tipo) {
     case "motocompresor":
       return "informes_motocompresor";
@@ -112,6 +112,7 @@ async function ejecutar() {
     }
   } finally {
     corriendo = false;
+    if (typeof window !== "undefined") window.dispatchEvent(new Event("verdu-sync"));
   }
 }
 
@@ -139,7 +140,7 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
           .storage.from(BUCKET)
           .upload(path, archivo.blob, {
             upsert: true,
-            contentType: archivo.blob.type || "application/octet-stream",
+            contentType: archivo.blob.type || "image/jpeg",
           });
         if (error) throw error;
       }).catch((e) => {

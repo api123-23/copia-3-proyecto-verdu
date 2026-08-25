@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
+import { listarRemotos } from "@/lib/remoto";
+import type { InformeGeneral } from "@/lib/types";
 import { TIPOS_EQUIPO, formatNumero } from "@/lib/informes";
 import { intentarSync } from "@/lib/sync";
 import { useSesion } from "@/lib/useSesion";
@@ -16,14 +19,36 @@ const BADGE_SYNC: Record<string, { label: string; clase: string }> = {
 };
 
 export function ListaInformes() {
-  const { cargando } = useSesion(true);
-  const informes = useLiveQuery(
+  const { cargando, sesion } = useSesion(true);
+  const locales = useLiveQuery(
     () => db.informes.orderBy("fecha_hora").reverse().toArray(),
     []
   );
+  const [remotos, setRemotos] = useState<InformeGeneral[]>([]);
 
-  if (cargando || !informes)
+  useEffect(() => {
+    if (cargando || !sesion) return;
+    let activo = true;
+    const refrescar = () => {
+      void listarRemotos().then((r) => {
+        if (activo) setRemotos(r);
+      });
+    };
+    refrescar();
+    window.addEventListener("verdu-sync", refrescar);
+    return () => {
+      activo = false;
+      window.removeEventListener("verdu-sync", refrescar);
+    };
+  }, [cargando, sesion]);
+
+  if (cargando || !locales)
     return <p className="px-margin text-on-surface-variant">Cargando...</p>;
+
+  const porId = new Map<string, InformeGeneral>();
+  for (const r of remotos) porId.set(r.id, r);
+  for (const l of locales) porId.set(l.id, l);
+  const informes = [...porId.values()].sort((a, b) => b.fecha_hora.localeCompare(a.fecha_hora));
 
   if (informes.length === 0) {
     return (
