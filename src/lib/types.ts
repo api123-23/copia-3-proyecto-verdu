@@ -195,8 +195,12 @@ export interface ArchivoLocal {
   informe_id: string;
   tipo: TipoArchivo;
   categoria: CategoriaFoto | null;
-  blob: Blob;
   url: string | null;
   estado_sync: "pendiente" | "subiendo" | "sincronizado" | "error";
   creado_en: string;
+}
+
+export interface BlobArchivo {
+  id: string;
+  blob: Blob;
 }

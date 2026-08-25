@@ -34,11 +34,20 @@ export function ListaInformes() {
         if (activo) setRemotos(r);
       });
     };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refrescar();
+    };
     refrescar();
     window.addEventListener("verdu-sync", refrescar);
+    window.addEventListener("online", refrescar);
+    window.addEventListener("focus", refrescar);
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       activo = false;
       window.removeEventListener("verdu-sync", refrescar);
+      window.removeEventListener("online", refrescar);
+      window.removeEventListener("focus", refrescar);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [cargando, sesion]);
 

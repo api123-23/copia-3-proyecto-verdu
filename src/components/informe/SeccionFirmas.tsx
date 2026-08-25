@@ -102,9 +102,13 @@ function BloqueFirma({
     const filas = await db.archivos.where({ informe_id: informeId, tipo }).toArray();
     return filas[0];
   }, [informeId, tipo]);
-  const url = useMemo(
-    () => (existente ? URL.createObjectURL(existente.blob) : null),
+  const registro = useLiveQuery(
+    () => (existente ? db.blobs.get(existente.id) : undefined),
     [existente]
+  );
+  const url = useMemo(
+    () => (registro ? URL.createObjectURL(registro.blob) : null),
+    [registro]
   );
   useEffect(
     () => () => {
@@ -114,23 +118,34 @@ function BloqueFirma({
   );
 
   async function guardar(blob: Blob) {
-    if (existente) await db.archivos.delete(existente.id);
-    await db.archivos.put({
-      id: crypto.randomUUID(),
-      informe_id: informeId,
-      tipo,
-      categoria: null,
-      blob,
-      url: null,
-      estado_sync: "pendiente",
-      creado_en: new Date().toISOString(),
+    const id = crypto.randomUUID();
+    await db.transaction("rw", [db.archivos, db.blobs], async () => {
+      if (existente) {
+        await db.archivos.delete(existente.id);
+        await db.blobs.delete(existente.id);
+      }
+      await db.blobs.put({ id, blob });
+      await db.archivos.put({
+        id,
+        informe_id: informeId,
+        tipo,
+        categoria: null,
+        url: null,
+        estado_sync: "pendiente",
+        creado_en: new Date().toISOString(),
+      });
     });
     setAbierto(false);
     onConfirmar?.();
   }
 
   async function limpiar() {
-    if (existente) await db.archivos.delete(existente.id);
+    if (existente) {
+      await db.transaction("rw", [db.archivos, db.blobs], async () => {
+        await db.archivos.delete(existente.id);
+        await db.blobs.delete(existente.id);
+      });
+    }
   }
 
   return (

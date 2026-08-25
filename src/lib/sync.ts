@@ -133,14 +133,20 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
         await db.archivos.update(archivo.id, { estado_sync: "sincronizado" });
         continue;
       }
+      const registro = await db.blobs.get(archivo.id);
+      if (!registro) {
+        await db.archivos.update(archivo.id, { estado_sync: "sincronizado" });
+        continue;
+      }
       await db.archivos.update(archivo.id, { estado_sync: "subiendo" });
       const path = `${informe.id}/${archivo.id}`;
-      await conReintentos(3, async () => {
+      const blob = registro.blob;
+      await conReintentos(4, async () => {
         const { error } = await supabase()
           .storage.from(BUCKET)
-          .upload(path, archivo.blob, {
+          .upload(path, blob, {
             upsert: true,
-            contentType: archivo.blob.type || "image/jpeg",
+            contentType: blob.type || "image/jpeg",
           });
         if (error) throw error;
       }).catch((e) => {

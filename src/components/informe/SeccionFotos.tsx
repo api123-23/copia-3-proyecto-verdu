@@ -56,8 +56,14 @@ function Lightbox({
 }
 
 function FotoItem({ archivo, cerrado }: { archivo: ArchivoLocal; cerrado: boolean }) {
-  const url = useMemo(() => URL.createObjectURL(archivo.blob), [archivo.blob]);
-  useEffect(() => () => URL.revokeObjectURL(url), [url]);
+  const registro = useLiveQuery(() => db.blobs.get(archivo.id), [archivo.id]);
+  const url = useMemo(() => (registro ? URL.createObjectURL(registro.blob) : null), [registro]);
+  useEffect(
+    () => () => {
+      if (url) URL.revokeObjectURL(url);
+    },
+    [url]
+  );
   const [abierta, setAbierta] = useState(false);
   const categoria = CATEGORIAS.find((c) => c.value === archivo.categoria)?.label ?? "";
   return (
@@ -75,7 +81,12 @@ function FotoItem({ archivo, cerrado }: { archivo: ArchivoLocal; cerrado: boolea
         <button
           type="button"
           className="absolute top-0 right-0 bg-error text-on-error rounded-full w-5 h-5 flex items-center justify-center"
-          onClick={() => db.archivos.delete(archivo.id)}
+          onClick={() =>
+            db.transaction("rw", [db.archivos, db.blobs], async () => {
+              await db.archivos.delete(archivo.id);
+              await db.blobs.delete(archivo.id);
+            })
+          }
         >
           <span className="material-symbols-outlined text-[14px]">close</span>
         </button>
@@ -110,15 +121,18 @@ export default function SeccionFotos({
         maxWidthOrHeight: 1920,
         useWebWorker: true,
       });
-      await db.archivos.put({
-        id: crypto.randomUUID(),
-        informe_id: informeId,
-        tipo: "foto",
-        categoria,
-        blob,
-        url: null,
-        estado_sync: "pendiente",
-        creado_en: new Date().toISOString(),
+      const id = crypto.randomUUID();
+      await db.transaction("rw", [db.archivos, db.blobs], async () => {
+        await db.blobs.put({ id, blob });
+        await db.archivos.put({
+          id,
+          informe_id: informeId,
+          tipo: "foto",
+          categoria,
+          url: null,
+          estado_sync: "pendiente",
+          creado_en: new Date().toISOString(),
+        });
       });
     } finally {
       setSubiendo(false);

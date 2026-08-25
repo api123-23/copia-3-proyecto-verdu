@@ -77,7 +77,7 @@ export async function traerInformeRemoto(id: string): Promise<boolean> {
 
   await db.transaction(
     "rw",
-    [db.informes, db.valores_motocompresor, db.valores_compresor, db.valores_vehiculos, db.valores_grupo_electrogeno, db.archivos],
+    [db.informes, db.valores_motocompresor, db.valores_compresor, db.valores_vehiculos, db.valores_grupo_electrogeno, db.archivos, db.blobs],
     async () => {
       await db.informes.put(informe);
       if (anexa) {
@@ -101,17 +101,17 @@ export async function traerInformeRemoto(id: string): Promise<boolean> {
         } catch {
           blob = null;
         }
-        if (!blob) continue;
+        const idArchivo = String(a.id);
         await db.archivos.put({
-          id: String(a.id),
+          id: idArchivo,
           informe_id: id,
           tipo: a.tipo as "foto" | "firma_tecnico" | "firma_cliente",
           categoria: (a.categoria as CategoriaFoto | null) ?? null,
-          blob,
           url: String(a.url),
           estado_sync: "sincronizado",
           creado_en: String(a.creado_en),
         });
+        if (blob) await db.blobs.put({ id: idArchivo, blob });
       }
     }
   );
