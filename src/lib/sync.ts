@@ -284,14 +284,22 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       firma_cliente_url: firmaCliente,
     });
 
-    await db.transaction("rw", [db.archivos, db.blobs], async () => {
-      const archLocal = await db.archivos.where("informe_id").equals(informe.id).toArray();
-      for (const a of archLocal) {
-        if (a.tipo !== "foto") continue;
-        await db.blobs.delete(a.id);
-        await db.archivos.update(a.id, { url: a.url ?? `synced/${a.id}`, estado_sync: "sincronizado" });
+    await db.transaction(
+      "rw",
+      [db.informes, db.valores_motocompresor, db.valores_compresor, db.valores_vehiculos, db.valores_grupo_electrogeno, db.archivos, db.blobs],
+      async () => {
+        await db.valores_motocompresor.delete(informe.id);
+        await db.valores_compresor.delete(informe.id);
+        await db.valores_vehiculos.delete(informe.id);
+        await db.valores_grupo_electrogeno.delete(informe.id);
+        const archLocal = await db.archivos.where("informe_id").equals(informe.id).toArray();
+        for (const a of archLocal) {
+          await db.blobs.delete(a.id);
+        }
+        await db.archivos.where("informe_id").equals(informe.id).delete();
+        await db.informes.delete(informe.id);
       }
-    });
+    );
   } catch (e) {
     const mensaje = mensajeDe(e);
     console.error(`Sync ${informe.id}:`, mensaje);

@@ -21,55 +21,64 @@ const BADGE_SYNC: Record<string, { label: string; clase: string }> = {
 export function ListaInformes() {
   const { cargando, sesion } = useSesion(true);
   const locales = useLiveQuery(
-    () => db.informes.orderBy("fecha_hora").reverse().toArray(),
+    () => db.informes.where("estado_sync").notEqual("sincronizado").toArray(),
     []
   );
   const [remotos, setRemotos] = useState<InformeGeneral[]>([]);
+  const [online, setOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
 
   useEffect(() => {
-    if (cargando || !sesion) return;
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", off);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (cargando || !sesion || !online) return;
     let activo = true;
     const refrescar = () => {
       void listarRemotos().then((r) => {
         if (activo) setRemotos(r);
       });
     };
-    const onVisible = () => {
-      if (document.visibilityState === "visible") refrescar();
-    };
     refrescar();
     window.addEventListener("verdu-sync", refrescar);
-    window.addEventListener("online", refrescar);
     window.addEventListener("focus", refrescar);
-    document.addEventListener("visibilitychange", onVisible);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") refrescar();
+    });
     return () => {
       activo = false;
       window.removeEventListener("verdu-sync", refrescar);
-      window.removeEventListener("online", refrescar);
       window.removeEventListener("focus", refrescar);
-      document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [cargando, sesion]);
+  }, [cargando, sesion, online]);
 
   if (cargando || !locales)
     return <p className="px-margin text-on-surface-variant">Cargando...</p>;
 
-  const porId = new Map<string, InformeGeneral>();
-  for (const r of remotos) porId.set(r.id, r);
-  for (const l of locales) porId.set(l.id, l);
-  const informes = [...porId.values()].sort((a, b) => b.fecha_hora.localeCompare(a.fecha_hora));
+  const informes = online
+    ? remotos.sort((a, b) => b.fecha_hora.localeCompare(a.fecha_hora))
+    : locales.sort((a, b) => b.fecha_hora.localeCompare(a.fecha_hora));
 
   if (informes.length === 0) {
     return (
       <div className="mx-4 md:mx-0 p-xl bg-white border border-outline-variant rounded-lg text-center">
         <p className="text-body-lg text-on-surface-variant mb-md">
-          No hay informes cargados en este dispositivo.
+          {online
+            ? "No hay informes sincronizados."
+            : "Sin conexión. No hay informes locales pendientes."}
         </p>
         <Link
           href="/informe/nuevo"
           className="inline-block bg-primary text-on-primary rounded px-md py-1.5 text-title-md font-bold uppercase tracking-wider"
         >
-          Crear primer informe
+          Crear informe
         </Link>
       </div>
     );
@@ -77,9 +86,14 @@ export function ListaInformes() {
 
   return (
     <div className="mx-4 md:mx-0 space-y-sm">
+      {!online ? (
+        <p className="text-[12px] text-on-surface-variant px-1">
+          Modo sin conexión — solo se muestran informes locales pendientes de sync.
+        </p>
+      ) : null}
       {informes.map((inf) => {
         const tipo = TIPOS_EQUIPO.find((t) => t.value === inf.tipo_equipo)?.label ?? inf.tipo_equipo;
-        const sync = BADGE_SYNC[inf.estado_sync];
+        const sync = online ? null : BADGE_SYNC[inf.estado_sync];
         const fecha = new Date(inf.fecha_hora).toLocaleDateString("es-AR", {
           day: "2-digit",
           month: "2-digit",
@@ -107,11 +121,13 @@ export function ListaInformes() {
               >
                 {inf.estado_firma === "firmado" ? "Firmado por cliente" : "Sin firma de cliente"}
               </span>
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase ${sync.clase}`}>
-                {sync.label}
-              </span>
+              {sync ? (
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase ${sync.clase}`}>
+                  {sync.label}
+                </span>
+              ) : null}
             </div>
-            {inf.estado_sync === "error" ? (
+            {!online && inf.estado_sync === "error" ? (
               <div className="mt-xs">
                 {inf.error_sync ? (
                   <p className="text-[10px] text-error break-words">{inf.error_sync}</p>
