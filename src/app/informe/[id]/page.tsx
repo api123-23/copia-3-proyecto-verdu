@@ -42,7 +42,6 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
   const [valoresGE, setValoresGE] = useState<InformeGrupoElectrogeno>(valoresVaciosGE());
   const [fallo, setFallo] = useState(false);
   const [intento, setIntento] = useState(0);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const estadoRef = useRef<{
     informe: InformeGeneral | null;
     valores: ValoresBase;
@@ -83,20 +82,11 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
     };
   }, [id, cargando, intento]);
 
-  function programarGuardado() {
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => {
-      const { informe: inf, valores: val, valoresGE: ge } = estadoRef.current;
-      if (inf) void guardarBorrador(inf, val, inf.tipo_equipo === "grupo_electrogeno" ? ge : undefined);
-    }, 500);
-  }
-
   function patchInforme(p: Partial<InformeGeneral>) {
     setInforme((prev) => {
       if (!prev) return prev;
       const next = { ...prev, ...p };
       estadoRef.current.informe = next;
-      programarGuardado();
       return next;
     });
   }
@@ -105,7 +95,6 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
     setValores((prev) => {
       const next = { ...prev, ...p };
       estadoRef.current.valores = next;
-      programarGuardado();
       return next;
     });
   }
@@ -114,13 +103,11 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
     setValoresGE((prev) => {
       const next = { ...prev, ...p };
       estadoRef.current.valoresGE = next;
-      programarGuardado();
       return next;
     });
   }
 
   async function enviar() {
-    if (timer.current) clearTimeout(timer.current);
     const { informe: inf, valores: val, valoresGE: ge } = estadoRef.current;
     if (!inf) return;
     const faltantes: string[] = [];
@@ -146,15 +133,16 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
       return;
     }
     const cerrado = inf.estado_firma === "firmado";
+    const yaSincronizado = inf.estado_sync === "sincronizado";
     const guardado = {
       ...inf,
-      estado_sync: "pendiente" as const,
+      estado_sync: yaSincronizado ? ("sincronizado" as const) : ("pendiente" as const),
       cerrado: inf.cerrado || cerrado,
     };
     estadoRef.current.informe = guardado;
     setInforme(guardado);
     await guardarBorrador(guardado, val, inf.tipo_equipo === "grupo_electrogeno" ? ge : undefined);
-    intentarSync();
+    if (!yaSincronizado) intentarSync();
     router.push("/");
   }
 
