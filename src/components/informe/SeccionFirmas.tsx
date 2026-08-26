@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import SignaturePad from "signature_pad";
 import { db } from "@/lib/db";
+import { supabase } from "@/lib/supabase";
 import type { InformeGeneral, TipoArchivo } from "@/lib/types";
 import { Seccion } from "@/components/ui";
 
@@ -108,15 +109,31 @@ function BloqueFirma({
     () => (existente ? db.blobs.get(existente.id) : undefined),
     [existente]
   );
-  const url = useMemo(
-    () => (registro ? URL.createObjectURL(registro.blob) : null),
-    [registro]
-  );
+  const [remoteUrl, setRemoteUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (registro || remoteUrl || !existente?.url) return;
+    let cancelado = false;
+    supabase().storage
+      .from("informe-archivos")
+      .createSignedUrl(existente.url, 3600)
+      .then(({ data }) => {
+        if (!cancelado && data?.signedUrl) setRemoteUrl(data.signedUrl);
+      })
+      .catch(() => {});
+    return () => { cancelado = true; };
+  }, [registro, remoteUrl, existente?.url]);
+
+  const url = useMemo(() => {
+    if (registro) return URL.createObjectURL(registro.blob);
+    return remoteUrl;
+  }, [registro, remoteUrl]);
+
   useEffect(
     () => () => {
-      if (url) URL.revokeObjectURL(url);
+      if (registro && url) URL.revokeObjectURL(url);
     },
-    [url]
+    [registro, url]
   );
 
   async function guardar(blob: Blob) {

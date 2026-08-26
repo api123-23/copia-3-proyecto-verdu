@@ -85,9 +85,11 @@ export async function traerInformeRemoto(id: string): Promise<boolean> {
     .select("*")
     .eq("informe_id", id);
 
+  const archivosMeta = (archivos ?? []) as FilaServidor[];
+
   await db.transaction(
     "rw",
-    [db.informes, db.valores_motocompresor, db.valores_compresor, db.valores_vehiculos, db.valores_grupo_electrogeno, db.archivos, db.blobs],
+    [db.informes, db.valores_motocompresor, db.valores_compresor, db.valores_vehiculos, db.valores_grupo_electrogeno, db.archivos],
     async () => {
       await db.informes.put(informe);
       if (anexa) {
@@ -102,17 +104,10 @@ export async function traerInformeRemoto(id: string): Promise<boolean> {
       if (anexaGE) {
         await db.valores_grupo_electrogeno.put(anexaGE);
       }
-      for (const a of (archivos ?? []) as FilaServidor[]) {
-        const existente = await db.archivos.get(String(a.id));
-        if (existente) continue;
-        let blob: Blob | null = null;
-        try {
-          const { data: descargado } = await supabase().storage.from(BUCKET).download(String(a.url));
-          blob = descargado ?? null;
-        } catch {
-          blob = null;
-        }
+      for (const a of archivosMeta) {
         const idArchivo = String(a.id);
+        const existente = await db.archivos.get(idArchivo);
+        if (existente) continue;
         await db.archivos.put({
           id: idArchivo,
           informe_id: id,
@@ -122,9 +117,21 @@ export async function traerInformeRemoto(id: string): Promise<boolean> {
           estado_sync: "sincronizado",
           creado_en: String(a.creado_en),
         });
-        if (blob) await db.blobs.put({ id: idArchivo, blob });
       }
     }
   );
+
+  for (const a of archivosMeta) {
+    const idArchivo = String(a.id);
+    const tieneBlob = await db.blobs.get(idArchivo);
+    if (tieneBlob) continue;
+    try {
+      const { data: descargado } = await supabase().storage.from(BUCKET).download(String(a.url));
+      if (descargado) await db.blobs.put({ id: idArchivo, blob: descargado });
+    } catch {
+      /* FotoItem usa signed URL como fallback */
+    }
+  }
+
   return true;
 }

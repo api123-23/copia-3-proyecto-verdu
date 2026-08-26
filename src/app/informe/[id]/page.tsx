@@ -7,6 +7,8 @@ import { useSesion } from "@/lib/useSesion";
 import { db } from "@/lib/db";
 import {
   CAMPO_LABELS,
+  CAMPO_LABELS_GE,
+  CAMPOS_GE,
   CAMPOS_POR_TIPO,
   cargarAnexa,
   cargarAnexaGE,
@@ -125,9 +127,16 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
     if (!inf.cliente_nombre.trim()) faltantes.push("Cliente / Empresa");
     if (inf.horas_trabajadas === null) faltantes.push("Total Horas Trabajadas");
     if (inf.maquina_operativa === null) faltantes.push("¿La máquina queda operativa?");
-    if (inf.tipo_equipo !== "grupo_electrogeno" && inf.tipo_equipo !== "extraordinarios") {
-      for (const campo of CAMPOS_POR_TIPO[inf.tipo_equipo]) {
-        if (val[campo] === null) faltantes.push(CAMPO_LABELS[campo]);
+    if (inf.tipo_equipo !== "extraordinarios") {
+      if (inf.tipo_equipo === "grupo_electrogeno") {
+        for (const campo of CAMPOS_GE) {
+          if (campo === "informe_id") continue;
+          if (ge[campo] === null || ge[campo] === undefined) faltantes.push(CAMPO_LABELS_GE[campo]);
+        }
+      } else {
+        for (const campo of CAMPOS_POR_TIPO[inf.tipo_equipo]) {
+          if (val[campo] === null) faltantes.push(CAMPO_LABELS[campo]);
+        }
       }
     }
     const fotos = await db.archivos.where({ informe_id: inf.id, tipo: "foto" }).count();
@@ -146,11 +155,6 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
     setInforme(guardado);
     await guardarBorrador(guardado, val, inf.tipo_equipo === "grupo_electrogeno" ? ge : undefined);
     intentarSync();
-    alert(
-      cerrado
-        ? "Informe enviado y cerrado. Si hay conexión, se está sincronizando con el servidor."
-        : "Informe guardado sin firma de cliente. Queda editable y se sincronizará con el servidor."
-    );
     router.push("/");
   }
 

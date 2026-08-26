@@ -11,9 +11,9 @@ import { intentarSync } from "@/lib/sync";
 import { useSesion } from "@/lib/useSesion";
 
 const BADGE_SYNC: Record<string, { label: string; clase: string }> = {
-  pendiente: { label: "Pendiente de sync", clase: "bg-secondary-container text-on-secondary-container" },
-  subiendo_imagenes: { label: "Sincronizando", clase: "bg-secondary-container text-on-secondary-container" },
-  imagenes_ok: { label: "Sincronizando", clase: "bg-secondary-container text-on-secondary-container" },
+  pendiente: { label: "Subiendo...", clase: "bg-amber-100 text-amber-700 animate-pulse" },
+  subiendo_imagenes: { label: "Subiendo fotos...", clase: "bg-amber-100 text-amber-700 animate-pulse" },
+  imagenes_ok: { label: "Guardando...", clase: "bg-amber-100 text-amber-700 animate-pulse" },
   sincronizado: { label: "Sincronizado", clase: "bg-green-100 text-green-700" },
   error: { label: "Error de sync", clase: "bg-error-container text-on-error-container" },
 };
@@ -49,29 +49,34 @@ export function ListaInformes() {
     refrescar();
     window.addEventListener("verdu-sync", refrescar);
     window.addEventListener("focus", refrescar);
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") refrescar();
-    });
+    const onVis = () => { if (document.visibilityState === "visible") refrescar(); };
+    document.addEventListener("visibilitychange", onVis);
     return () => {
       activo = false;
       window.removeEventListener("verdu-sync", refrescar);
       window.removeEventListener("focus", refrescar);
+      document.removeEventListener("visibilitychange", onVis);
     };
   }, [cargando, sesion, online]);
 
   if (cargando || !locales)
     return <p className="px-margin text-on-surface-variant">Cargando...</p>;
 
-  const informes = online
-    ? remotos.sort((a, b) => b.fecha_hora.localeCompare(a.fecha_hora))
-    : locales.sort((a, b) => b.fecha_hora.localeCompare(a.fecha_hora));
+  const pendientesLocales = locales.filter((l) => l.estado_sync !== "sincronizado");
+
+  const informesMap = new Map<string, InformeGeneral>();
+  if (online) {
+    for (const r of remotos) informesMap.set(r.id, r);
+  }
+  for (const l of pendientesLocales) informesMap.set(l.id, l);
+  const informes = [...informesMap.values()].sort((a, b) => b.fecha_hora.localeCompare(a.fecha_hora));
 
   if (informes.length === 0) {
     return (
       <div className="mx-4 md:mx-0 p-xl bg-white border border-outline-variant rounded-lg text-center">
         <p className="text-body-lg text-on-surface-variant mb-md">
           {online
-            ? "No hay informes sincronizados."
+            ? "No hay informes cargados."
             : "Sin conexión. No hay informes locales pendientes."}
         </p>
         <Link
@@ -88,12 +93,13 @@ export function ListaInformes() {
     <div className="mx-4 md:mx-0 space-y-sm">
       {!online ? (
         <p className="text-[12px] text-on-surface-variant px-1">
-          Modo sin conexión — solo se muestran informes locales pendientes de sync.
+          Sin conexión — mostrando informes locales pendientes.
         </p>
       ) : null}
       {informes.map((inf) => {
         const tipo = TIPOS_EQUIPO.find((t) => t.value === inf.tipo_equipo)?.label ?? inf.tipo_equipo;
-        const sync = online ? null : BADGE_SYNC[inf.estado_sync];
+        const esLocal = pendientesLocales.some((l) => l.id === inf.id);
+        const sync = esLocal ? BADGE_SYNC[inf.estado_sync] ?? BADGE_SYNC.pendiente : null;
         const fecha = new Date(inf.fecha_hora).toLocaleDateString("es-AR", {
           day: "2-digit",
           month: "2-digit",
@@ -127,7 +133,7 @@ export function ListaInformes() {
                 </span>
               ) : null}
             </div>
-            {!online && inf.estado_sync === "error" ? (
+            {esLocal && inf.estado_sync === "error" ? (
               <div className="mt-xs">
                 {inf.error_sync ? (
                   <p className="text-[10px] text-error break-words">{inf.error_sync}</p>
