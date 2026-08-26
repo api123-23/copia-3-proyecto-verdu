@@ -1,7 +1,7 @@
 import { db } from "./db";
 import { supabase } from "./supabase";
-import { cargarAnexa, cargarAnexaGE, valoresVacios } from "./informes";
-import type { InformeGeneral, TipoEquipo } from "./types";
+import { cargarAnexa, cargarAnexaGE, construirAnexa } from "./informes";
+import type { InformeGeneral, TipoEquipo, ValoresBase } from "./types";
 
 const BUCKET = "informe-archivos";
 const BACKOFF_INICIAL = 5000;
@@ -205,27 +205,15 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
     const tabla = tablaAnexa(informe.tipo_equipo);
     if (tabla && informe.tipo_equipo !== "grupo_electrogeno") {
       const anexa = await cargarAnexa(informe.tipo_equipo, informe.id);
-      const valores = { ...valoresVacios(), ...anexa };
-      const out: Record<string, unknown> = { informe_id: informe.id };
-      for (const campo of [
-        "horometro", "aceite_motor", "aceite_unidad", "refrig_radiador", "estado_bateria",
-        "conec_purga", "inst_electrica", "carroceria", "jabalina", "aislacion_suelo",
-        "rpm_min", "rpm_max", "tension_linea_f1", "tension_linea_f2", "tension_linea_f3",
-        "tension_gen_f1", "tension_gen_f2", "tension_gen_f3", "cons_carga_f1", "cons_carga_f2",
-        "cons_carga_f3", "cons_descarga_f1", "cons_descarga_f2", "cons_descarga_f3",
-        "temp_ambiente", "temp_refrigerante", "presion_unidad_comp", "presion_aceite_motor",
-        "circuito_refr_m", "circuito_despresuriz", "circuito_arranque", "circuito_seguridad",
-        "circuito_electr", "tiempo_y_delta", "diferencial",
-        "perdida_aceite_motor", "perdida_refrigerante", "perdida_aire", "perdida_combustible",
-      ] as const) {
-        if (campo in valores) out[campo] = (valores as Record<string, unknown>)[campo];
+      const out = construirAnexa(informe.tipo_equipo, informe.id, anexa as ValoresBase);
+      if (out) {
+        await conReintentos(3, async () => {
+          const { error: e2 } = await supabase().from(tabla).upsert(out);
+          if (e2) throw e2;
+        }).catch((e) => {
+          throw new Error(`Guardado de valores técnicos (${mensajeDe(e)})`);
+        });
       }
-      await conReintentos(3, async () => {
-        const { error: e2 } = await supabase().from(tabla).upsert(out);
-        if (e2) throw e2;
-      }).catch((e) => {
-        throw new Error(`Guardado de valores técnicos (${mensajeDe(e)})`);
-      });
     }
 
     if (tabla && informe.tipo_equipo === "grupo_electrogeno") {
