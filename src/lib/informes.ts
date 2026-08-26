@@ -321,8 +321,8 @@ export async function cargarAnexa(
 
 export async function cargarAnexaGE(
   informe_id: string
-): Promise<InformeGrupoElectrogeno | null> {
+): Promise<InformeGrupoElectrogeno> {
   const fila = await db.valores_grupo_electrogeno.get(informe_id);
-  if (!fila) return null;
+  if (!fila) return { ...valoresVaciosGE(), informe_id };
   return fila;
 }

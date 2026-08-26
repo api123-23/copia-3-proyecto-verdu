@@ -37,18 +37,18 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
   const router = useRouter();
   const [informe, setInforme] = useState<InformeGeneral | null>(null);
   const [valores, setValores] = useState<ValoresBase>(valoresVacios);
-  const [valoresGE, setValoresGE] = useState<InformeGrupoElectrogeno | null>(null);
+  const [valoresGE, setValoresGE] = useState<InformeGrupoElectrogeno>(valoresVaciosGE());
   const [fallo, setFallo] = useState(false);
   const [intento, setIntento] = useState(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const estadoRef = useRef<{
     informe: InformeGeneral | null;
     valores: ValoresBase;
-    valoresGE: InformeGrupoElectrogeno | null;
+    valoresGE: InformeGrupoElectrogeno;
   }>({
     informe: null,
     valores: valoresVacios(),
-    valoresGE: null,
+    valoresGE: valoresVaciosGE(),
   });
 
   useEffect(() => {
@@ -65,7 +65,7 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
         return;
       }
       const anexa = await cargarAnexa(inf.tipo_equipo, inf.id);
-      let anexaGE: InformeGrupoElectrogeno | null = null;
+      let anexaGE = valoresVaciosGE();
       if (inf.tipo_equipo === "grupo_electrogeno") {
         anexaGE = await cargarAnexaGE(inf.id);
       }
@@ -110,8 +110,7 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
 
   function patchValoresGE(p: Partial<InformeGrupoElectrogeno>) {
     setValoresGE((prev) => {
-      const base = prev ?? valoresVaciosGE();
-      const next = { ...base, ...p };
+      const next = { ...prev, ...p };
       estadoRef.current.valoresGE = next;
       programarGuardado();
       return next;

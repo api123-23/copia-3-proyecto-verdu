@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 import imageCompression from "browser-image-compression";
 import { db } from "@/lib/db";
+import { supabase } from "@/lib/supabase";
 import type { ArchivoLocal, CategoriaFoto } from "@/lib/types";
 import { Label, Seccion } from "@/components/ui";
 
@@ -57,12 +58,31 @@ function Lightbox({
 
 function FotoItem({ archivo, cerrado }: { archivo: ArchivoLocal; cerrado: boolean }) {
   const registro = useLiveQuery(() => db.blobs.get(archivo.id), [archivo.id]);
-  const url = useMemo(() => (registro ? URL.createObjectURL(registro.blob) : null), [registro]);
+  const [remoteUrl, setRemoteUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (registro || remoteUrl || !archivo.url) return;
+    let cancelado = false;
+    supabase().storage
+      .from("informe-archivos")
+      .createSignedUrl(archivo.url, 3600)
+      .then(({ data }) => {
+        if (!cancelado && data?.signedUrl) setRemoteUrl(data.signedUrl);
+      })
+      .catch(() => {});
+    return () => { cancelado = true; };
+  }, [registro, remoteUrl, archivo.url]);
+
+  const url = useMemo(() => {
+    if (registro) return URL.createObjectURL(registro.blob);
+    return remoteUrl;
+  }, [registro, remoteUrl]);
+
   useEffect(
     () => () => {
-      if (url) URL.revokeObjectURL(url);
+      if (registro && url) URL.revokeObjectURL(url);
     },
-    [url]
+    [registro, url]
   );
   const [abierta, setAbierta] = useState(false);
   const categoria = CATEGORIAS.find((c) => c.value === archivo.categoria)?.label ?? "";

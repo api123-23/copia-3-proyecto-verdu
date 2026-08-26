@@ -1,5 +1,5 @@
 import type { InformeGrupoElectrogeno, TipoEquipo, ValoresBase } from "@/lib/types";
-import { aplica } from "@/lib/informes";
+import { aplica, valoresVaciosGE } from "@/lib/informes";
 import {
   CampoNumero,
   GrupoTitulo,
@@ -119,13 +119,13 @@ export default function SeccionValores({
   tipo: TipoEquipo;
   valores: ValoresBase;
   onChange: (p: Patch) => void;
-  valoresGE?: InformeGrupoElectrogeno | null;
+  valoresGE?: InformeGrupoElectrogeno;
   onChangeGE?: (p: PatchGE) => void;
 }) {
   if (tipo === "extraordinarios") return null;
 
   if (tipo === "grupo_electrogeno") {
-    if (!valoresGE || !onChangeGE) return null;
+    if (!onChangeGE) return null;
     return (
       <section className="mb-lg bg-white shadow-sm border border-outline-variant mx-4 md:mx-0 rounded-lg overflow-hidden">
         <div className="bg-primary-container text-on-primary py-1 px-md flex items-center justify-between mb-sm">
@@ -134,7 +134,7 @@ export default function SeccionValores({
           </h2>
         </div>
         <div className="p-md space-y-md">
-          <SeccionValoresGE valoresGE={valoresGE} onChangeGE={onChangeGE} />
+          <SeccionValoresGE valoresGE={valoresGE ?? valoresVaciosGE()} onChangeGE={onChangeGE} />
         </div>
       </section>
     );

@@ -250,73 +250,104 @@ alter table informes_vehiculos enable row level security;
 alter table informes_grupo_electrogeno enable row level security;
 alter table informe_archivos enable row level security;
 
+drop policy if exists perfiles_select on perfiles;
 create policy perfiles_select on perfiles for select to authenticated
   using (id = auth.uid() or public.es_admin());
+drop policy if exists perfiles_insert_admin on perfiles;
 create policy perfiles_insert_admin on perfiles for insert to authenticated
   with check (public.es_admin());
+drop policy if exists perfiles_update_admin on perfiles;
 create policy perfiles_update_admin on perfiles for update to authenticated
   using (public.es_admin()) with check (public.es_admin());
 
+drop policy if exists clientes_select on clientes;
 create policy clientes_select on clientes for select to authenticated using (true);
+drop policy if exists clientes_write_admin on clientes;
 create policy clientes_write_admin on clientes for insert to authenticated
   with check (public.es_admin());
+drop policy if exists clientes_update_admin on clientes;
 create policy clientes_update_admin on clientes for update to authenticated
   using (public.es_admin()) with check (public.es_admin());
+drop policy if exists clientes_delete_admin on clientes;
 create policy clientes_delete_admin on clientes for delete to authenticated
   using (public.es_admin());
 
+drop policy if exists informes_select on informes_generales;
 create policy informes_select on informes_generales for select to authenticated
   using (tecnico_id = auth.uid() or public.es_admin());
+drop policy if exists informes_insert on informes_generales;
 create policy informes_insert on informes_generales for insert to authenticated
   with check (tecnico_id = auth.uid());
+drop policy if exists informes_update on informes_generales;
 create policy informes_update on informes_generales for update to authenticated
   using (tecnico_id = auth.uid() or public.es_admin())
   with check (tecnico_id = auth.uid() or public.es_admin());
+drop policy if exists informes_delete_admin on informes_generales;
 create policy informes_delete_admin on informes_generales for delete to authenticated
   using (public.es_admin());
 
+drop policy if exists moto_select on informes_motocompresor;
 create policy moto_select on informes_motocompresor for select to authenticated
   using (exists (select 1 from informes_generales g where g.id = informe_id and (g.tecnico_id = auth.uid() or public.es_admin())));
+drop policy if exists moto_write on informes_motocompresor;
 create policy moto_write on informes_motocompresor for insert to authenticated
   with check (exists (select 1 from informes_generales g where g.id = informe_id and (g.tecnico_id = auth.uid() or public.es_admin())));
+drop policy if exists moto_update on informes_motocompresor;
 create policy moto_update on informes_motocompresor for update to authenticated
   using (exists (select 1 from informes_generales g where g.id = informe_id and (g.tecnico_id = auth.uid() or public.es_admin())));
+drop policy if exists moto_delete on informes_motocompresor;
 create policy moto_delete on informes_motocompresor for delete to authenticated
   using (exists (select 1 from informes_generales g where g.id = informe_id and (g.tecnico_id = auth.uid() or public.es_admin())));
 
+drop policy if exists comp_select on informes_compresor;
 create policy comp_select on informes_compresor for select to authenticated
   using (exists (select 1 from informes_generales g where g.id = informe_id and (g.tecnico_id = auth.uid() or public.es_admin())));
+drop policy if exists comp_write on informes_compresor;
 create policy comp_write on informes_compresor for insert to authenticated
   with check (exists (select 1 from informes_generales g where g.id = informe_id and (g.tecnico_id = auth.uid() or public.es_admin())));
+drop policy if exists comp_update on informes_compresor;
 create policy comp_update on informes_compresor for update to authenticated
   using (exists (select 1 from informes_generales g where g.id = informe_id and (g.tecnico_id = auth.uid() or public.es_admin())));
+drop policy if exists comp_delete on informes_compresor;
 create policy comp_delete on informes_compresor for delete to authenticated
   using (exists (select 1 from informes_generales g where g.id = informe_id and (g.tecnico_id = auth.uid() or public.es_admin())));
 
+drop policy if exists veh_select on informes_vehiculos;
 create policy veh_select on informes_vehiculos for select to authenticated
   using (exists (select 1 from informes_generales g where g.id = informe_id and (g.tecnico_id = auth.uid() or public.es_admin())));
+drop policy if exists veh_write on informes_vehiculos;
 create policy veh_write on informes_vehiculos for insert to authenticated
   with check (exists (select 1 from informes_generales g where g.id = informe_id and (g.tecnico_id = auth.uid() or public.es_admin())));
+drop policy if exists veh_update on informes_vehiculos;
 create policy veh_update on informes_vehiculos for update to authenticated
   using (exists (select 1 from informes_generales g where g.id = informe_id and (g.tecnico_id = auth.uid() or public.es_admin())));
+drop policy if exists veh_delete on informes_vehiculos;
 create policy veh_delete on informes_vehiculos for delete to authenticated
   using (exists (select 1 from informes_generales g where g.id = informe_id and (g.tecnico_id = auth.uid() or public.es_admin())));
 
+drop policy if exists ge_select on informes_grupo_electrogeno;
 create policy ge_select on informes_grupo_electrogeno for select to authenticated
   using (exists (select 1 from informes_generales g where g.id = informe_id and (g.tecnico_id = auth.uid() or public.es_admin())));
+drop policy if exists ge_write on informes_grupo_electrogeno;
 create policy ge_write on informes_grupo_electrogeno for insert to authenticated
   with check (exists (select 1 from informes_generales g where g.id = informe_id and (g.tecnico_id = auth.uid() or public.es_admin())));
+drop policy if exists ge_update on informes_grupo_electrogeno;
 create policy ge_update on informes_grupo_electrogeno for update to authenticated
   using (exists (select 1 from informes_generales g where g.id = informe_id and (g.tecnico_id = auth.uid() or public.es_admin())));
+drop policy if exists ge_delete on informes_grupo_electrogeno;
 create policy ge_delete on informes_grupo_electrogeno for delete to authenticated
   using (exists (select 1 from informes_generales g where g.id = informe_id and (g.tecnico_id = auth.uid() or public.es_admin())));
 
+drop policy if exists archivos_select on informe_archivos;
 create policy archivos_select on informe_archivos for select to authenticated
   using (exists (select 1 from informes_generales g where g.id = informe_id and (g.tecnico_id = auth.uid() or public.es_admin())));
+drop policy if exists archivos_insert on informe_archivos;
 create policy archivos_insert on informe_archivos for insert to authenticated
   with check (exists (select 1 from informes_generales g where g.id = informe_id and (g.tecnico_id = auth.uid() or public.es_admin())));
+drop policy if exists archivos_update on informe_archivos;
 create policy archivos_update on informe_archivos for update to authenticated
   using (exists (select 1 from informes_generales g where g.id = informe_id and (g.tecnico_id = auth.uid() or public.es_admin())));
+drop policy if exists archivos_delete on informe_archivos;
 create policy archivos_delete on informe_archivos for delete to authenticated
   using (exists (select 1 from informes_generales g where g.id = informe_id and (g.tecnico_id = auth.uid() or public.es_admin())));
 
@@ -324,9 +355,15 @@ insert into storage.buckets (id, name, public)
 values ('informe-archivos', 'informe-archivos', false)
 on conflict (id) do nothing;
 
+drop policy if exists storage_upload on storage.objects;
 create policy storage_upload on storage.objects for insert to authenticated
   with check (bucket_id = 'informe-archivos' and owner = auth.uid());
+drop policy if exists storage_select on storage.objects;
 create policy storage_select on storage.objects for select to authenticated
   using (bucket_id = 'informe-archivos' and (owner = auth.uid() or public.es_admin()));
+drop policy if exists storage_update on storage.objects;
 create policy storage_update on storage.objects for update to authenticated
   using (bucket_id = 'informe-archivos' and owner = auth.uid());
+drop policy if exists storage_delete on storage.objects;
+create policy storage_delete on storage.objects for delete to authenticated
+  using (bucket_id = 'informe-archivos' and (owner = auth.uid() or public.es_admin()));
