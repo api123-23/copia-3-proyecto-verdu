@@ -48,19 +48,19 @@ create table if not exists informes_generales (
 create table if not exists informes_motocompresor (
   informe_id uuid primary key references informes_generales (id) on delete cascade,
   horometro numeric(10, 2),
-  aceite_motor text check (aceite_motor in ('si', 'no', 'optimo', 'bajo')),
+  aceite_motor text check (aceite_motor in ('ok', 'alto', 'bajo')),
   aceite_unidad text check (aceite_unidad in ('si', 'no')),
-  refrig_radiador text check (refrig_radiador in ('si', 'no', 'optimo', 'bajo')),
-  estado_bateria text check (estado_bateria in ('si', 'no', 'optimo', 'bajo')),
+  refrig_radiador text check (refrig_radiador in ('ok', 'alto', 'bajo')),
+  estado_bateria text check (estado_bateria in ('ok', 'mal')),
   conec_purga text check (conec_purga in ('si', 'no')),
-  inst_electrica text check (inst_electrica in ('si', 'no')),
-  carroceria text check (carroceria in ('si', 'no')),
+  inst_electrica text check (inst_electrica in ('ok', 'mal')),
+  carroceria text check (carroceria in ('ok', 'mal')),
   jabalina text check (jabalina in ('si', 'no')),
   aislacion_suelo text check (aislacion_suelo in ('si', 'no')),
   temp_ambiente numeric(10, 2),
   temp_refrigerante numeric(10, 2),
   presion_unidad_comp numeric(10, 2),
-  presion_aceite_motor numeric(10, 2),
+  presion_aceite_motor text check (presion_aceite_motor in ('ok', 'bajo')),
   perdida_aceite_motor text check (perdida_aceite_motor in ('si', 'no')),
   perdida_refrigerante text check (perdida_refrigerante in ('si', 'no')),
   perdida_aire text check (perdida_aire in ('si', 'no')),
@@ -71,7 +71,7 @@ create table if not exists informes_compresor (
   informe_id uuid primary key references informes_generales (id) on delete cascade,
   horometro numeric(10, 2),
   aceite_unidad text check (aceite_unidad in ('si', 'no')),
-  inst_electrica text check (inst_electrica in ('si', 'no')),
+  inst_electrica text check (inst_electrica in ('ok', 'mal')),
   jabalina text check (jabalina in ('si', 'no')),
   aislacion_suelo text check (aislacion_suelo in ('si', 'no')),
   tension_linea_f1 numeric(10, 2),
@@ -79,11 +79,11 @@ create table if not exists informes_compresor (
   tension_linea_f3 numeric(10, 2),
   temp_ambiente numeric(10, 2),
   temp_refrigerante numeric(10, 2),
-  circuito_refr_m text check (circuito_refr_m in ('si', 'no')),
+  circuito_refr_m text check (circuito_refr_m in ('ok', 'mal')),
   circuito_despresuriz text check (circuito_despresuriz in ('si', 'no')),
-  circuito_arranque text check (circuito_arranque in ('si', 'no')),
-  circuito_seguridad text check (circuito_seguridad in ('si', 'no')),
-  circuito_electr text check (circuito_electr in ('si', 'no')),
+  circuito_arranque text check (circuito_arranque in ('ok', 'mal')),
+  circuito_seguridad text check (circuito_seguridad in ('ok', 'mal')),
+  circuito_electr text check (circuito_electr in ('ok', 'mal')),
   tiempo_y_delta text,
   diferencial text,
   perdida_aceite_motor text check (perdida_aceite_motor in ('si', 'no'))
@@ -92,17 +92,61 @@ create table if not exists informes_compresor (
 create table if not exists informes_vehiculos (
   informe_id uuid primary key references informes_generales (id) on delete cascade,
   horometro numeric(10, 2),
-  aceite_motor text check (aceite_motor in ('si', 'no', 'optimo', 'bajo')),
-  refrig_radiador text check (refrig_radiador in ('si', 'no', 'optimo', 'bajo')),
-  estado_bateria text check (estado_bateria in ('si', 'no', 'optimo', 'bajo')),
-  inst_electrica text check (inst_electrica in ('si', 'no')),
-  carroceria text check (carroceria in ('si', 'no')),
+  aceite_motor text check (aceite_motor in ('ok', 'alto', 'bajo')),
+  refrig_radiador text check (refrig_radiador in ('ok', 'alto', 'bajo')),
+  estado_bateria text check (estado_bateria in ('ok', 'alto', 'bajo')),
+  inst_electrica text check (inst_electrica in ('ok', 'mal')),
+  carroceria text check (carroceria in ('ok', 'mal')),
   temp_ambiente numeric(10, 2),
   temp_refrigerante numeric(10, 2),
   perdida_aceite_motor text check (perdida_aceite_motor in ('si', 'no')),
   perdida_refrigerante text check (perdida_refrigerante in ('si', 'no')),
   perdida_aire text check (perdida_aire in ('si', 'no')),
   perdida_combustible text check (perdida_combustible in ('si', 'no'))
+);
+
+create table if not exists informes_grupo_electrogeno (
+  informe_id uuid primary key references informes_generales (id) on delete cascade,
+  ge_motor_detenido_aceite_motor text check (ge_motor_detenido_aceite_motor in ('ok', 'bajo')),
+  ge_motor_detenido_agua_radiador text check (ge_motor_detenido_agua_radiador in ('ok', 'bajo')),
+  ge_motor_detenido_restriccion_aire text check (ge_motor_detenido_restriccion_aire in ('si', 'no')),
+  ge_motor_detenido_tension_correas text check (ge_motor_detenido_tension_correas in ('ok', 'mal')),
+  ge_motor_detenido_estado_baterias text check (ge_motor_detenido_estado_baterias in ('ok', 'mal')),
+  ge_motor_detenido_inst_electrica text check (ge_motor_detenido_inst_electrica in ('ok', 'mal')),
+  ge_motor_detenido_cableado_distrib text check (ge_motor_detenido_cableado_distrib in ('ok', 'mal')),
+  ge_motor_detenido_cubo_ventilador text check (ge_motor_detenido_cubo_ventilador in ('ok', 'mal')),
+  ge_motor_detenido_ajuste_motor text check (ge_motor_detenido_ajuste_motor in ('si', 'no')),
+  ge_motor_detenido_union_tubo_aire text check (ge_motor_detenido_union_tubo_aire in ('ok', 'mal')),
+  ge_motor_detenido_lineas_combustible text check (ge_motor_detenido_lineas_combustible in ('ok', 'mal')),
+  ge_motor_detenido_dca_anticongelante text check (ge_motor_detenido_dca_anticongelante in ('ok', 'mal')),
+  ge_motor_detenido_ajuste_inyectores text check (ge_motor_detenido_ajuste_inyectores in ('si', 'no')),
+  ge_motor_detenido_calibre_inyectores text check (ge_motor_detenido_calibre_inyectores in ('si', 'no')),
+  ge_funcionamiento_sistema_arranque text check (ge_funcionamiento_sistema_arranque in ('ok', 'mal')),
+  ge_funcionamiento_mangueras text check (ge_funcionamiento_mangueras in ('ok', 'mal')),
+  ge_funcionamiento_presion_aceite text check (ge_funcionamiento_presion_aceite in ('ok', 'bajo')),
+  ge_funcionamiento_temp_agua text check (ge_funcionamiento_temp_agua in ('optimo', 'bajo', 'alto')),
+  ge_funcionamiento_diferencial_temp text check (ge_funcionamiento_diferencial_temp in ('optimo', 'bajo', 'alto')),
+  ge_funcionamiento_vibraciones text check (ge_funcionamiento_vibraciones in ('si', 'no')),
+  ge_funcionamiento_antivibratorios text check (ge_funcionamiento_antivibratorios in ('ok', 'mal')),
+  ge_funcionamiento_llave_termomagnetica text check (ge_funcionamiento_llave_termomagnetica in ('ok', 'mal')),
+  ge_funcionamiento_carga_alternador text check (ge_funcionamiento_carga_alternador in ('si', 'no')),
+  ge_funcionamiento_llave_transferencia text check (ge_funcionamiento_llave_transferencia in ('si', 'no')),
+  ge_funcionamiento_rpm_max text check (ge_funcionamiento_rpm_max in ('optimo', 'bajo', 'alto')),
+  ge_funcionamiento_circ_seguridad text check (ge_funcionamiento_circ_seguridad in ('ok', 'mal')),
+  ge_funcionamiento_ventilacion_aire text check (ge_funcionamiento_ventilacion_aire in ('ok', 'mal')),
+  ge_funcionamiento_perdidas_aceite text check (ge_funcionamiento_perdidas_aceite in ('optimo', 'bajo', 'alto')),
+  ge_funcionamiento_perdidas_combustible text check (ge_funcionamiento_perdidas_combustible in ('si', 'no')),
+  ge_funcionamiento_restriccion_escape text check (ge_funcionamiento_restriccion_escape in ('si', 'no')),
+  ge_funcionamiento_restriccion_aire text check (ge_funcionamiento_restriccion_aire in ('si', 'no')),
+  ge_funcionamiento_frecuencia text check (ge_funcionamiento_frecuencia in ('ok', 'baja', 'alta')),
+  ge_funcionamiento_tension_linea text check (ge_funcionamiento_tension_linea in ('ok', 'baja', 'alta')),
+  ge_funcionamiento_amperaje_f1 text check (ge_funcionamiento_amperaje_f1 in ('optimo', 'bajo', 'alto')),
+  ge_funcionamiento_amperaje_f2 text check (ge_funcionamiento_amperaje_f2 in ('optimo', 'bajo', 'alto')),
+  ge_funcionamiento_amperaje_f3 text check (ge_funcionamiento_amperaje_f3 in ('optimo', 'bajo', 'alto')),
+  ge_funcionamiento_tension_linea_carga text check (ge_funcionamiento_tension_linea_carga in ('ok', 'baja', 'alta')),
+  ge_funcionamiento_temp_ambiente numeric(10, 2),
+  ge_funcionamiento_inspeccion_bateria text check (ge_funcionamiento_inspeccion_bateria in ('ok', 'no')),
+  ge_funcionamiento_accion_electrico text check (ge_funcionamiento_accion_electrico in ('si', 'no'))
 );
 
 create table if not exists informe_archivos (
@@ -203,6 +247,7 @@ alter table informes_generales enable row level security;
 alter table informes_motocompresor enable row level security;
 alter table informes_compresor enable row level security;
 alter table informes_vehiculos enable row level security;
+alter table informes_grupo_electrogeno enable row level security;
 alter table informe_archivos enable row level security;
 
 create policy perfiles_select on perfiles for select to authenticated
@@ -255,6 +300,15 @@ create policy veh_write on informes_vehiculos for insert to authenticated
 create policy veh_update on informes_vehiculos for update to authenticated
   using (exists (select 1 from informes_generales g where g.id = informe_id and (g.tecnico_id = auth.uid() or public.es_admin())));
 create policy veh_delete on informes_vehiculos for delete to authenticated
+  using (exists (select 1 from informes_generales g where g.id = informe_id and (g.tecnico_id = auth.uid() or public.es_admin())));
+
+create policy ge_select on informes_grupo_electrogeno for select to authenticated
+  using (exists (select 1 from informes_generales g where g.id = informe_id and (g.tecnico_id = auth.uid() or public.es_admin())));
+create policy ge_write on informes_grupo_electrogeno for insert to authenticated
+  with check (exists (select 1 from informes_generales g where g.id = informe_id and (g.tecnico_id = auth.uid() or public.es_admin())));
+create policy ge_update on informes_grupo_electrogeno for update to authenticated
+  using (exists (select 1 from informes_generales g where g.id = informe_id and (g.tecnico_id = auth.uid() or public.es_admin())));
+create policy ge_delete on informes_grupo_electrogeno for delete to authenticated
   using (exists (select 1 from informes_generales g where g.id = informe_id and (g.tecnico_id = auth.uid() or public.es_admin())));
 
 create policy archivos_select on informe_archivos for select to authenticated

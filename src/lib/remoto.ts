@@ -1,7 +1,7 @@
 import { db } from "./db";
 import { supabase } from "./supabase";
 import { tablaAnexa } from "./sync";
-import type { CategoriaFoto, InformeGeneral, TipoEquipo, ValoresBase } from "./types";
+import type { CategoriaFoto, InformeGeneral, InformeGrupoElectrogeno, TipoEquipo, ValoresBase } from "./types";
 
 const BUCKET = "informe-archivos";
 
@@ -61,12 +61,22 @@ export async function traerInformeRemoto(id: string): Promise<boolean> {
 
   const tabla = tablaAnexa(informe.tipo_equipo);
   let anexa: Partial<ValoresBase> | null = null;
-  if (tabla) {
+  let anexaGE: InformeGrupoElectrogeno | null = null;
+
+  if (tabla && informe.tipo_equipo !== "grupo_electrogeno") {
     const { data: filaAnexa } = await supabase().from(tabla).select("*").eq("informe_id", id).maybeSingle();
     if (filaAnexa) {
       const resto = { ...(filaAnexa as FilaServidor) };
       delete resto.informe_id;
       anexa = resto as Partial<ValoresBase>;
+    }
+  }
+
+  if (tabla && informe.tipo_equipo === "grupo_electrogeno") {
+    const { data: filaGE } = await supabase().from(tabla).select("*").eq("informe_id", id).maybeSingle();
+    if (filaGE) {
+      const resto = { ...(filaGE as FilaServidor) };
+      anexaGE = resto as unknown as InformeGrupoElectrogeno;
     }
   }
 
@@ -86,10 +96,11 @@ export async function traerInformeRemoto(id: string): Promise<boolean> {
             ? db.valores_motocompresor
             : informe.tipo_equipo === "compresor"
               ? db.valores_compresor
-              : informe.tipo_equipo === "vehiculos"
-                ? db.valores_vehiculos
-                : db.valores_grupo_electrogeno;
+              : db.valores_vehiculos;
         await destino.put({ informe_id: id, ...anexa } as never);
+      }
+      if (anexaGE) {
+        await db.valores_grupo_electrogeno.put(anexaGE);
       }
       for (const a of (archivos ?? []) as FilaServidor[]) {
         const existente = await db.archivos.get(String(a.id));

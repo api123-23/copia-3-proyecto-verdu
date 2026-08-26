@@ -121,25 +121,6 @@ export function SeccionTrabajos({
             onChange={(e) => onChange({ observaciones_ia: e.target.value || null })}
           />
         ) : null}
-        <div className="flex items-center justify-between bg-surface-container-low p-1 rounded">
-          <span className="text-body-md font-body-md text-[12px]">¿La máquina queda operativa?</span>
-          <div className="dual-option w-24">
-            <button
-              type="button"
-              className={informe.maquina_operativa === true ? "selected-ok" : ""}
-              onClick={() => onChange({ maquina_operativa: true })}
-            >
-              Sí
-            </button>
-            <button
-              type="button"
-              className={informe.maquina_operativa === false ? "selected-error" : ""}
-              onClick={() => onChange({ maquina_operativa: false })}
-            >
-              No
-            </button>
-          </div>
-        </div>
       </div>
     </Seccion>
   );
@@ -201,6 +182,40 @@ export function SeccionRepuestos({
         </div>
       </div>
     </Seccion>
+  );
+}
+
+export function SeccionOperativa({
+  informe,
+  onChange,
+}: {
+  informe: InformeGeneral;
+  onChange: (p: PatchInforme) => void;
+}) {
+  return (
+    <section className="mb-lg bg-white shadow-sm border border-outline-variant mx-4 md:mx-0 rounded-lg overflow-hidden">
+      <div className="p-md">
+        <div className="flex items-center justify-between bg-surface-container-low p-1 rounded">
+          <span className="text-body-md font-body-md text-[12px]">¿La máquina queda operativa?</span>
+          <div className="dual-option w-24">
+            <button
+              type="button"
+              className={informe.maquina_operativa === true ? "selected-ok" : ""}
+              onClick={() => onChange({ maquina_operativa: true })}
+            >
+              Sí
+            </button>
+            <button
+              type="button"
+              className={informe.maquina_operativa === false ? "selected-error" : ""}
+              onClick={() => onChange({ maquina_operativa: false })}
+            >
+              No
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 

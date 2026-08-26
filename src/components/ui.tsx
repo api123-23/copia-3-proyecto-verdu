@@ -57,7 +57,39 @@ export function ItemSelect({
     <div className="flex justify-between items-center bg-surface-container-low p-1 rounded">
       <span className="text-body-md font-body-md text-[12px]">{etiqueta}</span>
       <select
-        className={`select-small ${valor === "no" ? "text-error" : ""}`}
+        className={`select-small ${valor === "no" || valor === "mal" ? "text-error" : ""}`}
+        value={valor ?? ""}
+        onChange={(e) => onChange(e.target.value === "" ? null : e.target.value)}
+      >
+        <option value="">---</option>
+        {opciones.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+export function ItemSelectFull({
+  etiqueta,
+  valor,
+  onChange,
+  opciones,
+  className,
+}: {
+  etiqueta: string;
+  valor: string | null;
+  onChange: (v: string | null) => void;
+  opciones: { value: string; label: string }[];
+  className?: string;
+}) {
+  return (
+    <div className={`flex justify-between items-center bg-surface-container-low p-1.5 rounded ${className ?? ""}`}>
+      <span className="text-body-md font-body-md text-[12px]">{etiqueta}</span>
+      <select
+        className={`select-small ${valor === "no" || valor === "mal" ? "text-error" : ""}`}
         value={valor ?? ""}
         onChange={(e) => onChange(e.target.value === "" ? null : e.target.value)}
       >
@@ -77,9 +109,47 @@ export const OPCIONES_SI_NO = [
   { value: "no", label: "No" },
 ];
 
+export const OPCIONES_OK_MAL = [
+  { value: "ok", label: "Ok" },
+  { value: "mal", label: "Mal" },
+];
+
 export const OPCIONES_NIVEL = [
+  { value: "ok", label: "Ok" },
+  { value: "alto", label: "Alto" },
+  { value: "bajo", label: "Bajo" },
+];
+
+export const OPCIONES_OK_NO = [
+  { value: "ok", label: "Ok" },
+  { value: "no", label: "No" },
+];
+
+export const OPCIONES_OPTIMO_BAJO = [
   { value: "optimo", label: "Óptimo" },
   { value: "bajo", label: "Bajo" },
+];
+
+export const OPCIONES_OPTIMO_BAJO_ALTO = [
+  { value: "optimo", label: "Óptimo" },
+  { value: "bajo", label: "Bajo" },
+  { value: "alto", label: "Alto" },
+];
+
+export const OPCIONES_OK_BAJO = [
+  { value: "ok", label: "Ok" },
+  { value: "bajo", label: "Bajo" },
+];
+
+export const OPCIONES_OK_ALTO = [
+  { value: "ok", label: "Ok" },
+  { value: "alto", label: "Alto" },
+];
+
+export const OPCIONES_BAJA_ALTA = [
+  { value: "ok", label: "Ok" },
+  { value: "baja", label: "Baja" },
+  { value: "alta", label: "Alta" },
 ];
 
 export function CampoNumero({

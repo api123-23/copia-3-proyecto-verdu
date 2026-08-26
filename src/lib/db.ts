@@ -55,6 +55,17 @@ class AppDB extends Dexie {
           await tx.table("archivos").put(meta);
         }
       });
+    this.version(3).stores({
+      informes:
+        "id, numero_registro, cliente_id, tecnico_id, tipo_equipo, estado_firma, estado_sync, fecha_hora",
+      clientes: "id, nombre",
+      valores_motocompresor: "informe_id",
+      valores_compresor: "informe_id",
+      valores_vehiculos: "informe_id",
+      valores_grupo_electrogeno: "informe_id",
+      archivos: "id, informe_id, tipo, categoria, estado_sync",
+      blobs: "id",
+    });
   }
 }
 

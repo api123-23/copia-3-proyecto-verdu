@@ -1,19 +1,23 @@
 "use client";
 
 import { useEffect, useRef, useState, use } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSesion } from "@/lib/useSesion";
 import { db } from "@/lib/db";
 import {
   CAMPO_LABELS,
   CAMPOS_POR_TIPO,
   cargarAnexa,
+  cargarAnexaGE,
   formatNumero,
   guardarBorrador,
   valoresVacios,
+  valoresVaciosGE,
 } from "@/lib/informes";
 import { intentarSync } from "@/lib/sync";
 import { traerInformeRemoto } from "@/lib/remoto";
-import type { InformeGeneral, ValoresBase } from "@/lib/types";
+import type { InformeGeneral, InformeGrupoElectrogeno, ValoresBase } from "@/lib/types";
 import { Divisor } from "@/components/ui";
 import {
   SeccionCliente,
@@ -21,6 +25,7 @@ import {
   SeccionHoras,
   SeccionRepuestos,
   SeccionCotizacion,
+  SeccionOperativa,
 } from "@/components/informe/secciones";
 import SeccionValores from "@/components/informe/SeccionValores";
 import SeccionFotos from "@/components/informe/SeccionFotos";
@@ -28,40 +33,59 @@ import SeccionFirmas from "@/components/informe/SeccionFirmas";
 
 export default function InformePage(props: PageProps<"/informe/[id]">) {
   const { id } = use(props.params);
-  useSesion(true);
+  const { cargando } = useSesion(true);
+  const router = useRouter();
   const [informe, setInforme] = useState<InformeGeneral | null>(null);
   const [valores, setValores] = useState<ValoresBase>(valoresVacios);
+  const [valoresGE, setValoresGE] = useState<InformeGrupoElectrogeno | null>(null);
+  const [fallo, setFallo] = useState(false);
+  const [intento, setIntento] = useState(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const estadoRef = useRef<{ informe: InformeGeneral | null; valores: ValoresBase }>({
+  const estadoRef = useRef<{
+    informe: InformeGeneral | null;
+    valores: ValoresBase;
+    valoresGE: InformeGrupoElectrogeno | null;
+  }>({
     informe: null,
-    valores,
+    valores: valoresVacios(),
+    valoresGE: null,
   });
 
   useEffect(() => {
     let activo = true;
+    setFallo(false);
     (async () => {
-      let inf = await db.informes.get(id);
+      let inf = await db.informes.get(id).catch(() => undefined);
       if (!inf) {
         const traido = await traerInformeRemoto(id).catch(() => false);
-        if (traido) inf = await db.informes.get(id);
+        if (traido) inf = await db.informes.get(id).catch(() => undefined);
       }
-      if (!inf || !activo) return;
+      if (!inf) {
+        if (activo) setFallo(true);
+        return;
+      }
       const anexa = await cargarAnexa(inf.tipo_equipo, inf.id);
+      let anexaGE: InformeGrupoElectrogeno | null = null;
+      if (inf.tipo_equipo === "grupo_electrogeno") {
+        anexaGE = await cargarAnexaGE(inf.id);
+      }
       if (!activo) return;
-      estadoRef.current = { informe: inf, valores: { ...valoresVacios(), ...anexa } };
+      const val = { ...valoresVacios(), ...anexa };
+      estadoRef.current = { informe: inf, valores: val, valoresGE: anexaGE };
       setInforme(inf);
-      setValores(estadoRef.current.valores);
+      setValores(val);
+      setValoresGE(anexaGE);
     })();
     return () => {
       activo = false;
     };
-  }, [id]);
+  }, [id, cargando, intento]);
 
   function programarGuardado() {
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
-      const { informe: inf, valores: val } = estadoRef.current;
-      if (inf) void guardarBorrador(inf, val);
+      const { informe: inf, valores: val, valoresGE: ge } = estadoRef.current;
+      if (inf) void guardarBorrador(inf, val, inf.tipo_equipo === "grupo_electrogeno" ? ge : undefined);
     }, 500);
   }
 
@@ -84,16 +108,28 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
     });
   }
 
+  function patchValoresGE(p: Partial<InformeGrupoElectrogeno>) {
+    setValoresGE((prev) => {
+      const base = prev ?? valoresVaciosGE();
+      const next = { ...base, ...p };
+      estadoRef.current.valoresGE = next;
+      programarGuardado();
+      return next;
+    });
+  }
+
   async function enviar() {
     if (timer.current) clearTimeout(timer.current);
-    const { informe: inf, valores: val } = estadoRef.current;
+    const { informe: inf, valores: val, valoresGE: ge } = estadoRef.current;
     if (!inf) return;
     const faltantes: string[] = [];
     if (!inf.cliente_nombre.trim()) faltantes.push("Cliente / Empresa");
     if (inf.horas_trabajadas === null) faltantes.push("Total Horas Trabajadas");
     if (inf.maquina_operativa === null) faltantes.push("¿La máquina queda operativa?");
-    for (const campo of CAMPOS_POR_TIPO[inf.tipo_equipo]) {
-      if (val[campo] === null) faltantes.push(CAMPO_LABELS[campo]);
+    if (inf.tipo_equipo !== "grupo_electrogeno" && inf.tipo_equipo !== "extraordinarios") {
+      for (const campo of CAMPOS_POR_TIPO[inf.tipo_equipo]) {
+        if (val[campo] === null) faltantes.push(CAMPO_LABELS[campo]);
+      }
     }
     const fotos = await db.archivos.where({ informe_id: inf.id, tipo: "foto" }).count();
     if (fotos === 0) faltantes.push("Registro Fotográfico (mínimo 1 foto)");
@@ -109,12 +145,38 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
     };
     estadoRef.current.informe = guardado;
     setInforme(guardado);
-    await guardarBorrador(guardado, val);
+    await guardarBorrador(guardado, val, inf.tipo_equipo === "grupo_electrogeno" ? ge : undefined);
     intentarSync();
     alert(
       cerrado
         ? "Informe enviado y cerrado. Si hay conexión, se está sincronizando con el servidor."
         : "Informe guardado sin firma de cliente. Queda editable y se sincronizará con el servidor."
+    );
+    router.push("/");
+  }
+
+  if (fallo) {
+    return (
+      <main className="min-h-screen flex flex-col items-center justify-center gap-md px-margin">
+        <p className="text-body-lg text-on-surface-variant text-center">
+          No se pudo cargar el informe. Verificá tu conexión o reintentá.
+        </p>
+        <div className="flex gap-sm">
+          <button
+            type="button"
+            className="bg-primary text-on-primary rounded px-md py-1 text-[13px] font-bold uppercase tracking-wider"
+            onClick={() => setIntento((i) => i + 1)}
+          >
+            Reintentar
+          </button>
+          <Link
+            href="/"
+            className="border border-outline-variant rounded px-md py-1 text-[13px]"
+          >
+            Volver al listado
+          </Link>
+        </div>
+      </main>
     );
   }
 
@@ -157,7 +219,15 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
           <SeccionCliente informe={informe} onChange={patchInforme} />
           <Divisor />
           <SeccionTrabajos informe={informe} onChange={patchInforme} />
-          <SeccionValores tipo={informe.tipo_equipo} valores={valores} onChange={patchValores} />
+          <SeccionValores
+            tipo={informe.tipo_equipo}
+            valores={valores}
+            onChange={patchValores}
+            valoresGE={valoresGE}
+            onChangeGE={patchValoresGE}
+          />
+          <Divisor />
+          <SeccionOperativa informe={informe} onChange={patchInforme} />
           <Divisor />
           <SeccionHoras informe={informe} onChange={patchInforme} />
           <Divisor />

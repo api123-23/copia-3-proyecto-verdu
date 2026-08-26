@@ -89,12 +89,14 @@ function BloqueFirma({
   tipo,
   informeId,
   onConfirmar,
+  onEliminar,
   children,
 }: {
   titulo: string;
   tipo: TipoArchivo;
   informeId: string;
   onConfirmar?: () => void;
+  onEliminar?: () => void;
   children?: React.ReactNode;
 }) {
   const [abierto, setAbierto] = useState(false);
@@ -145,6 +147,7 @@ function BloqueFirma({
         await db.archivos.delete(existente.id);
         await db.blobs.delete(existente.id);
       });
+      onEliminar?.();
     }
   }
 
@@ -198,6 +201,9 @@ export default function SeccionFirmas({
           informeId={informe.id}
           onConfirmar={() =>
             onChange({ estado_firma: "firmado", firmado_en: new Date().toISOString() })
+          }
+          onEliminar={() =>
+            onChange({ estado_firma: "pendiente", firmado_en: null })
           }
         >
           <input

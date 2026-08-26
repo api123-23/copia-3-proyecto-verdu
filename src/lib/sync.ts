@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { supabase } from "./supabase";
-import { CAMPOS_POR_TIPO, cargarAnexa, valoresVacios } from "./informes";
+import { cargarAnexa, cargarAnexaGE, valoresVacios } from "./informes";
 import type { InformeGeneral, TipoEquipo } from "./types";
 
 const BUCKET = "informe-archivos";
@@ -203,17 +203,43 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
     });
 
     const tabla = tablaAnexa(informe.tipo_equipo);
-    if (tabla) {
+    if (tabla && informe.tipo_equipo !== "grupo_electrogeno") {
       const anexa = await cargarAnexa(informe.tipo_equipo, informe.id);
       const valores = { ...valoresVacios(), ...anexa };
       const out: Record<string, unknown> = { informe_id: informe.id };
-      for (const campo of CAMPOS_POR_TIPO[informe.tipo_equipo]) out[campo] = valores[campo];
+      for (const campo of [
+        "horometro", "aceite_motor", "aceite_unidad", "refrig_radiador", "estado_bateria",
+        "conec_purga", "inst_electrica", "carroceria", "jabalina", "aislacion_suelo",
+        "rpm_min", "rpm_max", "tension_linea_f1", "tension_linea_f2", "tension_linea_f3",
+        "tension_gen_f1", "tension_gen_f2", "tension_gen_f3", "cons_carga_f1", "cons_carga_f2",
+        "cons_carga_f3", "cons_descarga_f1", "cons_descarga_f2", "cons_descarga_f3",
+        "temp_ambiente", "temp_refrigerante", "presion_unidad_comp", "presion_aceite_motor",
+        "circuito_refr_m", "circuito_despresuriz", "circuito_arranque", "circuito_seguridad",
+        "circuito_electr", "tiempo_y_delta", "diferencial",
+        "perdida_aceite_motor", "perdida_refrigerante", "perdida_aire", "perdida_combustible",
+      ] as const) {
+        if (campo in valores) out[campo] = (valores as Record<string, unknown>)[campo];
+      }
       await conReintentos(3, async () => {
         const { error: e2 } = await supabase().from(tabla).upsert(out);
         if (e2) throw e2;
       }).catch((e) => {
         throw new Error(`Guardado de valores técnicos (${mensajeDe(e)})`);
       });
+    }
+
+    if (tabla && informe.tipo_equipo === "grupo_electrogeno") {
+      const ge = await cargarAnexaGE(informe.id);
+      if (ge) {
+        const { informe_id: _id, ...campos } = ge;
+        const out: Record<string, unknown> = { informe_id: informe.id, ...campos };
+        await conReintentos(3, async () => {
+          const { error: e2 } = await supabase().from(tabla).upsert(out);
+          if (e2) throw e2;
+        }).catch((e) => {
+          throw new Error(`Guardado de valores grupo electrógeno (${mensajeDe(e)})`);
+        });
+      }
     }
 
     const filasArchivos = archivosOk
@@ -234,12 +260,37 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       });
     }
 
+    const idsLocales = new Set(archivosOk.map((a) => a.id));
+    const { data: archRemotos } = await supabase()
+      .from("informe_archivos")
+      .select("id")
+      .eq("informe_id", informe.id);
+    if (archRemotos) {
+      const aBorrar = archRemotos.filter((r) => !idsLocales.has(r.id));
+      if (aBorrar.length > 0) {
+        const idsBorrar = aBorrar.map((r) => r.id);
+        await supabase().from("informe_archivos").delete().in("id", idsBorrar);
+        for (const rid of idsBorrar) {
+          await supabase().storage.from(BUCKET).remove([`${informe.id}/${rid}`]).catch(() => {});
+        }
+      }
+    }
+
     await db.informes.update(informe.id, {
       estado_sync: "sincronizado",
       sincronizado_en: new Date().toISOString(),
       numero_registro: data.numero_registro ?? informe.numero_registro,
       firma_tecnico_url: firmaTecnico,
       firma_cliente_url: firmaCliente,
+    });
+
+    await db.transaction("rw", [db.archivos, db.blobs], async () => {
+      const archLocal = await db.archivos.where("informe_id").equals(informe.id).toArray();
+      for (const a of archLocal) {
+        if (a.tipo !== "foto") continue;
+        await db.blobs.delete(a.id);
+        await db.archivos.update(a.id, { url: a.url ?? `synced/${a.id}`, estado_sync: "sincronizado" });
+      }
     });
   } catch (e) {
     const mensaje = mensajeDe(e);

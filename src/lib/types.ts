@@ -16,7 +16,17 @@ export type EstadoSync =
 
 export type SiNo = "si" | "no" | null;
 
-export type Nivel = "si" | "no" | "optimo" | "bajo" | null;
+export type Nivel = "si" | "no" | "ok" | "mal" | "optimo" | "bajo" | "alto" | null;
+
+export type OkMal = "ok" | "mal" | null;
+
+export type SiNoOkMal = "si" | "no" | "ok" | "mal" | null;
+
+export type OptimoBajoAlto = "optimo" | "bajo" | "alto" | null;
+
+export type BajaAlta = "ok" | "baja" | "alta" | null;
+
+export type FotoEstado = "ok" | "si" | "no" | null;
 
 export type CategoriaFoto = "inicial" | "desarrollo" | "repuestos" | "final" | "falla";
 
@@ -89,7 +99,7 @@ export interface ValoresBase {
   temp_ambiente: number | null;
   temp_refrigerante: number | null;
   presion_unidad_comp: number | null;
-  presion_aceite_motor: number | null;
+  presion_aceite_motor: Nivel;
   circuito_refr_m: SiNo;
   circuito_despresuriz: SiNo;
   circuito_arranque: SiNo;
@@ -146,8 +156,6 @@ export type InformeCompresor = { informe_id: string } & Omit<
   | "cons_descarga_f1"
   | "cons_descarga_f2"
   | "cons_descarga_f3"
-  | "presion_unidad_comp"
-  | "presion_aceite_motor"
   | "perdida_refrigerante"
   | "perdida_aire"
   | "perdida_combustible"
@@ -186,6 +194,46 @@ export type InformeVehiculos = { informe_id: string } & Omit<
 
 export interface InformeGrupoElectrogeno {
   informe_id: string;
+  ge_motor_detenido_aceite_motor: OkMal;
+  ge_motor_detenido_agua_radiador: OkMal;
+  ge_motor_detenido_restriccion_aire: SiNo;
+  ge_motor_detenido_tension_correas: OkMal;
+  ge_motor_detenido_estado_baterias: OkMal;
+  ge_motor_detenido_inst_electrica: OkMal;
+  ge_motor_detenido_cableado_distrib: OkMal;
+  ge_motor_detenido_cubo_ventilador: OkMal;
+  ge_motor_detenido_ajuste_motor: SiNo;
+  ge_motor_detenido_union_tubo_aire: OkMal;
+  ge_motor_detenido_lineas_combustible: OkMal;
+  ge_motor_detenido_dca_anticongelante: OkMal;
+  ge_motor_detenido_ajuste_inyectores: SiNo;
+  ge_motor_detenido_calibre_inyectores: SiNo;
+  ge_funcionamiento_sistema_arranque: OkMal;
+  ge_funcionamiento_mangueras: OkMal;
+  ge_funcionamiento_presion_aceite: OkMal;
+  ge_funcionamiento_temp_agua: OptimoBajoAlto;
+  ge_funcionamiento_diferencial_temp: OptimoBajoAlto;
+  ge_funcionamiento_vibraciones: SiNo;
+  ge_funcionamiento_antivibratorios: OkMal;
+  ge_funcionamiento_llave_termomagnetica: OkMal;
+  ge_funcionamiento_carga_alternador: SiNo;
+  ge_funcionamiento_llave_transferencia: SiNo;
+  ge_funcionamiento_rpm_max: OptimoBajoAlto;
+  ge_funcionamiento_circ_seguridad: OkMal;
+  ge_funcionamiento_ventilacion_aire: OkMal;
+  ge_funcionamiento_perdidas_aceite: OptimoBajoAlto;
+  ge_funcionamiento_perdidas_combustible: SiNo;
+  ge_funcionamiento_restriccion_escape: SiNo;
+  ge_funcionamiento_restriccion_aire: SiNo;
+  ge_funcionamiento_frecuencia: BajaAlta;
+  ge_funcionamiento_tension_linea: BajaAlta;
+  ge_funcionamiento_amperaje_f1: OptimoBajoAlto;
+  ge_funcionamiento_amperaje_f2: OptimoBajoAlto;
+  ge_funcionamiento_amperaje_f3: OptimoBajoAlto;
+  ge_funcionamiento_tension_linea_carga: BajaAlta;
+  ge_funcionamiento_temp_ambiente: number | null;
+  ge_funcionamiento_inspeccion_bateria: OkMal;
+  ge_funcionamiento_accion_electrico: SiNo;
 }
 
 export type TipoArchivo = "foto" | "firma_tecnico" | "firma_cliente";

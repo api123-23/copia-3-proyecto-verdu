@@ -1,6 +1,7 @@
 import { db } from "./db";
 import type {
   InformeGeneral,
+  InformeGrupoElectrogeno,
   TipoEquipo,
   ValoresBase,
 } from "./types";
@@ -93,6 +94,52 @@ export function valoresVacios(): ValoresBase {
     perdida_refrigerante: null,
     perdida_aire: null,
     perdida_combustible: null,
+  };
+}
+
+export function valoresVaciosGE(): InformeGrupoElectrogeno {
+  return {
+    informe_id: "",
+    ge_motor_detenido_aceite_motor: null,
+    ge_motor_detenido_agua_radiador: null,
+    ge_motor_detenido_restriccion_aire: null,
+    ge_motor_detenido_tension_correas: null,
+    ge_motor_detenido_estado_baterias: null,
+    ge_motor_detenido_inst_electrica: null,
+    ge_motor_detenido_cableado_distrib: null,
+    ge_motor_detenido_cubo_ventilador: null,
+    ge_motor_detenido_ajuste_motor: null,
+    ge_motor_detenido_union_tubo_aire: null,
+    ge_motor_detenido_lineas_combustible: null,
+    ge_motor_detenido_dca_anticongelante: null,
+    ge_motor_detenido_ajuste_inyectores: null,
+    ge_motor_detenido_calibre_inyectores: null,
+    ge_funcionamiento_sistema_arranque: null,
+    ge_funcionamiento_mangueras: null,
+    ge_funcionamiento_presion_aceite: null,
+    ge_funcionamiento_temp_agua: null,
+    ge_funcionamiento_diferencial_temp: null,
+    ge_funcionamiento_vibraciones: null,
+    ge_funcionamiento_antivibratorios: null,
+    ge_funcionamiento_llave_termomagnetica: null,
+    ge_funcionamiento_carga_alternador: null,
+    ge_funcionamiento_llave_transferencia: null,
+    ge_funcionamiento_rpm_max: null,
+    ge_funcionamiento_circ_seguridad: null,
+    ge_funcionamiento_ventilacion_aire: null,
+    ge_funcionamiento_perdidas_aceite: null,
+    ge_funcionamiento_perdidas_combustible: null,
+    ge_funcionamiento_restriccion_escape: null,
+    ge_funcionamiento_restriccion_aire: null,
+    ge_funcionamiento_frecuencia: null,
+    ge_funcionamiento_tension_linea: null,
+    ge_funcionamiento_amperaje_f1: null,
+    ge_funcionamiento_amperaje_f2: null,
+    ge_funcionamiento_amperaje_f3: null,
+    ge_funcionamiento_tension_linea_carga: null,
+    ge_funcionamiento_temp_ambiente: null,
+    ge_funcionamiento_inspeccion_bateria: null,
+    ge_funcionamiento_accion_electrico: null,
   };
 }
 
@@ -207,7 +254,7 @@ export function construirAnexa(
   v: ValoresBase
 ): Record<string, unknown> | null {
   if (tipo === "extraordinarios") return null;
-  if (tipo === "grupo_electrogeno") return { informe_id };
+  if (tipo === "grupo_electrogeno") return null;
   const out: Record<string, unknown> = { informe_id };
   for (const campo of CAMPOS_POR_TIPO[tipo]) out[campo] = v[campo];
   return out;
@@ -215,7 +262,8 @@ export function construirAnexa(
 
 export async function guardarBorrador(
   informe: InformeGeneral,
-  valores: ValoresBase
+  valores: ValoresBase,
+  valoresGE?: InformeGrupoElectrogeno | null
 ): Promise<void> {
   const actualizado = { ...informe, actualizado_en: new Date().toISOString() };
   await db.transaction(
@@ -240,10 +288,14 @@ export async function guardarBorrador(
             ? db.valores_motocompresor
             : actualizado.tipo_equipo === "compresor"
               ? db.valores_compresor
-              : actualizado.tipo_equipo === "vehiculos"
-                ? db.valores_vehiculos
-                : db.valores_grupo_electrogeno;
+              : db.valores_vehiculos;
         await tabla.put(anexa as never);
+      }
+      if (actualizado.tipo_equipo === "grupo_electrogeno" && valoresGE) {
+        await db.valores_grupo_electrogeno.put({
+          ...valoresGE,
+          informe_id: actualizado.id,
+        } as InformeGrupoElectrogeno);
       }
     }
   );
@@ -253,18 +305,24 @@ export async function cargarAnexa(
   tipo: TipoEquipo,
   informe_id: string
 ): Promise<Partial<ValoresBase>> {
-  if (tipo === "extraordinarios") return {};
+  if (tipo === "extraordinarios" || tipo === "grupo_electrogeno") return {};
   const tabla =
     tipo === "motocompresor"
       ? db.valores_motocompresor
       : tipo === "compresor"
         ? db.valores_compresor
-        : tipo === "vehiculos"
-          ? db.valores_vehiculos
-          : db.valores_grupo_electrogeno;
+        : db.valores_vehiculos;
   const fila = await tabla.get(informe_id);
   if (!fila) return {};
   const resto = { ...fila } as unknown as Record<string, unknown>;
   delete resto.informe_id;
   return resto as Partial<ValoresBase>;
+}
+
+export async function cargarAnexaGE(
+  informe_id: string
+): Promise<InformeGrupoElectrogeno | null> {
+  const fila = await db.valores_grupo_electrogeno.get(informe_id);
+  if (!fila) return null;
+  return fila;
 }
