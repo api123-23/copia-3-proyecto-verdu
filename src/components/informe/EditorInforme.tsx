@@ -16,6 +16,7 @@ import {
   valoresVaciosGE,
 } from "@/lib/informes";
 import { intentarSync } from "@/lib/sync";
+import { Icono } from "@/components/Icono";
 import { traerInformeRemoto } from "@/lib/remoto";
 import { navegar } from "@/lib/hashRuta";
 import type { InformeGeneral, InformeGrupoElectrogeno, ValoresBase } from "@/lib/types";
@@ -223,7 +224,7 @@ export function EditorInforme({ id }: { id: string }) {
             className="hover:bg-primary-container active:scale-95 transition-all px-2 py-1 rounded"
             aria-label="Volver al listado"
           >
-            <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+            <Icono nombre="arrow_back" className="w-[16px] h-[16px]" />
           </a>
           <LogoTipo className="w-7 h-7 rounded-lg hidden sm:inline-flex" />
           <h1 className="text-title-md font-title-md font-bold tracking-tight">
@@ -236,7 +237,7 @@ export function EditorInforme({ id }: { id: string }) {
           onClick={enviar}
         >
           ENVIAR
-          <span className="material-symbols-outlined text-[16px]">send</span>
+          <Icono nombre="send" className="w-[16px] h-[16px]" />
         </button>
       </header>
       <main className="max-w-7xl mx-auto md:px-margin">
@@ -246,7 +247,7 @@ export function EditorInforme({ id }: { id: string }) {
             AIR POWER S.A.
           </span>
           <div className="flex items-center gap-1.5 text-on-surface-variant">
-            <span className="material-symbols-outlined text-[16px]">calendar_today</span>
+            <Icono nombre="calendar_today" className="w-[16px] h-[16px]" />
             <span className="text-body-md font-body-md text-[12px]">{fecha}</span>
           </div>
         </div>

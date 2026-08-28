@@ -6,6 +6,7 @@ import { ListaInformes } from "@/components/ListaInformes";
 import { EditorInforme } from "@/components/informe/EditorInforme";
 import { NuevoInforme } from "@/components/informe/NuevoInforme";
 import { LogoTipo } from "@/components/LogoTipo";
+import { Icono } from "@/components/Icono";
 
 export default function Home() {
   const { cargando, sesion } = useSesion(true);
@@ -44,7 +45,7 @@ export default function Home() {
           href="#/informe/nuevo"
           className="flex items-center gap-1 text-label-caps font-label-caps font-bold tracking-wider hover:bg-primary-container active:scale-95 transition-all px-3 py-1.5 rounded"
         >
-          <span className="material-symbols-outlined text-[16px]">add</span>
+          <Icono nombre="add" className="w-[16px] h-[16px]" />
           NUEVO
         </a>
       </header>

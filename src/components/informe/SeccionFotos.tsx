@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { comprimirImagenWebp } from "@/lib/imagen";
 import type { ArchivoLocal, CategoriaFoto } from "@/lib/types";
 import { Label, Seccion } from "@/components/ui";
+import { Icono } from "@/components/Icono";
 
 const CATEGORIAS: { value: CategoriaFoto; label: string }[] = [
   { value: "inicial", label: "Estado Inicial" },
@@ -108,7 +109,7 @@ function FotoItem({ archivo, cerrado }: { archivo: ArchivoLocal; cerrado: boolea
             })
           }
         >
-          <span className="material-symbols-outlined text-[14px]">close</span>
+          <Icono nombre="close" className="w-[14px] h-[14px]" />
         </button>
       ) : null}
       {abierta && url ? (
@@ -180,7 +181,7 @@ export default function SeccionFotos({
             onClick={() => inputRef.current?.click()}
             disabled={subiendo}
           >
-            <span className="material-symbols-outlined text-[32px] text-primary mb-2">add_a_photo</span>
+            <Icono nombre="add_a_photo" className="w-[32px] h-[32px] text-primary mb-2" />
             <span className="text-title-md font-bold text-primary uppercase tracking-wider">
               {subiendo ? "Procesando..." : "Tomar o Subir Foto"}
             </span>

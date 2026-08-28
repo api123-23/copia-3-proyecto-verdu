@@ -9,6 +9,7 @@ import { TIPOS_EQUIPO, formatNumero } from "@/lib/informes";
 import { intentarSync } from "@/lib/sync";
 import { useSesion } from "@/lib/useSesion";
 import { LogoTipo } from "@/components/LogoTipo";
+import { Icono } from "@/components/Icono";
 
 const BADGE_SYNC: Record<string, { label: string; clase: string }> = {
   pendiente: { label: "Subiendo...", clase: "bg-amber-100 text-amber-700 animate-pulse" },
@@ -124,7 +125,7 @@ export function ListaInformes() {
             href="#/informe/nuevo"
             className="inline-flex items-center gap-1 bg-primary text-on-primary rounded px-md py-1.5 text-title-md font-bold uppercase tracking-wider active:scale-95 transition-all"
           >
-            <span className="material-symbols-outlined text-[16px]">add</span>
+            <Icono nombre="add" className="w-[16px] h-[16px]" />
             Crear informe
           </a>
           {online ? (

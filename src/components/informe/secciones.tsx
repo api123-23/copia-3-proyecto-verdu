@@ -1,6 +1,7 @@
 import type { InformeGeneral } from "@/lib/types";
 import { TIPOS_EQUIPO } from "@/lib/informes";
 import { Label, Seccion } from "@/components/ui";
+import { Icono } from "@/components/Icono";
 
 type PatchInforme = Partial<InformeGeneral>;
 
@@ -67,7 +68,7 @@ export function SeccionCliente({
                 );
               }}
             >
-              <span className="material-symbols-outlined text-[16px]">location_on</span>
+              <Icono nombre="location_on" className="w-[16px] h-[16px]" />
             </button>
           </div>
         </div>

@@ -295,42 +295,28 @@ update informes_grupo_electrogeno set ge_funcionamiento_inspeccion_bateria = cas
 alter table informes_grupo_electrogeno add constraint informes_grupo_electrogeno_ge_funcionamiento_inspeccion_bateria_check
   check (ge_funcionamiento_inspeccion_bateria in ('ok', 'mal'));
 
-create table if not exists contador_informes (
-  id smallint primary key,
-  ultimo int not null default 0
+-- NUMERACIÓN: 100% servidor, por orden de llegada.
+-- Una secuencia real garantiza números únicos y consecutivos aunque varios
+-- dispositivos sincronicen en paralelo (nextval es atómico).
+create sequence if not exists public.numero_informe_seq;
+alter table informes_generales
+  alter column numero_registro set default nextval('public.numero_informe_seq');
+select setval(
+  'public.numero_informe_seq',
+  case
+    when exists (select 1 from informes_generales)
+      then greatest(
+        (select last_value from public.numero_informe_seq),
+        (select max(numero_registro) from informes_generales)
+      )
+    else 0
+  end
 );
 
-insert into contador_informes (id, ultimo)
-select 1, coalesce((select max(numero_registro) from informes_generales), 0)
-on conflict (id) do update set ultimo = greatest(contador_informes.ultimo, excluded.ultimo);
-
-create or replace function public.asignar_numero_informe()
-returns trigger
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  if new.numero_registro is null then
-    insert into public.contador_informes (id, ultimo)
-    values (1, 0)
-    on conflict (id) do nothing;
-    select ultimo + 1 into new.numero_registro
-    from public.contador_informes
-    where id = 1
-    for update;
-    update public.contador_informes
-    set ultimo = new.numero_registro
-    where id = 1;
-  end if;
-  return new;
-end;
-$$;
-
+-- Se retira el mecanismo anterior (tabla contador + trigger)
 drop trigger if exists trg_asignar_numero on informes_generales;
-create trigger trg_asignar_numero
-  before insert on informes_generales
-  for each row execute function public.asignar_numero_informe();
+drop function if exists public.asignar_numero_informe();
+drop table if exists public.contador_informes;
 
 create or replace function public.rol_actual()
 returns text

@@ -48,10 +48,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="es" className={`${inter.variable} ${jetbrains.variable}`}>
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=optional"
-          rel="stylesheet"
-        />
       </head>
       <body className="bg-background font-body-md text-on-surface antialiased">
         <MotorSync />
