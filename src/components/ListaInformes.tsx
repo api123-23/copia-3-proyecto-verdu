@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
@@ -9,6 +8,7 @@ import type { InformeGeneral } from "@/lib/types";
 import { TIPOS_EQUIPO, formatNumero } from "@/lib/informes";
 import { intentarSync } from "@/lib/sync";
 import { useSesion } from "@/lib/useSesion";
+import { LogoTipo } from "@/components/LogoTipo";
 
 const BADGE_SYNC: Record<string, { label: string; clase: string }> = {
   pendiente: { label: "Subiendo...", clase: "bg-amber-100 text-amber-700 animate-pulse" },
@@ -111,24 +111,28 @@ export function ListaInformes() {
   if (informes.length === 0) {
     return (
       <div className="mx-4 md:mx-0 p-xl bg-white border border-outline-variant rounded-lg text-center">
+        <div className="flex items-center justify-center mb-md">
+          <LogoTipo className="w-14 h-14 rounded-2xl opacity-90" />
+        </div>
         <p className="text-body-lg text-on-surface-variant mb-md">
           {online
-            ? "No hay informes cargados."
+            ? "No hay informes cargados todavía. Creá el primero."
             : "Sin conexión. No hay informes locales pendientes."}
         </p>
         <div className="flex items-center justify-center gap-sm">
-          <Link
-            href="/informe/nuevo"
-            className="inline-block bg-primary text-on-primary rounded px-md py-1.5 text-title-md font-bold uppercase tracking-wider"
+          <a
+            href="#/informe/nuevo"
+            className="inline-flex items-center gap-1 bg-primary text-on-primary rounded px-md py-1.5 text-title-md font-bold uppercase tracking-wider active:scale-95 transition-all"
           >
+            <span className="material-symbols-outlined text-[16px]">add</span>
             Crear informe
-          </Link>
+          </a>
           {online ? (
             <button
               type="button"
               onClick={actualizar}
               disabled={actualizando}
-              className="inline-block border border-outline-variant rounded px-md py-1.5 text-title-md font-bold uppercase tracking-wider text-primary"
+              className="inline-block border border-outline-variant rounded px-md py-1.5 text-title-md font-bold uppercase tracking-wider text-primary active:scale-95 transition-all"
             >
               {actualizando ? "Actualizando..." : "Actualizar"}
             </button>
@@ -145,7 +149,7 @@ export function ListaInformes() {
           type="button"
           onClick={actualizar}
           disabled={actualizando || !online}
-          className={`text-[12px] font-bold uppercase tracking-wider border border-outline-variant rounded px-3 py-1 transition-colors ${
+          className={`text-[12px] font-bold uppercase tracking-wider border border-outline-variant rounded px-3 py-1 active:scale-95 transition-all ${
             actualizando
               ? "opacity-50 cursor-not-allowed"
               : online
@@ -171,10 +175,10 @@ export function ListaInformes() {
           year: "numeric",
         });
         return (
-          <Link
+          <a
             key={inf.id}
-            href={`/informe/${inf.id}`}
-            className="block bg-white border border-outline-variant rounded-lg p-md shadow-sm hover:bg-surface-container-low transition-colors"
+            href={`#/informe/${encodeURIComponent(inf.id)}`}
+            className="block bg-white border border-outline-variant rounded-lg p-md shadow-sm hover:bg-surface-container-low hover:shadow-md active:scale-[0.99] transition-all"
           >
             <div className="flex justify-between items-center mb-xs">
               <span className="text-title-md font-bold text-primary">
@@ -216,7 +220,7 @@ export function ListaInformes() {
                 </button>
               </div>
             ) : null}
-          </Link>
+          </a>
         );
       })}
     </div>

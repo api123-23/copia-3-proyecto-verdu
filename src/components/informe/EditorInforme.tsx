@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, use } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { useSesion } from "@/lib/useSesion";
 import { db } from "@/lib/db";
 import {
@@ -19,8 +17,10 @@ import {
 } from "@/lib/informes";
 import { intentarSync } from "@/lib/sync";
 import { traerInformeRemoto } from "@/lib/remoto";
+import { navegar } from "@/lib/hashRuta";
 import type { InformeGeneral, InformeGrupoElectrogeno, ValoresBase } from "@/lib/types";
 import { Divisor } from "@/components/ui";
+import { LogoTipo } from "@/components/LogoTipo";
 import {
   SeccionCliente,
   SeccionTrabajos,
@@ -33,10 +33,8 @@ import SeccionValores from "@/components/informe/SeccionValores";
 import SeccionFotos from "@/components/informe/SeccionFotos";
 import SeccionFirmas from "@/components/informe/SeccionFirmas";
 
-export default function InformePage(props: PageProps<"/informe/[id]">) {
-  const { id } = use(props.params);
-  const { cargando } = useSesion(true);
-  const router = useRouter();
+export function EditorInforme({ id }: { id: string }) {
+  const { cargando } = useSesion(false);
   const [informe, setInforme] = useState<InformeGeneral | null>(null);
   const [valores, setValores] = useState<ValoresBase>(valoresVacios);
   const [valoresGE, setValoresGE] = useState<InformeGrupoElectrogeno>(valoresVaciosGE());
@@ -55,7 +53,6 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
 
   useEffect(() => {
     let activo = true;
-    setFallo(false);
     (async () => {
       let inf = await db.informes.get(id).catch(() => undefined);
       if (!inf) {
@@ -86,6 +83,7 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
       const val = { ...valoresVacios(), ...anexa };
       estadoRef.current = { informe: inf, valores: val, valoresGE: anexaGE };
       sucioRef.current = false;
+      setFallo(false);
       setInforme(inf);
       setValores(val);
       setValoresGE(anexaGE);
@@ -166,7 +164,7 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
     setInforme(guardado);
     await guardarBorrador(guardado, val, inf.tipo_equipo === "grupo_electrogeno" ? ge : undefined);
     if (resincronizar) intentarSync();
-    router.push("/");
+    navegar("#/");
   }
 
   if (fallo) {
@@ -183,12 +181,12 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
           >
             Reintentar
           </button>
-          <Link
-            href="/"
+          <a
+            href="#/"
             className="border border-outline-variant rounded px-md py-1 text-[13px]"
           >
             Volver al listado
-          </Link>
+          </a>
         </div>
       </main>
     );
@@ -205,24 +203,48 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
   });
 
   return (
-    <div className="pt-12 pb-xl">
-      <header className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin h-12 bg-primary text-on-primary border-b border-primary-container shadow-sm">
+    <div
+      className="pb-xl"
+      style={{
+        paddingTop: "calc(env(safe-area-inset-top, 0px) + 3rem)",
+        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 3rem)",
+      }}
+    >
+      <header
+        className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin bg-primary text-on-primary border-b border-primary-container shadow-sm"
+        style={{
+          minHeight: "calc(env(safe-area-inset-top, 0px) + 3rem)",
+          paddingTop: "env(safe-area-inset-top, 0px)",
+        }}
+      >
         <div className="flex items-center gap-2">
+          <a
+            href="#/"
+            className="hover:bg-primary-container active:scale-95 transition-all px-2 py-1 rounded"
+            aria-label="Volver al listado"
+          >
+            <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+          </a>
+          <LogoTipo className="w-7 h-7 rounded-lg hidden sm:inline-flex" />
           <h1 className="text-title-md font-title-md font-bold tracking-tight">
             Informe Técnico № {formatNumero(informe.numero_registro)}
           </h1>
         </div>
         <button
           type="button"
-          className="text-label-caps font-label-caps font-bold tracking-wider hover:bg-primary-container transition-colors px-3 py-1.5 rounded"
+          className="flex items-center gap-1 text-label-caps font-label-caps font-bold tracking-wider hover:bg-primary-container active:scale-95 transition-all px-3 py-1.5 rounded"
           onClick={enviar}
         >
           ENVIAR
+          <span className="material-symbols-outlined text-[16px]">send</span>
         </button>
       </header>
       <main className="max-w-7xl mx-auto md:px-margin">
-        <div className="bg-white border-b border-outline-variant px-md py-1 flex justify-between items-center mb-md shadow-sm">
-          <span className="text-title-md font-title-md font-bold text-primary">AIR POWER S.A.</span>
+        <div className="bg-white border-b border-outline-variant px-md py-1 flex items-center justify-between mb-md shadow-sm">
+          <span className="flex items-center gap-2 text-title-md font-title-md font-bold text-primary">
+            <LogoTipo className="w-5 h-5 rounded" />
+            AIR POWER S.A.
+          </span>
           <div className="flex items-center gap-1.5 text-on-surface-variant">
             <span className="material-symbols-outlined text-[16px]">calendar_today</span>
             <span className="text-body-md font-body-md text-[12px]">{fecha}</span>

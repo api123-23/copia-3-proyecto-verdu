@@ -74,9 +74,7 @@ create table if not exists informes_compresor (
   inst_electrica text check (inst_electrica in ('ok', 'mal')),
   jabalina text check (jabalina in ('si', 'no')),
   aislacion_suelo text check (aislacion_suelo in ('si', 'no')),
-  tension_linea_f1 numeric(10, 2),
-  tension_linea_f2 numeric(10, 2),
-  tension_linea_f3 numeric(10, 2),
+  tension_linea numeric(10, 2),
   temp_ambiente numeric(10, 2),
   temp_refrigerante numeric(10, 2),
   circuito_refr_m text check (circuito_refr_m in ('ok', 'mal')),
@@ -94,7 +92,7 @@ create table if not exists informes_vehiculos (
   horometro numeric(10, 2),
   aceite_motor text check (aceite_motor in ('ok', 'alto', 'bajo')),
   refrig_radiador text check (refrig_radiador in ('ok', 'alto', 'bajo')),
-  estado_bateria text check (estado_bateria in ('ok', 'alto', 'bajo')),
+  estado_bateria text check (estado_bateria in ('ok', 'mal')),
   inst_electrica text check (inst_electrica in ('ok', 'mal')),
   carroceria text check (carroceria in ('ok', 'mal')),
   temp_ambiente numeric(10, 2),
@@ -107,8 +105,8 @@ create table if not exists informes_vehiculos (
 
 create table if not exists informes_grupo_electrogeno (
   informe_id uuid primary key references informes_generales (id) on delete cascade,
-  ge_motor_detenido_aceite_motor text check (ge_motor_detenido_aceite_motor in ('ok', 'bajo')),
-  ge_motor_detenido_agua_radiador text check (ge_motor_detenido_agua_radiador in ('ok', 'bajo')),
+  ge_motor_detenido_aceite_motor text check (ge_motor_detenido_aceite_motor in ('ok', 'bajo', 'alto')),
+  ge_motor_detenido_agua_radiador text check (ge_motor_detenido_agua_radiador in ('ok', 'bajo', 'alto')),
   ge_motor_detenido_restriccion_aire text check (ge_motor_detenido_restriccion_aire in ('si', 'no')),
   ge_motor_detenido_tension_correas text check (ge_motor_detenido_tension_correas in ('ok', 'mal')),
   ge_motor_detenido_estado_baterias text check (ge_motor_detenido_estado_baterias in ('ok', 'mal')),
@@ -118,9 +116,6 @@ create table if not exists informes_grupo_electrogeno (
   ge_motor_detenido_ajuste_motor text check (ge_motor_detenido_ajuste_motor in ('si', 'no')),
   ge_motor_detenido_union_tubo_aire text check (ge_motor_detenido_union_tubo_aire in ('ok', 'mal')),
   ge_motor_detenido_lineas_combustible text check (ge_motor_detenido_lineas_combustible in ('ok', 'mal')),
-  ge_motor_detenido_dca_anticongelante text check (ge_motor_detenido_dca_anticongelante in ('ok', 'mal')),
-  ge_motor_detenido_ajuste_inyectores text check (ge_motor_detenido_ajuste_inyectores in ('si', 'no')),
-  ge_motor_detenido_calibre_inyectores text check (ge_motor_detenido_calibre_inyectores in ('si', 'no')),
   ge_funcionamiento_sistema_arranque text check (ge_funcionamiento_sistema_arranque in ('ok', 'mal')),
   ge_funcionamiento_mangueras text check (ge_funcionamiento_mangueras in ('ok', 'mal')),
   ge_funcionamiento_presion_aceite text check (ge_funcionamiento_presion_aceite in ('ok', 'bajo')),
@@ -129,23 +124,23 @@ create table if not exists informes_grupo_electrogeno (
   ge_funcionamiento_vibraciones text check (ge_funcionamiento_vibraciones in ('si', 'no')),
   ge_funcionamiento_antivibratorios text check (ge_funcionamiento_antivibratorios in ('ok', 'mal')),
   ge_funcionamiento_llave_termomagnetica text check (ge_funcionamiento_llave_termomagnetica in ('ok', 'mal')),
-  ge_funcionamiento_carga_alternador text check (ge_funcionamiento_carga_alternador in ('si', 'no')),
+  ge_funcionamiento_carga_alternador text check (ge_funcionamiento_carga_alternador in ('ok', 'mal')),
   ge_funcionamiento_llave_transferencia text check (ge_funcionamiento_llave_transferencia in ('si', 'no')),
   ge_funcionamiento_rpm_max text check (ge_funcionamiento_rpm_max in ('optimo', 'bajo', 'alto')),
   ge_funcionamiento_circ_seguridad text check (ge_funcionamiento_circ_seguridad in ('ok', 'mal')),
   ge_funcionamiento_ventilacion_aire text check (ge_funcionamiento_ventilacion_aire in ('ok', 'mal')),
-  ge_funcionamiento_perdidas_aceite text check (ge_funcionamiento_perdidas_aceite in ('optimo', 'bajo', 'alto')),
+  ge_funcionamiento_perdidas_aceite text check (ge_funcionamiento_perdidas_aceite in ('si', 'no')),
   ge_funcionamiento_perdidas_combustible text check (ge_funcionamiento_perdidas_combustible in ('si', 'no')),
   ge_funcionamiento_restriccion_escape text check (ge_funcionamiento_restriccion_escape in ('si', 'no')),
   ge_funcionamiento_restriccion_aire text check (ge_funcionamiento_restriccion_aire in ('si', 'no')),
   ge_funcionamiento_frecuencia text check (ge_funcionamiento_frecuencia in ('ok', 'baja', 'alta')),
   ge_funcionamiento_tension_linea text check (ge_funcionamiento_tension_linea in ('ok', 'baja', 'alta')),
-  ge_funcionamiento_amperaje_f1 text check (ge_funcionamiento_amperaje_f1 in ('optimo', 'bajo', 'alto')),
-  ge_funcionamiento_amperaje_f2 text check (ge_funcionamiento_amperaje_f2 in ('optimo', 'bajo', 'alto')),
-  ge_funcionamiento_amperaje_f3 text check (ge_funcionamiento_amperaje_f3 in ('optimo', 'bajo', 'alto')),
+  ge_funcionamiento_amperaje_f1 numeric(10, 2),
+  ge_funcionamiento_amperaje_f2 numeric(10, 2),
+  ge_funcionamiento_amperaje_f3 numeric(10, 2),
   ge_funcionamiento_tension_linea_carga text check (ge_funcionamiento_tension_linea_carga in ('ok', 'baja', 'alta')),
   ge_funcionamiento_temp_ambiente numeric(10, 2),
-  ge_funcionamiento_inspeccion_bateria text check (ge_funcionamiento_inspeccion_bateria in ('ok', 'no')),
+  ge_funcionamiento_inspeccion_bateria text check (ge_funcionamiento_inspeccion_bateria in ('ok', 'mal')),
   ge_funcionamiento_accion_electrico text check (ge_funcionamiento_accion_electrico in ('si', 'no'))
 );
 
@@ -164,6 +159,83 @@ create index if not exists idx_informes_cliente on informes_generales (cliente_i
 create index if not exists idx_archivos_informe on informe_archivos (informe_id);
 
 alter table informes_generales alter column horas_trabajadas type numeric(10, 2);
+
+-- VEHÍCULOS: inspección de batería pasa a Ok/Mal
+alter table informes_vehiculos drop constraint if exists informes_vehiculos_estado_bateria_check;
+update informes_vehiculos set estado_bateria = null where estado_bateria in ('alto', 'bajo');
+alter table informes_vehiculos add constraint informes_vehiculos_estado_bateria_check
+  check (estado_bateria in ('ok', 'mal'));
+
+-- COMPRESOR: tensión de línea unificada en un solo campo
+alter table informes_compresor add column if not exists tension_linea numeric(10, 2);
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'informes_compresor'
+      and column_name = 'tension_linea_f1'
+  ) then
+    update informes_compresor
+      set tension_linea = tension_linea_f1
+      where tension_linea is null and tension_linea_f1 is not null;
+  end if;
+end $$;
+alter table informes_compresor drop column if exists tension_linea_f1;
+alter table informes_compresor drop column if exists tension_linea_f2;
+alter table informes_compresor drop column if exists tension_linea_f3;
+
+-- GE: elimino campos 12/13/14 de "verificar con motor detenido"
+alter table informes_grupo_electrogeno drop column if exists ge_motor_detenido_dca_anticongelante;
+alter table informes_grupo_electrogeno drop column if exists ge_motor_detenido_ajuste_inyectores;
+alter table informes_grupo_electrogeno drop column if exists ge_motor_detenido_calibre_inyectores;
+
+-- GE: niveles de aceite/agua con opción "alto"
+alter table informes_grupo_electrogeno drop constraint if exists informes_grupo_electrogeno_ge_motor_detenido_aceite_motor_check;
+alter table informes_grupo_electrogeno add constraint informes_grupo_electrogeno_ge_motor_detenido_aceite_motor_check
+  check (ge_motor_detenido_aceite_motor in ('ok', 'bajo', 'alto'));
+alter table informes_grupo_electrogeno drop constraint if exists informes_grupo_electrogeno_ge_motor_detenido_agua_radiador_check;
+alter table informes_grupo_electrogeno add constraint informes_grupo_electrogeno_ge_motor_detenido_agua_radiador_check
+  check (ge_motor_detenido_agua_radiador in ('ok', 'bajo', 'alto'));
+
+-- GE: carga del alternador pasa a Ok/Mal
+alter table informes_grupo_electrogeno drop constraint if exists informes_grupo_electrogeno_ge_funcionamiento_carga_alternador_check;
+update informes_grupo_electrogeno set ge_funcionamiento_carga_alternador = case
+  when ge_funcionamiento_carga_alternador = 'si' then 'ok'
+  when ge_funcionamiento_carga_alternador = 'no' then 'mal'
+  else null end
+  where ge_funcionamiento_carga_alternador in ('si', 'no');
+alter table informes_grupo_electrogeno add constraint informes_grupo_electrogeno_ge_funcionamiento_carga_alternador_check
+  check (ge_funcionamiento_carga_alternador in ('ok', 'mal'));
+
+-- GE: pérdidas de aceite pasa a Sí/No
+alter table informes_grupo_electrogeno drop constraint if exists informes_grupo_electrogeno_ge_funcionamiento_perdidas_aceite_check;
+update informes_grupo_electrogeno set ge_funcionamiento_perdidas_aceite = case
+  when ge_funcionamiento_perdidas_aceite = 'optimo' then 'no'
+  when ge_funcionamiento_perdidas_aceite in ('bajo', 'alto') then 'si'
+  else null end
+  where ge_funcionamiento_perdidas_aceite in ('optimo', 'bajo', 'alto');
+alter table informes_grupo_electrogeno add constraint informes_grupo_electrogeno_ge_funcionamiento_perdidas_aceite_check
+  check (ge_funcionamiento_perdidas_aceite in ('si', 'no'));
+
+-- GE: amperaje de fases pasa a numérico
+alter table informes_grupo_electrogeno drop constraint if exists informes_grupo_electrogeno_ge_funcionamiento_amperaje_f1_check;
+alter table informes_grupo_electrogeno drop constraint if exists informes_grupo_electrogeno_ge_funcionamiento_amperaje_f2_check;
+alter table informes_grupo_electrogeno drop constraint if exists informes_grupo_electrogeno_ge_funcionamiento_amperaje_f3_check;
+update informes_grupo_electrogeno set
+  ge_funcionamiento_amperaje_f1 = null,
+  ge_funcionamiento_amperaje_f2 = null,
+  ge_funcionamiento_amperaje_f3 = null;
+alter table informes_grupo_electrogeno alter column ge_funcionamiento_amperaje_f1 type numeric(10, 2) using ge_funcionamiento_amperaje_f1::numeric;
+alter table informes_grupo_electrogeno alter column ge_funcionamiento_amperaje_f2 type numeric(10, 2) using ge_funcionamiento_amperaje_f2::numeric;
+alter table informes_grupo_electrogeno alter column ge_funcionamiento_amperaje_f3 type numeric(10, 2) using ge_funcionamiento_amperaje_f3::numeric;
+
+-- GE: inspección de batería pasa a Ok/Mal
+alter table informes_grupo_electrogeno drop constraint if exists informes_grupo_electrogeno_ge_funcionamiento_inspeccion_bateria_check;
+update informes_grupo_electrogeno set ge_funcionamiento_inspeccion_bateria = 'mal'
+  where ge_funcionamiento_inspeccion_bateria = 'no';
+alter table informes_grupo_electrogeno add constraint informes_grupo_electrogeno_ge_funcionamiento_inspeccion_bateria_check
+  check (ge_funcionamiento_inspeccion_bateria in ('ok', 'mal'));
 
 create table if not exists contador_informes (
   id smallint primary key,

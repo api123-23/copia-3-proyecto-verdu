@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { supabase } from "./supabase";
-import { cargarAnexa, cargarAnexaGE, construirAnexa } from "./informes";
+import { CAMPOS_GE, cargarAnexa, cargarAnexaGE, construirAnexa } from "./informes";
 import type { InformeGeneral, TipoEquipo, ValoresBase } from "./types";
 
 const BUCKET = "informe-archivos";
@@ -220,8 +220,8 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
     if (tabla && informe.tipo_equipo === "grupo_electrogeno") {
       const ge = await cargarAnexaGE(informe.id);
       if (ge) {
-        const { informe_id: _id, ...campos } = ge;
-        const out: Record<string, unknown> = { informe_id: informe.id, ...campos };
+        const out: Record<string, unknown> = { informe_id: informe.id };
+        for (const campo of CAMPOS_GE) out[campo] = ge[campo];
         await conReintentos(3, async () => {
           const { error: e2 } = await supabase().from(tabla).upsert(out);
           if (e2) throw e2;

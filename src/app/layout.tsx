@@ -19,6 +19,8 @@ const jetbrains = JetBrains_Mono({
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
   themeColor: "#003e7a",
 };
 
@@ -26,9 +28,18 @@ export const metadata: Metadata = {
   title: "Air Power S.A. — Informe Técnico",
   description: "PWA de informes técnicos con sincronización offline",
   manifest: "/manifest.webmanifest",
+  applicationName: "Informes",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Air Power",
+  },
+  formatDetection: {
+    telephone: false,
+  },
   icons: {
     icon: "/icons/icon-192.png",
-    apple: "/icons/icon-192.png",
+    apple: "/icons/icon-180.png",
   },
 };
 
@@ -36,6 +47,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="es" className={`${inter.variable} ${jetbrains.variable}`}>
       <head>
+        <meta name="apple-mobile-web-app-capable" content="yes" />
         <link
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=optional"
           rel="stylesheet"

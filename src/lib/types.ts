@@ -76,7 +76,7 @@ export interface ValoresBase {
   aceite_motor: Nivel;
   aceite_unidad: SiNo;
   refrig_radiador: Nivel;
-  estado_bateria: Nivel;
+  estado_bateria: OkMal;
   conec_purga: SiNo;
   inst_electrica: SiNo;
   carroceria: SiNo;
@@ -84,9 +84,7 @@ export interface ValoresBase {
   aislacion_suelo: SiNo;
   rpm_min: number | null;
   rpm_max: number | null;
-  tension_linea_f1: number | null;
-  tension_linea_f2: number | null;
-  tension_linea_f3: number | null;
+  tension_linea: number | null;
   tension_gen_f1: number | null;
   tension_gen_f2: number | null;
   tension_gen_f3: number | null;
@@ -117,9 +115,7 @@ export type InformeMotocompresor = { informe_id: string } & Omit<
   ValoresBase,
   | "rpm_min"
   | "rpm_max"
-  | "tension_linea_f1"
-  | "tension_linea_f2"
-  | "tension_linea_f3"
+  | "tension_linea"
   | "tension_gen_f1"
   | "tension_gen_f2"
   | "tension_gen_f3"
@@ -169,9 +165,7 @@ export type InformeVehiculos = { informe_id: string } & Omit<
   | "aislacion_suelo"
   | "rpm_min"
   | "rpm_max"
-  | "tension_linea_f1"
-  | "tension_linea_f2"
-  | "tension_linea_f3"
+  | "tension_linea"
   | "tension_gen_f1"
   | "tension_gen_f2"
   | "tension_gen_f3"
@@ -194,8 +188,8 @@ export type InformeVehiculos = { informe_id: string } & Omit<
 
 export interface InformeGrupoElectrogeno {
   informe_id: string;
-  ge_motor_detenido_aceite_motor: OkMal;
-  ge_motor_detenido_agua_radiador: OkMal;
+  ge_motor_detenido_aceite_motor: Nivel;
+  ge_motor_detenido_agua_radiador: Nivel;
   ge_motor_detenido_restriccion_aire: SiNo;
   ge_motor_detenido_tension_correas: OkMal;
   ge_motor_detenido_estado_baterias: OkMal;
@@ -205,9 +199,6 @@ export interface InformeGrupoElectrogeno {
   ge_motor_detenido_ajuste_motor: SiNo;
   ge_motor_detenido_union_tubo_aire: OkMal;
   ge_motor_detenido_lineas_combustible: OkMal;
-  ge_motor_detenido_dca_anticongelante: OkMal;
-  ge_motor_detenido_ajuste_inyectores: SiNo;
-  ge_motor_detenido_calibre_inyectores: SiNo;
   ge_funcionamiento_sistema_arranque: OkMal;
   ge_funcionamiento_mangueras: OkMal;
   ge_funcionamiento_presion_aceite: OkMal;
@@ -216,20 +207,20 @@ export interface InformeGrupoElectrogeno {
   ge_funcionamiento_vibraciones: SiNo;
   ge_funcionamiento_antivibratorios: OkMal;
   ge_funcionamiento_llave_termomagnetica: OkMal;
-  ge_funcionamiento_carga_alternador: SiNo;
+  ge_funcionamiento_carga_alternador: OkMal;
   ge_funcionamiento_llave_transferencia: SiNo;
   ge_funcionamiento_rpm_max: OptimoBajoAlto;
   ge_funcionamiento_circ_seguridad: OkMal;
   ge_funcionamiento_ventilacion_aire: OkMal;
-  ge_funcionamiento_perdidas_aceite: OptimoBajoAlto;
+  ge_funcionamiento_perdidas_aceite: SiNo;
   ge_funcionamiento_perdidas_combustible: SiNo;
   ge_funcionamiento_restriccion_escape: SiNo;
   ge_funcionamiento_restriccion_aire: SiNo;
   ge_funcionamiento_frecuencia: BajaAlta;
   ge_funcionamiento_tension_linea: BajaAlta;
-  ge_funcionamiento_amperaje_f1: OptimoBajoAlto;
-  ge_funcionamiento_amperaje_f2: OptimoBajoAlto;
-  ge_funcionamiento_amperaje_f3: OptimoBajoAlto;
+  ge_funcionamiento_amperaje_f1: number | null;
+  ge_funcionamiento_amperaje_f2: number | null;
+  ge_funcionamiento_amperaje_f3: number | null;
   ge_funcionamiento_tension_linea_carga: BajaAlta;
   ge_funcionamiento_temp_ambiente: number | null;
   ge_funcionamiento_inspeccion_bateria: OkMal;

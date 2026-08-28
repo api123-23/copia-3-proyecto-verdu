@@ -116,8 +116,8 @@ export const OPCIONES_OK_MAL = [
 
 export const OPCIONES_NIVEL = [
   { value: "ok", label: "Ok" },
-  { value: "alto", label: "Alto" },
   { value: "bajo", label: "Bajo" },
+  { value: "alto", label: "Alto" },
 ];
 
 export const OPCIONES_OK_NO = [

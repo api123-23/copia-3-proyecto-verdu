@@ -3,13 +3,18 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    overscroll-behavior-y: none;
+  }
   body {
     @apply bg-background font-body-md text-on-surface antialiased;
+    overscroll-behavior-y: none;
   }
   button,
   select,
   a {
     touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
