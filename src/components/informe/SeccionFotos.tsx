@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLiveQuery } from "dexie-react-hooks";
-import imageCompression from "browser-image-compression";
 import { db } from "@/lib/db";
 import { supabase } from "@/lib/supabase";
+import { comprimirImagenWebp } from "@/lib/imagen";
 import type { ArchivoLocal, CategoriaFoto } from "@/lib/types";
 import { Label, Seccion } from "@/components/ui";
 
@@ -136,11 +136,7 @@ export default function SeccionFotos({
   async function onFile(file: File) {
     setSubiendo(true);
     try {
-      const blob = await imageCompression(file, {
-        maxSizeMB: 1,
-        maxWidthOrHeight: 1920,
-        useWebWorker: true,
-      });
+      const blob = await comprimirImagenWebp(file);
       const id = crypto.randomUUID();
       await db.transaction("rw", [db.archivos, db.blobs], async () => {
         await db.blobs.put({ id, blob });

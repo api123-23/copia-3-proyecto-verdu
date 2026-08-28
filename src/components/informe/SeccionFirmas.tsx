@@ -3,6 +3,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import SignaturePad from "signature_pad";
 import { db } from "@/lib/db";
 import { supabase } from "@/lib/supabase";
+import { comprimirImagenWebp } from "@/lib/imagen";
 import type { InformeGeneral, TipoArchivo } from "@/lib/types";
 import { Seccion } from "@/components/ui";
 
@@ -36,8 +37,20 @@ function ModalFirma({
     const canvas = canvasRef.current;
     if (!canvas || !padRef.current || padRef.current.isEmpty()) return;
     canvas.toBlob((blob) => {
-      if (blob) onConfirmar(blob);
-    }, "image/png");
+      if (blob) {
+        void comandoWebp(blob);
+        return;
+      }
+      canvas.toBlob((blobPng) => {
+        if (blobPng) void comandoWebp(blobPng);
+      }, "image/png");
+    }, "image/webp");
+  }
+
+  async function comandoWebp(blob: Blob) {
+    const comprimido =
+      blob.type === "image/webp" ? blob : await comprimirImagenWebp(blob);
+    onConfirmar(comprimido);
   }
 
   return (

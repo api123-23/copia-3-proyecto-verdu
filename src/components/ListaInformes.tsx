@@ -26,6 +26,43 @@ export function ListaInformes() {
   );
   const [remotos, setRemotos] = useState<InformeGeneral[]>([]);
   const [online, setOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
+  const [actualizando, setActualizando] = useState(false);
+
+  async function actualizar() {
+    if (actualizando) return;
+    const confirmado = window.confirm(
+      "Esto limpiará la caché local y mostrará solo los informes cargados en la base de datos. ¿Continuar?"
+    );
+    if (!confirmado) return;
+    setActualizando(true);
+    try {
+      await db.transaction(
+        "rw",
+        [
+          db.informes,
+          db.valores_motocompresor,
+          db.valores_compresor,
+          db.valores_vehiculos,
+          db.valores_grupo_electrogeno,
+          db.archivos,
+          db.blobs,
+        ],
+        async () => {
+          await db.informes.clear();
+          await db.valores_motocompresor.clear();
+          await db.valores_compresor.clear();
+          await db.valores_vehiculos.clear();
+          await db.valores_grupo_electrogeno.clear();
+          await db.archivos.clear();
+          await db.blobs.clear();
+        }
+      );
+      const lista = await listarRemotos();
+      setRemotos(lista);
+    } finally {
+      setActualizando(false);
+    }
+  }
 
   useEffect(() => {
     const on = () => setOnline(true);
@@ -79,18 +116,46 @@ export function ListaInformes() {
             ? "No hay informes cargados."
             : "Sin conexión. No hay informes locales pendientes."}
         </p>
-        <Link
-          href="/informe/nuevo"
-          className="inline-block bg-primary text-on-primary rounded px-md py-1.5 text-title-md font-bold uppercase tracking-wider"
-        >
-          Crear informe
-        </Link>
+        <div className="flex items-center justify-center gap-sm">
+          <Link
+            href="/informe/nuevo"
+            className="inline-block bg-primary text-on-primary rounded px-md py-1.5 text-title-md font-bold uppercase tracking-wider"
+          >
+            Crear informe
+          </Link>
+          {online ? (
+            <button
+              type="button"
+              onClick={actualizar}
+              disabled={actualizando}
+              className="inline-block border border-outline-variant rounded px-md py-1.5 text-title-md font-bold uppercase tracking-wider text-primary"
+            >
+              {actualizando ? "Actualizando..." : "Actualizar"}
+            </button>
+          ) : null}
+        </div>
       </div>
     );
   }
 
   return (
     <div className="mx-4 md:mx-0 space-y-sm">
+      <div className="flex items-center justify-end">
+        <button
+          type="button"
+          onClick={actualizar}
+          disabled={actualizando || !online}
+          className={`text-[12px] font-bold uppercase tracking-wider border border-outline-variant rounded px-3 py-1 transition-colors ${
+            actualizando
+              ? "opacity-50 cursor-not-allowed"
+              : online
+                ? "text-primary hover:bg-surface-container-low"
+                : "opacity-50 cursor-not-allowed"
+          }`}
+        >
+          {actualizando ? "Actualizando..." : "Actualizar"}
+        </button>
+      </div>
       {!online ? (
         <p className="text-[12px] text-on-surface-variant px-1">
           Sin conexión — mostrando informes locales pendientes.

@@ -62,6 +62,17 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
         if (traido) inf = await db.informes.get(id).catch(() => undefined);
       }
       if (!inf) {
+        const crudo = sessionStorage.getItem("verdu-nuevo");
+        if (crudo) {
+          try {
+            const candidato = JSON.parse(crudo) as InformeGeneral;
+            if (candidato.id === id) inf = candidato;
+          } catch {
+            /* sesión corrupta; se ignora */
+          }
+        }
+      }
+      if (!inf) {
         if (activo) setFallo(true);
         return;
       }
