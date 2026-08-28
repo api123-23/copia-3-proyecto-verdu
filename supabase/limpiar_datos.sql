@@ -16,5 +16,5 @@ DELETE FROM informes_generales;
 -- 4. Clientes
 DELETE FROM clientes;
 
--- 5. Resetear secuencia de numeración
-ALTER SEQUENCE seq_numero_informe RESTART WITH 1;
+-- 5. Resetear numeración (el contador asigna en orden de llegada sin saltos)
+UPDATE contador_informes SET ultimo = 0;

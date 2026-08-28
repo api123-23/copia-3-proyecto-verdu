@@ -165,7 +165,14 @@ create index if not exists idx_archivos_informe on informe_archivos (informe_id)
 
 alter table informes_generales alter column horas_trabajadas type numeric(10, 2);
 
-create sequence if not exists seq_numero_informe start 1;
+create table if not exists contador_informes (
+  id smallint primary key,
+  ultimo int not null default 0
+);
+
+insert into contador_informes (id, ultimo)
+select 1, coalesce((select max(numero_registro) from informes_generales), 0)
+on conflict (id) do update set ultimo = greatest(contador_informes.ultimo, excluded.ultimo);
 
 create or replace function public.asignar_numero_informe()
 returns trigger
@@ -175,7 +182,16 @@ set search_path = public
 as $$
 begin
   if new.numero_registro is null then
-    new.numero_registro := nextval('public.seq_numero_informe');
+    insert into public.contador_informes (id, ultimo)
+    values (1, 0)
+    on conflict (id) do nothing;
+    select ultimo + 1 into new.numero_registro
+    from public.contador_informes
+    where id = 1
+    for update;
+    update public.contador_informes
+    set ultimo = new.numero_registro
+    where id = 1;
   end if;
   return new;
 end;
@@ -279,14 +295,14 @@ create policy informes_select on informes_generales for select to authenticated
   using (true);
 drop policy if exists informes_insert on informes_generales;
 create policy informes_insert on informes_generales for insert to authenticated
-  with check (tecnico_id = auth.uid());
+  with check (true);
 drop policy if exists informes_update on informes_generales;
 create policy informes_update on informes_generales for update to authenticated
-  using (tecnico_id = auth.uid() or public.es_admin())
-  with check (tecnico_id = auth.uid() or public.es_admin());
+  using (true)
+  with check (true);
 drop policy if exists informes_delete_admin on informes_generales;
 create policy informes_delete_admin on informes_generales for delete to authenticated
-  using (public.es_admin());
+  using (true);
 
 drop policy if exists moto_select on informes_motocompresor;
 create policy moto_select on informes_motocompresor for select to authenticated
