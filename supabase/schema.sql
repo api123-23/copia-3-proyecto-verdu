@@ -28,7 +28,7 @@ create table if not exists informes_generales (
   observaciones text,
   observaciones_ia text,
   maquina_operativa boolean,
-  horas_trabajadas numeric(5, 2),
+  horas_trabajadas numeric(10, 2),
   repuestos_air_power text,
   repuestos_cliente text,
   requiere_cotizacion boolean not null default false,
@@ -162,6 +162,8 @@ create index if not exists idx_informes_tecnico on informes_generales (tecnico_i
 create index if not exists idx_informes_fecha on informes_generales (fecha_hora);
 create index if not exists idx_informes_cliente on informes_generales (cliente_id);
 create index if not exists idx_archivos_informe on informe_archivos (informe_id);
+
+alter table informes_generales alter column horas_trabajadas type numeric(10, 2);
 
 create sequence if not exists seq_numero_informe start 1;
 

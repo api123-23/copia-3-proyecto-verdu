@@ -42,6 +42,7 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
   const [valoresGE, setValoresGE] = useState<InformeGrupoElectrogeno>(valoresVaciosGE());
   const [fallo, setFallo] = useState(false);
   const [intento, setIntento] = useState(0);
+  const sucioRef = useRef(false);
   const estadoRef = useRef<{
     informe: InformeGeneral | null;
     valores: ValoresBase;
@@ -84,6 +85,7 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
       if (!activo) return;
       const val = { ...valoresVacios(), ...anexa };
       estadoRef.current = { informe: inf, valores: val, valoresGE: anexaGE };
+      sucioRef.current = false;
       setInforme(inf);
       setValores(val);
       setValoresGE(anexaGE);
@@ -94,6 +96,7 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
   }, [id, cargando, intento]);
 
   function patchInforme(p: Partial<InformeGeneral>) {
+    sucioRef.current = true;
     setInforme((prev) => {
       if (!prev) return prev;
       const next = { ...prev, ...p };
@@ -103,6 +106,7 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
   }
 
   function patchValores(p: Partial<ValoresBase>) {
+    sucioRef.current = true;
     setValores((prev) => {
       const next = { ...prev, ...p };
       estadoRef.current.valores = next;
@@ -111,6 +115,7 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
   }
 
   function patchValoresGE(p: Partial<InformeGrupoElectrogeno>) {
+    sucioRef.current = true;
     setValoresGE((prev) => {
       const next = { ...prev, ...p };
       estadoRef.current.valoresGE = next;
@@ -145,15 +150,22 @@ export default function InformePage(props: PageProps<"/informe/[id]">) {
     }
     const cerrado = inf.estado_firma === "firmado";
     const yaSincronizado = inf.estado_sync === "sincronizado";
+    const archivosPendientes = await db.archivos
+      .where("informe_id")
+      .equals(inf.id)
+      .filter((a) => a.estado_sync !== "sincronizado")
+      .count();
+    const hayCambios = sucioRef.current || archivosPendientes > 0;
+    const resincronizar = !yaSincronizado || hayCambios;
     const guardado = {
       ...inf,
-      estado_sync: yaSincronizado ? ("sincronizado" as const) : ("pendiente" as const),
+      estado_sync: resincronizar ? ("pendiente" as const) : ("sincronizado" as const),
       cerrado: inf.cerrado || cerrado,
     };
     estadoRef.current.informe = guardado;
     setInforme(guardado);
     await guardarBorrador(guardado, val, inf.tipo_equipo === "grupo_electrogeno" ? ge : undefined);
-    if (!yaSincronizado) intentarSync();
+    if (resincronizar) intentarSync();
     router.push("/");
   }
 
