@@ -1,4 +1,4 @@
-const CACHE = "verdu-shell-yyaCHXWZa5s8z5SnAicWp";
+const CACHE = "verdu-shell-KmY0qioATEDrBvh5YuGl-";
 const PRECACHE = [
   "/",
   "/login",
@@ -6,10 +6,15 @@ const PRECACHE = [
   "/icons/icon-180.png",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
+  "/_next/static/KmY0qioATEDrBvh5YuGl-/_buildManifest.js",
+  "/_next/static/KmY0qioATEDrBvh5YuGl-/_clientMiddlewareManifest.js",
+  "/_next/static/KmY0qioATEDrBvh5YuGl-/_ssgManifest.js",
   "/_next/static/chunks/02fh7_m5mrih8.js",
   "/_next/static/chunks/07nldpx3i6mc_.js",
   "/_next/static/chunks/0cz1d0mv5g_q7.js",
-  "/_next/static/chunks/1-zcuetlqh6di.js",
+  "/_next/static/chunks/0k16m1c57o-qb.js",
+  "/_next/static/chunks/0x_rltj3itd_o.js",
+  "/_next/static/chunks/1cwczo7gh-yho.js",
   "/_next/static/chunks/1ejmw26mh-6og.js",
   "/_next/static/chunks/1kden681vlcis.js",
   "/_next/static/chunks/1vmuvg71dkxre.js",
@@ -33,18 +38,26 @@ const PRECACHE = [
   "/_next/static/media/9c72aa0f40e4eef8-s.1y4-pdgsjb-pw.woff2",
   "/_next/static/media/ad66f9afd8947f86-s.3lvt2whj97whp.woff2",
   "/_next/static/media/e1750518007a189a-s.p.29e6ydd6osd72.woff2",
-  "/_next/static/media/favicon.2vob68tjqpejf.ico",
-  "/_next/static/yyaCHXWZa5s8z5SnAicWp/_buildManifest.js",
-  "/_next/static/yyaCHXWZa5s8z5SnAicWp/_clientMiddlewareManifest.js",
-  "/_next/static/yyaCHXWZa5s8z5SnAicWp/_ssgManifest.js"
+  "/_next/static/media/favicon.2vob68tjqpejf.ico"
 ];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches
-      .open(CACHE)
-      .then((cache) => cache.addAll(PRECACHE))
-      .then(() => self.skipWaiting())
+    (async () => {
+      const cache = await caches.open(CACHE);
+      await Promise.allSettled(
+        PRECACHE.map(async (url) => {
+          try {
+            const req = new Request(url, { cache: "reload" });
+            const res = await fetch(req);
+            if (res && (res.ok || res.type === "opaque")) await cache.put(req, res);
+          } catch {
+            /* un asset que falle no debe romper la instalación */
+          }
+        })
+      );
+      await self.skipWaiting();
+    })()
   );
 });
 
@@ -89,15 +102,17 @@ self.addEventListener("fetch", (event) => {
 
   if (esStatic) {
     event.respondWith(
-      caches.match(req).then(
-        (match) =>
-          match ||
-          fetch(req).then((res) => {
-            const copia = res.clone();
-            caches.open(CACHE).then((cache) => cache.put(req, copia));
+      (async () => {
+        const cache = await caches.open(CACHE);
+        const enCache = await cache.match(req);
+        const pedirRed = fetch(req)
+          .then((res) => {
+            if (res.ok || res.type === "opaque") cache.put(req, res.clone());
             return res;
           })
-      )
+          .catch(() => enCache);
+        return enCache || pedirRed;
+      })()
     );
   }
 });

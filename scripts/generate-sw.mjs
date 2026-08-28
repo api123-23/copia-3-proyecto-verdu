@@ -44,10 +44,21 @@ const PRECACHE = ${JSON.stringify(precache, null, 2)};
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches
-      .open(CACHE)
-      .then((cache) => cache.addAll(PRECACHE))
-      .then(() => self.skipWaiting())
+    (async () => {
+      const cache = await caches.open(CACHE);
+      await Promise.allSettled(
+        PRECACHE.map(async (url) => {
+          try {
+            const req = new Request(url, { cache: "reload" });
+            const res = await fetch(req);
+            if (res && (res.ok || res.type === "opaque")) await cache.put(req, res);
+          } catch {
+            /* un asset que falle no debe romper la instalación */
+          }
+        })
+      );
+      await self.skipWaiting();
+    })()
   );
 });
 
@@ -92,15 +103,17 @@ self.addEventListener("fetch", (event) => {
 
   if (esStatic) {
     event.respondWith(
-      caches.match(req).then(
-        (match) =>
-          match ||
-          fetch(req).then((res) => {
-            const copia = res.clone();
-            caches.open(CACHE).then((cache) => cache.put(req, copia));
+      (async () => {
+        const cache = await caches.open(CACHE);
+        const enCache = await cache.match(req);
+        const pedirRed = fetch(req)
+          .then((res) => {
+            if (res.ok || res.type === "opaque") cache.put(req, res.clone());
             return res;
           })
-      )
+          .catch(() => enCache);
+        return enCache || pedirRed;
+      })()
     );
   }
 });

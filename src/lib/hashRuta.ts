@@ -27,8 +27,8 @@ export type Ruta =
 
 export function parsearRuta(hash: string): Ruta {
   const h = hash.replace(/^#/, "");
-  const mInforme = h.match(/^\/informe\/(.+)$/);
+  if (/^\/informe\/nuevo\/?$/.test(h)) return { tipo: "nuevo" };
+  const mInforme = h.match(/^\/informe\/(.+?)\/?$/);
   if (mInforme) return { tipo: "informe", id: decodeURIComponent(mInforme[1]) };
-  if (h === "/informe/nuevo") return { tipo: "nuevo" };
   return { tipo: "lista" };
 }

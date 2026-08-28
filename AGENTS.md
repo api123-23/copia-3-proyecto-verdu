@@ -15,5 +15,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **Ubicaciones del logo en la app:** login (`src/app/login/page.tsx`, 80px rounded-2xl centrado), cabecera fija de lista (`page.tsx`, w-7) y editor (`EditorInforme.tsx`, w-7, oculto en <sm), barra "AIR POWER S.A." de ambas vistas (w-5). Componente `src/components/LogoTipo.tsx` con `img` a `/icons/icon-192.png`.
 - **UI polish (móvil):** feedback táctil `active:scale-*` en cabeceras/ENVIAR/NUEVO/Crear informe/tarjetas/Actualizar; íconos add/send en botones; estado vacío del listado con logo; safe-area-inferior (`env(safe-area-inset-bottom)` + 3rem) en lista/editor/login; `overscroll-behavior-y: none` y `-webkit-tap-highlight-color: transparent` en `globals.css` (CSS de base, no prólogo `@layer` para touch-action). Build OK (0 errores TS), lint 0 errores (mismos 5 warnings previos).
 - **Pendiente:** deploy (regenerar `public/sw.js` del precache ya hecho por build), ejecutar `supabase/schema.sql` en Supabase, y verificación visual del logo en celular (instalación PWA).
+- **Fix regresiones (commit c31092d) — CRÍTICO (aplicado, sin commitear):**
+  - `parsearRuta` (`hashRuta.ts:28`): el regex `^/informe/(.+)$` capturaba `/informe/nuevo` antes que el chequeo de ruta "nuevo" → el botón NUEVO/"Crear informe" abría un editor con id `nuevo` y fallaba ("No se pudo cargar el informe") en PC y celular. Ahora `/informe/nuevo` se chequea primero.
+  - Se re-crearon las rutas legadas `src/app/informe/nuevo/page.tsx` y `src/app/informe/[id]/page.tsx` como shims client que redirigen a `/#/informe/nuevo` y `/#/informe/<id>` (evitan 404 en enlaces viejos / shell viejo del SW en el celular).
+  - `generate-sw.mjs`: install tolerante (`Promise.allSettled`, un asset que falle no rompe el SW, `skipWaiting` siempre) y estáticos con stale-while-revalidate (cache-first + revalidate en background) en vez de `cache.addAll`.
+  - Verificado: build OK (rutas `/`, `/login`, `/informe/nuevo`, `/informe/[id]`), lint 0 errores, `next start` → todos los 39 recursos del precache responden 200, rutas 200.
 
 <!-- END -->
