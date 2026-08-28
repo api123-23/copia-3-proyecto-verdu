@@ -24,6 +24,8 @@ export type SiNoOkMal = "si" | "no" | "ok" | "mal" | null;
 
 export type OptimoBajoAlto = "optimo" | "bajo" | "alto" | null;
 
+export type OkBajoAlto = "ok" | "bajo" | "alto" | null;
+
 export type BajaAlta = "ok" | "baja" | "alta" | null;
 
 export type FotoEstado = "ok" | "si" | "no" | null;
@@ -78,8 +80,8 @@ export interface ValoresBase {
   refrig_radiador: Nivel;
   estado_bateria: OkMal;
   conec_purga: SiNo;
-  inst_electrica: SiNo;
-  carroceria: SiNo;
+  inst_electrica: OkMal;
+  carroceria: OkMal;
   jabalina: SiNo;
   aislacion_suelo: SiNo;
   rpm_min: number | null;
@@ -141,6 +143,7 @@ export type InformeCompresor = { informe_id: string } & Omit<
   | "estado_bateria"
   | "conec_purga"
   | "carroceria"
+  | "aceite_unidad"
   | "rpm_min"
   | "rpm_max"
   | "tension_gen_f1"
@@ -155,7 +158,9 @@ export type InformeCompresor = { informe_id: string } & Omit<
   | "perdida_refrigerante"
   | "perdida_aire"
   | "perdida_combustible"
->;
+> & {
+  aceite_unidad: OkBajoAlto;
+};
 
 export type InformeVehiculos = { informe_id: string } & Omit<
   ValoresBase,

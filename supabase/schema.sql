@@ -70,7 +70,7 @@ create table if not exists informes_motocompresor (
 create table if not exists informes_compresor (
   informe_id uuid primary key references informes_generales (id) on delete cascade,
   horometro numeric(10, 2),
-  aceite_unidad text check (aceite_unidad in ('si', 'no')),
+  aceite_unidad text check (aceite_unidad in ('ok', 'bajo', 'alto')),
   inst_electrica text check (inst_electrica in ('ok', 'mal')),
   jabalina text check (jabalina in ('si', 'no')),
   aislacion_suelo text check (aislacion_suelo in ('si', 'no')),
@@ -82,7 +82,7 @@ create table if not exists informes_compresor (
   circuito_arranque text check (circuito_arranque in ('ok', 'mal')),
   circuito_seguridad text check (circuito_seguridad in ('ok', 'mal')),
   circuito_electr text check (circuito_electr in ('ok', 'mal')),
-  tiempo_y_delta text,
+  tiempo_y_delta text check (tiempo_y_delta in ('ok', 'bajo', 'alto')),
   diferencial text,
   perdida_aceite_motor text check (perdida_aceite_motor in ('si', 'no'))
 );
@@ -160,10 +160,44 @@ create index if not exists idx_archivos_informe on informe_archivos (informe_id)
 
 alter table informes_generales alter column horas_trabajadas type numeric(10, 2);
 
--- VEHÍCULOS: inspección de batería pasa a Ok/Mal
-alter table informes_vehiculos drop constraint if exists informes_vehiculos_estado_bateria_check;
+-- Ayuda idempotente: elimina TODOS los checks de una columna (incluso si el nombre
+-- cambió por renombres o quedó truncado por el límite de 63 caracteres).
+create or replace function public.dropar_checks_de_columna(tabla text, columna text)
+returns void
+language plpgsql
+set search_path = public
+as $$
+declare c record;
+begin
+  for c in (
+    select con.conname
+    from pg_constraint con
+    join pg_class cl on cl.oid = con.conrelid
+    join pg_namespace ns on ns.oid = cl.relnamespace
+    where ns.nspname = 'public'
+      and cl.relname = tabla
+      and con.contype = 'c'
+      and exists (
+        select 1
+        from unnest(con.conkey) k
+        join pg_attribute a on a.attrelid = con.conrelid and a.attnum = k
+        where a.attname = columna
+      )
+  ) loop
+    execute format('alter table %I.%I drop constraint %I', 'public', tabla, c.conname);
+  end loop;
+end $$;
+
+-- VEHÍCULOS: inspección de batería pasa a Ok/Mal (legacy si/no/alto/bajo)
+select public.dropar_checks_de_columna('informes_vehiculos', 'estado_bateria');
 update informes_vehiculos set estado_bateria = null where estado_bateria in ('alto', 'bajo');
 alter table informes_vehiculos add constraint informes_vehiculos_estado_bateria_check
+  check (estado_bateria in ('ok', 'mal'));
+
+-- MOTODES: batería también pasa a Ok/Mal
+select public.dropar_checks_de_columna('informes_motocompresor', 'estado_bateria');
+update informes_motocompresor set estado_bateria = null where estado_bateria in ('alto', 'bajo');
+alter table informes_motocompresor add constraint informes_motocompresor_estado_bateria_check
   check (estado_bateria in ('ok', 'mal'));
 
 -- COMPRESOR: tensión de línea unificada en un solo campo
@@ -185,21 +219,42 @@ alter table informes_compresor drop column if exists tension_linea_f1;
 alter table informes_compresor drop column if exists tension_linea_f2;
 alter table informes_compresor drop column if exists tension_linea_f3;
 
+-- COMPRESOR: aceite unidad pasa a ok/bajo/alto (legacy si/no)
+select public.dropar_checks_de_columna('informes_compresor', 'aceite_unidad');
+update informes_compresor set aceite_unidad = case
+  when aceite_unidad = 'si' then 'ok'
+  when aceite_unidad = 'no' then 'bajo'
+  else aceite_unidad end;
+alter table informes_compresor add constraint informes_compresor_aceite_unidad_check
+  check (aceite_unidad in ('ok', 'bajo', 'alto'));
+
+-- COMPRESOR: tiempo de conmutación Y-Δ pasa a ok/bajo/alto (legacy si/no/mal)
+select public.dropar_checks_de_columna('informes_compresor', 'tiempo_y_delta');
+update informes_compresor set tiempo_y_delta = case
+  when tiempo_y_delta = 'si' then 'ok'
+  when tiempo_y_delta in ('no', 'mal') then 'bajo'
+  when tiempo_y_delta in ('ok', 'bajo', 'alto') then tiempo_y_delta
+  else null end;
+alter table informes_compresor add constraint informes_compresor_tiempo_y_delta_check
+  check (tiempo_y_delta in ('ok', 'bajo', 'alto'));
+
 -- GE: elimino campos 12/13/14 de "verificar con motor detenido"
 alter table informes_grupo_electrogeno drop column if exists ge_motor_detenido_dca_anticongelante;
 alter table informes_grupo_electrogeno drop column if exists ge_motor_detenido_ajuste_inyectores;
 alter table informes_grupo_electrogeno drop column if exists ge_motor_detenido_calibre_inyectores;
 
--- GE: niveles de aceite/agua con opción "alto"
-alter table informes_grupo_electrogeno drop constraint if exists informes_grupo_electrogeno_ge_motor_detenido_aceite_motor_check;
+-- GE: niveles de aceite/agua con opción "alto" (legacy mal → bajo)
+select public.dropar_checks_de_columna('informes_grupo_electrogeno', 'ge_motor_detenido_aceite_motor');
+update informes_grupo_electrogeno set ge_motor_detenido_aceite_motor = 'bajo' where ge_motor_detenido_aceite_motor = 'mal';
 alter table informes_grupo_electrogeno add constraint informes_grupo_electrogeno_ge_motor_detenido_aceite_motor_check
   check (ge_motor_detenido_aceite_motor in ('ok', 'bajo', 'alto'));
-alter table informes_grupo_electrogeno drop constraint if exists informes_grupo_electrogeno_ge_motor_detenido_agua_radiador_check;
+select public.dropar_checks_de_columna('informes_grupo_electrogeno', 'ge_motor_detenido_agua_radiador');
+update informes_grupo_electrogeno set ge_motor_detenido_agua_radiador = 'bajo' where ge_motor_detenido_agua_radiador = 'mal';
 alter table informes_grupo_electrogeno add constraint informes_grupo_electrogeno_ge_motor_detenido_agua_radiador_check
   check (ge_motor_detenido_agua_radiador in ('ok', 'bajo', 'alto'));
 
--- GE: carga del alternador pasa a Ok/Mal
-alter table informes_grupo_electrogeno drop constraint if exists informes_grupo_electrogeno_ge_funcionamiento_carga_alternador_check;
+-- GE: carga del alternador pasa a Ok/Mal (legacy si/no)
+select public.dropar_checks_de_columna('informes_grupo_electrogeno', 'ge_funcionamiento_carga_alternador');
 update informes_grupo_electrogeno set ge_funcionamiento_carga_alternador = case
   when ge_funcionamiento_carga_alternador = 'si' then 'ok'
   when ge_funcionamiento_carga_alternador = 'no' then 'mal'
@@ -208,8 +263,8 @@ update informes_grupo_electrogeno set ge_funcionamiento_carga_alternador = case
 alter table informes_grupo_electrogeno add constraint informes_grupo_electrogeno_ge_funcionamiento_carga_alternador_check
   check (ge_funcionamiento_carga_alternador in ('ok', 'mal'));
 
--- GE: pérdidas de aceite pasa a Sí/No
-alter table informes_grupo_electrogeno drop constraint if exists informes_grupo_electrogeno_ge_funcionamiento_perdidas_aceite_check;
+-- GE: pérdidas de aceite pasa a Sí/No (legacy óptimo/bajo/alto)
+select public.dropar_checks_de_columna('informes_grupo_electrogeno', 'ge_funcionamiento_perdidas_aceite');
 update informes_grupo_electrogeno set ge_funcionamiento_perdidas_aceite = case
   when ge_funcionamiento_perdidas_aceite = 'optimo' then 'no'
   when ge_funcionamiento_perdidas_aceite in ('bajo', 'alto') then 'si'
@@ -219,9 +274,9 @@ alter table informes_grupo_electrogeno add constraint informes_grupo_electrogeno
   check (ge_funcionamiento_perdidas_aceite in ('si', 'no'));
 
 -- GE: amperaje de fases pasa a numérico
-alter table informes_grupo_electrogeno drop constraint if exists informes_grupo_electrogeno_ge_funcionamiento_amperaje_f1_check;
-alter table informes_grupo_electrogeno drop constraint if exists informes_grupo_electrogeno_ge_funcionamiento_amperaje_f2_check;
-alter table informes_grupo_electrogeno drop constraint if exists informes_grupo_electrogeno_ge_funcionamiento_amperaje_f3_check;
+select public.dropar_checks_de_columna('informes_grupo_electrogeno', 'ge_funcionamiento_amperaje_f1');
+select public.dropar_checks_de_columna('informes_grupo_electrogeno', 'ge_funcionamiento_amperaje_f2');
+select public.dropar_checks_de_columna('informes_grupo_electrogeno', 'ge_funcionamiento_amperaje_f3');
 update informes_grupo_electrogeno set
   ge_funcionamiento_amperaje_f1 = null,
   ge_funcionamiento_amperaje_f2 = null,
@@ -230,10 +285,13 @@ alter table informes_grupo_electrogeno alter column ge_funcionamiento_amperaje_f
 alter table informes_grupo_electrogeno alter column ge_funcionamiento_amperaje_f2 type numeric(10, 2) using ge_funcionamiento_amperaje_f2::numeric;
 alter table informes_grupo_electrogeno alter column ge_funcionamiento_amperaje_f3 type numeric(10, 2) using ge_funcionamiento_amperaje_f3::numeric;
 
--- GE: inspección de batería pasa a Ok/Mal
-alter table informes_grupo_electrogeno drop constraint if exists informes_grupo_electrogeno_ge_funcionamiento_inspeccion_bateria_check;
-update informes_grupo_electrogeno set ge_funcionamiento_inspeccion_bateria = 'mal'
-  where ge_funcionamiento_inspeccion_bateria = 'no';
+-- GE: inspección de batería pasa a Ok/Mal (legacy si/no)
+select public.dropar_checks_de_columna('informes_grupo_electrogeno', 'ge_funcionamiento_inspeccion_bateria');
+update informes_grupo_electrogeno set ge_funcionamiento_inspeccion_bateria = case
+  when ge_funcionamiento_inspeccion_bateria = 'no' then 'mal'
+  when ge_funcionamiento_inspeccion_bateria = 'si' then 'ok'
+  else null end
+  where ge_funcionamiento_inspeccion_bateria in ('si', 'no');
 alter table informes_grupo_electrogeno add constraint informes_grupo_electrogeno_ge_funcionamiento_inspeccion_bateria_check
   check (ge_funcionamiento_inspeccion_bateria in ('ok', 'mal'));
 

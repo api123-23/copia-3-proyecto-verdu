@@ -1,5 +1,6 @@
 import { db } from "./db";
 import { supabase } from "./supabase";
+import { normalizarValores } from "./informes";
 import { tablaAnexa } from "./sync";
 import type { CategoriaFoto, InformeGeneral, InformeGrupoElectrogeno, TipoEquipo, ValoresBase } from "./types";
 
@@ -68,6 +69,7 @@ export async function traerInformeRemoto(id: string): Promise<boolean> {
     if (filaAnexa) {
       const resto = { ...(filaAnexa as FilaServidor) };
       delete resto.informe_id;
+      normalizarValores(informe.tipo_equipo, resto);
       anexa = resto as Partial<ValoresBase>;
     }
   }
@@ -76,6 +78,7 @@ export async function traerInformeRemoto(id: string): Promise<boolean> {
     const { data: filaGE } = await supabase().from(tabla).select("*").eq("informe_id", id).maybeSingle();
     if (filaGE) {
       const resto = { ...(filaGE as FilaServidor) };
+      normalizarValores("grupo_electrogeno", resto);
       anexaGE = resto as unknown as InformeGrupoElectrogeno;
     }
   }

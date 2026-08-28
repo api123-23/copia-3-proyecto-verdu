@@ -320,6 +320,39 @@ export function aplica(tipo: TipoEquipo, campo: keyof ValoresBase): boolean {
   return CAMPOS_POR_TIPO[tipo].includes(campo);
 }
 
+export function normalizarValores(
+  tipo: TipoEquipo,
+  valores: Record<string, unknown>
+): void {
+  if (tipo === "grupo_electrogeno") {
+    const ge = valores as Record<string, unknown>;
+    const aCero = (campo: string) => {
+      if (ge[campo] === "si") ge[campo] = "ok";
+      else if (ge[campo] === "no") ge[campo] = "mal";
+    };
+    aCero("ge_funcionamiento_carga_alternador");
+    aCero("ge_funcionamiento_inspeccion_bateria");
+    if (ge.ge_funcionamiento_perdidas_aceite === "optimo") ge.ge_funcionamiento_perdidas_aceite = "no";
+    else if (ge.ge_funcionamiento_perdidas_aceite === "bajo" || ge.ge_funcionamiento_perdidas_aceite === "alto")
+      ge.ge_funcionamiento_perdidas_aceite = "si";
+    for (const campo of [
+      "ge_motor_detenido_aceite_motor",
+      "ge_motor_detenido_agua_radiador",
+      "ge_funcionamiento_temp_agua",
+      "ge_funcionamiento_diferencial_temp",
+      "ge_funcionamiento_rpm_max",
+    ]) {
+      if (ge[campo] === "mal") ge[campo] = "bajo";
+    }
+  } else if (tipo === "compresor") {
+    if (valores.aceite_unidad === "si") valores.aceite_unidad = "ok";
+    else if (valores.aceite_unidad === "no") valores.aceite_unidad = "bajo";
+    if (valores.tiempo_y_delta === "si") valores.tiempo_y_delta = "ok";
+    else if (valores.tiempo_y_delta === "no" || valores.tiempo_y_delta === "mal")
+      valores.tiempo_y_delta = "bajo";
+  }
+}
+
 export function construirAnexa(
   tipo: TipoEquipo,
   informe_id: string,
@@ -329,6 +362,7 @@ export function construirAnexa(
   if (tipo === "grupo_electrogeno") return null;
   const out: Record<string, unknown> = { informe_id };
   for (const campo of CAMPOS_POR_TIPO[tipo]) out[campo] = v[campo];
+  normalizarValores(tipo, out);
   return out;
 }
 
@@ -388,6 +422,7 @@ export async function cargarAnexa(
   if (!fila) return {};
   const resto = { ...fila } as unknown as Record<string, unknown>;
   delete resto.informe_id;
+  normalizarValores(tipo, resto);
   return resto as Partial<ValoresBase>;
 }
 
@@ -396,5 +431,7 @@ export async function cargarAnexaGE(
 ): Promise<InformeGrupoElectrogeno> {
   const fila = await db.valores_grupo_electrogeno.get(informe_id);
   if (!fila) return { ...valoresVaciosGE(), informe_id };
-  return fila;
+  const registro = { ...fila } as unknown as Record<string, unknown>;
+  normalizarValores("grupo_electrogeno", registro);
+  return registro as unknown as InformeGrupoElectrogeno;
 }

@@ -190,7 +190,7 @@ export default function SeccionValores({
                 <ItemSelect etiqueta="Aceite Motor" opciones={OPCIONES_NIVEL} valor={valores.aceite_motor} onChange={set("aceite_motor")} />
               ) : null}
               {aplica(tipo, "aceite_unidad") ? (
-                <ItemSelect etiqueta="Aceite Unidad" opciones={OPCIONES_SI_NO} valor={valores.aceite_unidad} onChange={set("aceite_unidad")} />
+                <ItemSelect etiqueta="Aceite Unidad" opciones={esCompresor ? OPCIONES_NIVEL : OPCIONES_SI_NO} valor={valores.aceite_unidad} onChange={set("aceite_unidad")} />
               ) : null}
               {aplica(tipo, "refrig_radiador") ? (
                 <ItemSelect etiqueta="Refrig. Rad." opciones={OPCIONES_NIVEL} valor={valores.refrig_radiador} onChange={set("refrig_radiador")} />
@@ -296,7 +296,7 @@ export default function SeccionValores({
                   <ItemSelect etiqueta="Arranque" opciones={OPCIONES_OK_MAL} valor={valores.circuito_arranque} onChange={set("circuito_arranque")} />
                   <ItemSelect etiqueta="Seguridad" opciones={OPCIONES_OK_MAL} valor={valores.circuito_seguridad} onChange={set("circuito_seguridad")} />
                   <ItemSelect etiqueta="Electr." opciones={OPCIONES_OK_MAL} valor={valores.circuito_electr} onChange={set("circuito_electr")} />
-                  <ItemSelect etiqueta="Tiempo Y-Δ" opciones={OPCIONES_OK_BAJO} valor={valores.tiempo_y_delta} onChange={set("tiempo_y_delta")} />
+                  <ItemSelect etiqueta="Tiempo Y-Δ" opciones={OPCIONES_NIVEL} valor={valores.tiempo_y_delta} onChange={set("tiempo_y_delta")} />
                   <ItemSelect etiqueta="Diferencial" opciones={OPCIONES_OK_NO} valor={valores.diferencial} onChange={set("diferencial")} />
                 </div>
               </div>
