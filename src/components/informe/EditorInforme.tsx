@@ -223,7 +223,8 @@ export function EditorInforme({ id }: { id: string }) {
         `Sos un asistente de cotizaciones técnicas. A partir de este detalle, organizá los ítems a cotizar de manera clara y concisa, respetando exactamente lo indicado sin inventar nada. Usá bullets simples en español, sin precios:\n\n${fuente}`
       );
       patchInforme({
-        cotizacion_notas_ia: texto.trim(),
+        cotizacion_notas: texto.trim(),
+        cotizacion_notas_ia: "Generado con IA (revisar antes de enviar).",
       });
       setToast({ mensaje: "Cotización redactada con IA.", tipo: "exito" });
     } catch (e) {

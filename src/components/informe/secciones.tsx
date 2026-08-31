@@ -134,11 +134,10 @@ export function SeccionTrabajos({
           </div>
         ) : null}
         {informe.observaciones_ia ? (
-          <textarea
-            className="input-technical h-24 resize-none py-1 w-full bg-surface-container-low"
-            value={informe.observaciones_ia}
-            onChange={(e) => onChange({ observaciones_ia: e.target.value || null })}
-          />
+          <p className="flex items-center gap-1.5 text-[11px] text-primary font-bold">
+            <span aria-hidden>✓</span>
+            Editado con IA. El texto ya fue reemplazado arriba; podés corregirlo a mano.
+          </p>
         ) : null}
         {onGenerarInforme ? (
           <p className="text-[10px] text-on-surface-variant italic">
@@ -302,11 +301,10 @@ export function SeccionCotizacion({
               </div>
             ) : null}
             {informe.cotizacion_notas_ia ? (
-              <textarea
-                className="input-technical h-24 resize-none py-1 w-full bg-surface-container-low"
-                value={informe.cotizacion_notas_ia}
-                onChange={(e) => onChange({ cotizacion_notas_ia: e.target.value || null })}
-              />
+              <p className="flex items-center gap-1.5 text-[11px] text-primary font-bold">
+                <span aria-hidden>✓</span>
+                Editado con IA. El texto ya fue reemplazado arriba; podés corregirlo a mano.
+              </p>
             ) : null}
           </div>
         ) : null}
