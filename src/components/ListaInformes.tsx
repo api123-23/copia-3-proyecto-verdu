@@ -75,8 +75,31 @@ export function ListaInformes() {
             .order("nombre", { ascending: true }),
         ]);
         if (!activo) return;
-        if (!p.error) setTecnicos((p.data ?? []) as Tecnico[]);
+        const perfiles = (p.data ?? []) as Tecnico[];
+        if (p.error) {
+          console.warn("[lista] no se pudieron leer perfiles:", p.error.message);
+        }
         if (!c.error) setClientes((c.data ?? []) as ClienteL[]);
+
+        const porId = new Map<string, Tecnico>();
+        for (const t of perfiles) porId.set(t.id, t);
+
+        const idsPerfil = new Set(perfiles.map((t) => t.id));
+
+        const { data: filas } = await supabase()
+          .from("informes_generales")
+          .select("tecnico_id")
+          .not("tecnico_id", "is", null);
+        if (!activo) return;
+
+        for (const f of filas ?? []) {
+          const id = (f as { tecnico_id: string }).tecnico_id;
+          if (id && !idsPerfil.has(id)) {
+            porId.set(id, { id, nombre: null, apellido: null, rol: "tecnico" });
+          }
+        }
+
+        setTecnicos([...porId.values()]);
       } catch {
         if (!activo) return;
       }
@@ -84,7 +107,7 @@ export function ListaInformes() {
     return () => {
       activo = false;
     };
-  }, [online]);
+  }, [online, remotos]);
 
   async function actualizar() {
     if (actualizando) return;
@@ -169,6 +192,11 @@ export function ListaInformes() {
   const tecnicoNombre = new Map<string, string>();
   for (const t of tecnicos) {
     tecnicoNombre.set(t.id, t.nombre || t.apellido ? `${t.nombre ?? ""} ${t.apellido ?? ""}`.trim() : t.id.slice(0, 8));
+  }
+
+  function nombreTecnico(id: string | null): string {
+    if (!id) return "—";
+    return tecnicoNombre.get(id) ?? id.slice(0, 8);
   }
 
   const filtroNumeroTrim = filtroNumero.trim().toLowerCase();
@@ -397,7 +425,7 @@ export function ListaInformes() {
                   <td className="px-3 py-2 whitespace-nowrap">{formatoFecha(inf.fecha_hora)}</td>
                   <td className="px-3 py-2 truncate max-w-[260px]">{inf.cliente_nombre || "Sin cliente"}</td>
                   <td className="px-3 py-2 whitespace-nowrap text-on-surface-variant">
-                    {tecnicoNombre.get(inf.tecnico_id ?? "") ?? "—"}
+                    {nombreTecnico(inf.tecnico_id)}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">{tipo}</td>
                   <td className="px-3 py-2 whitespace-nowrap">
@@ -443,7 +471,7 @@ export function ListaInformes() {
               <p className="text-body-lg truncate">{inf.cliente_nombre || "Sin cliente"}</p>
               <p className="text-body-md text-on-surface-variant">{tipo}</p>
               <p className="text-body-md text-on-surface-variant">
-                Técnico: {tecnicoNombre.get(inf.tecnico_id ?? "") ?? "—"}
+                Técnico: {nombreTecnico(inf.tecnico_id)}
               </p>
               <div className="flex gap-xs mt-sm">
                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase ${estadoFirmaClase(inf)}`}>
