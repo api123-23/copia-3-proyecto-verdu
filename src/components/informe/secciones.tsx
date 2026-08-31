@@ -139,7 +139,7 @@ export function SeccionTrabajos({
             Editado con IA. El texto ya fue reemplazado arriba; podés corregirlo a mano.
           </p>
         ) : null}
-        {onGenerarInforme ? (
+        {onGenerarInforme && !informe.observaciones_ia ? (
           <p className="text-[10px] text-on-surface-variant italic">
             El texto de arriba se usa como fuente para la IA. Usá {"\u201C"}GENERAR INFORME{"\u201D"} para redactar
             las observaciones con Gemini.

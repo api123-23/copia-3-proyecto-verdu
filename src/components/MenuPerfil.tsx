@@ -158,22 +158,34 @@ function FormDatos({ onListo }: { onListo: () => void }) {
         <p className="text-body-md text-green-700">Datos guardados.</p>
       ) : (
         <form onSubmit={guardar} className="space-y-sm">
-          <input
-            type="text"
-            className="input-technical w-full text-[13px] h-[36px]"
-            placeholder="Nombre"
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-            autoComplete="given-name"
-          />
-          <input
-            type="text"
-            className="input-technical w-full text-[13px] h-[36px]"
-            placeholder="Apellido"
-            value={apellido}
-            onChange={(e) => setApellido(e.target.value)}
-            autoComplete="family-name"
-          />
+          <div className="space-y-0.5">
+            <label className="text-[10px] font-bold text-on-surface-variant">Nombre</label>
+            <input
+              type="text"
+              className="input-technical w-full text-[13px] h-[36px]"
+              placeholder={perfil?.nombre ? `Actual: ${perfil.nombre}` : "Nombre (vacío)"}
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              autoComplete="given-name"
+            />
+            {perfil?.nombre ? (
+              <p className="text-[10px] text-on-surface-variant">Actual: {perfil.nombre}</p>
+            ) : null}
+          </div>
+          <div className="space-y-0.5">
+            <label className="text-[10px] font-bold text-on-surface-variant">Apellido</label>
+            <input
+              type="text"
+              className="input-technical w-full text-[13px] h-[36px]"
+              placeholder={perfil?.apellido ? `Actual: ${perfil.apellido}` : "Apellido (vacío)"}
+              value={apellido}
+              onChange={(e) => setApellido(e.target.value)}
+              autoComplete="family-name"
+            />
+            {perfil?.apellido ? (
+              <p className="text-[10px] text-on-surface-variant">Actual: {perfil.apellido}</p>
+            ) : null}
+          </div>
           <p className="text-[10px] text-on-surface-variant">
             Se guardará en tu perfil y se usará para filtrar informes por técnico.
           </p>
@@ -239,6 +251,9 @@ function FormCambiarClave({ onListo }: { onListo: () => void }) {
             onChange={(e) => setNueva(e.target.value)}
             autoComplete="new-password"
           />
+          <p className="text-[10px] text-on-surface-variant">
+            Por seguridad la contraseña actual no se muestra. Solo ingresá la nueva.
+          </p>
           {error ? <p className="text-[12px] text-error">{error}</p> : null}
           <div className="flex gap-1">
             <button

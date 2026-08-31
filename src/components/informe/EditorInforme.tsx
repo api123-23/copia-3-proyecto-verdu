@@ -47,6 +47,16 @@ export function EditorInforme({ id }: { id: string }) {
   const [generandoInforme, setGenerandoInforme] = useState(false);
   const [redactandoIA, setRedactandoIA] = useState(false);
   const [toast, setToast] = useState<{ mensaje: string; tipo: "exito" | "error" | "info" } | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function mostrarToast(t: { mensaje: string; tipo: "exito" | "error" | "info" }) {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast(t);
+    toastTimer.current = setTimeout(() => {
+      setToast(null);
+      toastTimer.current = null;
+    }, 5000);
+  }
   const sucioRef = useRef(false);
   const estadoRef = useRef<{
     informe: InformeGeneral | null;
@@ -151,7 +161,7 @@ export function EditorInforme({ id }: { id: string }) {
     const fotos = await db.archivos.where({ informe_id: inf.id, tipo: "foto" }).count();
     if (fotos < 3) faltantes.push("Registro Fotográfico (mínimo 3 fotos)");
     if (faltantes.length > 0) {
-      setToast({ mensaje: `Faltan: ${faltantes.slice(0, 3).join(", ")}...`, tipo: "error" });
+      mostrarToast({ mensaje: `Faltan: ${faltantes.slice(0, 3).join(", ")}...`, tipo: "error" });
       return;
     }
     setEnviando(true);
@@ -174,10 +184,10 @@ export function EditorInforme({ id }: { id: string }) {
       setInforme(guardado);
       await guardarBorrador(guardado, val, inf.tipo_equipo === "grupo_electrogeno" ? ge : undefined);
       if (resincronizar) intentarSync();
-      setToast({ mensaje: "Informe guardado. Sincronizando...", tipo: "exito" });
+      mostrarToast({ mensaje: "Informe guardado. Sincronizando...", tipo: "exito" });
       setTimeout(() => navegar("#/"), 700);
     } catch {
-      setToast({ mensaje: "No se pudo guardar el informe. Reintentá.", tipo: "error" });
+      mostrarToast({ mensaje: "No se pudo guardar el informe. Reintentá.", tipo: "error" });
     } finally {
       setEnviando(false);
     }
@@ -192,15 +202,15 @@ export function EditorInforme({ id }: { id: string }) {
     setGenerandoInforme(true);
     try {
       const texto = await gemini(
-        `Sos un redactor técnico de informes de mantenimiento de equipos. A partir de estos datos, redactá las observaciones y los trabajos realizados de forma corta, simple, formal y descriptiva. No inventes datos que no estén indicados. Escribí en primera persona, en español, sin títulos ni markdown:\n\n${fuente}`
+        `Sos un redactor técnico de informes de mantenimiento. Reescribí el texto de abajo de forma más formal y prolija, SIN cambiar su significado ni agregar información. Reglas estrictas: NO inventes trabajos, procesos, pasos ni detalles que no estén escritos; NO menciones procedimientos, herramientas ni tareas que no figuren en el texto original; NO agregues ni quites datos (clientes, equipos, horas, observaciones); mantené el mismo contenido, solo mejorá la redacción. Escribí en español, en primera persona, en un solo párrafo, sin títulos ni markdown:\n\n${fuente}`
       );
       patchInforme({
         observaciones: texto.trim(),
         observaciones_ia: "Generado con IA (revisar antes de enviar).",
       });
-      setToast({ mensaje: "Informe generado con IA.", tipo: "exito" });
+      mostrarToast({ mensaje: "Informe generado con IA.", tipo: "exito" });
     } catch (e) {
-      setToast({
+      mostrarToast({
         mensaje: e instanceof Error ? e.message : "No se pudo generar con IA.",
         tipo: "error",
       });
@@ -214,7 +224,7 @@ export function EditorInforme({ id }: { id: string }) {
     if (!inf || redactandoIA) return;
     const fuente = inf.cotizacion_notas?.trim();
     if (!fuente) {
-      setToast({ mensaje: "Escribí qué se debe cotizar primero.", tipo: "info" });
+      mostrarToast({ mensaje: "Escribí qué se debe cotizar primero.", tipo: "info" });
       return;
     }
     setRedactandoIA(true);
@@ -226,9 +236,9 @@ export function EditorInforme({ id }: { id: string }) {
         cotizacion_notas: texto.trim(),
         cotizacion_notas_ia: "Generado con IA (revisar antes de enviar).",
       });
-      setToast({ mensaje: "Cotización redactada con IA.", tipo: "exito" });
+      mostrarToast({ mensaje: "Cotización redactada con IA.", tipo: "exito" });
     } catch (e) {
-      setToast({
+      mostrarToast({
         mensaje: e instanceof Error ? e.message : "No se pudo redactar con IA.",
         tipo: "error",
       });
