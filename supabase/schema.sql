@@ -362,43 +362,45 @@ alter table informes_grupo_electrogeno add constraint informes_grupo_electrogeno
 -- NUMERACIÓN: 100% servidor, por orden de llegada.
 -- Una secuencia real garantiza números únicos y consecutivos aunque varios
 -- dispositivos sincronicen en paralelo (nextval es atómico).
--- Un BEFORE INSERT trigger asigna el número SOLO al INSERTAR un informe nuevo
--- sin número. Editar o firmar un informe ya cargado ejecuta INSERT ... ON
--- CONFLICT (id) DO UPDATE sobre una fila existente: el trigger no corre
--- (es BEFORE INSERT, con when numero_registro is null), por lo que el número
--- de un informe cargado NUNCA cambia ni consume una posición de la secuencia.
+--
+-- IMPORTANTE: NO se usa un BEFORE INSERT trigger con nextval(). Un trigger
+-- BEFORE INSERT también se dispara en INSERT ... ON CONFLICT DO UPDATE (UPSERT),
+-- incluso cuando la fila existe y solo se actualiza, quemando un valor de la
+-- secuencia en cada re-sincronización (firmar/editar un informe cargado
+-- incrementaría el contador de forma incorrecta). Por eso el número se asigna
+-- EXPLÍCITAMENTE desde el cliente (sync.ts) solo cuando el informe es nuevo,
+-- vía la función siguiente_numero_informe(), y nunca se toca al editar/firmar.
 create sequence if not exists public.numero_informe_seq;
 
-create or replace function public.asignar_numero_informe()
-returns trigger
-language plpgsql
+create or replace function public.siguiente_numero_informe()
+returns bigint
+language sql
+stable
 set search_path = public
 as $$
-begin
-  new.numero_registro := nextval('public.numero_informe_seq');
-  return new;
-end;
+  select nextval('public.numero_informe_seq');
 $$;
 
-drop trigger if exists trg_asignar_numero on informes_generales;
-create trigger trg_asignar_numero
-  before insert on informes_generales
-  for each row
-  when (new.numero_registro is null)
-  execute function public.asignar_numero_informe();
+grant execute on function public.siguiente_numero_informe() to authenticated;
+grant usage on sequence public.numero_informe_seq to authenticated;
 
--- Se retira el default: la única fuente de numeración es el trigger, para que
--- nunca compitan dos mecanismos y un UPDATE no pueda tocar el número.
+-- Asegura que la secuencia continúa a partir del máximo existente
+-- (idempotente: no baja el valor si ya se superó).
+do $$
+begin
+  perform setval('public.numero_informe_seq', greatest(
+    (select coalesce(max(numero_registro), 0)::bigint from public.informes_generales),
+    (select last_value from public.numero_informe_seq)
+  ), true);
+end $$;
+
+-- Se retiran el trigger y la función de la numeración automática anterior.
+drop trigger if exists trg_asignar_numero on informes_generales;
+drop function if exists public.asignar_numero_informe();
+
+-- Se retira el default: la única fuente de numeración es siguiente_numero_informe().
 alter table informes_generales
   alter column numero_registro drop default;
-
--- Reset de la numeración en cada ejecución del schema:
--- con is_called=false, el próximo nextval devuelve 1 → el próximo
--- informe nuevo arranca en № 1.
--- OJO: si ya existen informes con numero_registro asignado, los nuevos
--- podrían chocar con el unique de numero_registro. Si querés numeración
--- consecutiva limpia, vaciá la tabla antes (delete from informes_generales).
-select setval('public.numero_informe_seq', 1, false);
 
 -- Se retira el mecanismo anterior (tabla contador + trigger viejo)
 drop table if exists public.contador_informes;

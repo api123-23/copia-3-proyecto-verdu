@@ -162,8 +162,35 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
     const firmaCliente =
       archivosOk.find((a) => a.tipo === "firma_cliente")?.url ?? informe.firma_cliente_url;
 
+    // El número de registro se asigna SOLO si el informe es realmente nuevo en el
+    // servidor. Si ya existe (editar/firmar un informe cargado), se conserva el
+    // existente y NO se consume una posición de la secuencia. Nunca se depende de
+    // un trigger en el UPSERT (un BEFORE INSERT revolvería nextval también en las
+    // actualizaciones, incrementando el contador de forma incorrecta).
+    let numeroRegistro = informe.numero_registro;
+    if (numeroRegistro === null || numeroRegistro === undefined) {
+      const existente = await supabase()
+        .from("informes_generales")
+        .select("id, numero_registro")
+        .eq("id", informe.id)
+        .maybeSingle();
+      if (existente.error) {
+        throw new Error(`No se pudo verificar el informe en el servidor (${existente.error.message})`);
+      }
+      if (existente.data) {
+        numeroRegistro = (existente.data.numero_registro as number | null) ?? null;
+      } else {
+        const { data: sig, error: sigErr } = await supabase().rpc("siguiente_numero_informe");
+        if (sigErr) {
+          throw new Error(`No se pudo asignar el número de informe (${sigErr.message})`);
+        }
+        numeroRegistro = typeof sig === "number" ? sig : null;
+      }
+    }
+
     const payload = {
       id: informe.id,
+      numero_registro: numeroRegistro,
       cliente_id: informe.cliente_id,
       cliente_nombre: informe.cliente_nombre,
       cliente_telefono: informe.cliente_telefono,

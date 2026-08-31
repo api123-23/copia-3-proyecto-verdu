@@ -30,14 +30,36 @@ function ModalFirma({
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ratio = Math.max(window.devicePixelRatio || 1, 1);
-    canvas.width = canvas.offsetWidth * ratio;
-    canvas.height = canvas.offsetHeight * ratio;
-    canvas.getContext("2d")?.scale(ratio, ratio);
-    const pad = new SignaturePad(canvas);
+
+    const medir = () => {
+      const w = canvas.offsetWidth || 320;
+      const h = canvas.offsetHeight || 192;
+      const ratio = Math.max(window.devicePixelRatio || 1, 1);
+      canvas.width = w * ratio;
+      canvas.height = h * ratio;
+      const ctx = canvas.getContext("2d");
+      if (ctx) ctx.scale(ratio, ratio);
+    };
+    medir();
+
+    const pad = new SignaturePad(canvas, {
+      minWidth: 1.2,
+      maxWidth: 2.6,
+      penColor: "#191c1e",
+    });
+    pad.addEventListener("beginStroke", () => setPuedeConfirmar(true));
     pad.addEventListener("endStroke", () => setPuedeConfirmar(!pad.isEmpty()));
     padRef.current = pad;
-    return () => pad.off();
+
+    // En pantallas táctiles el layout puede terminar después del primer paint,
+    // lo que cambiaría offsetWidth. Se vuelve a medir con un frame de margen.
+    const id = window.requestAnimationFrame(() => {
+      if (padRef.current === pad) medir();
+    });
+    return () => {
+      window.cancelAnimationFrame(id);
+      pad.off();
+    };
   }, []);
 
   function confirmar() {
