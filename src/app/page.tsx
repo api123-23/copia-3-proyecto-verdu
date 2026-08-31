@@ -57,9 +57,9 @@ export default function Home() {
         <div className="flex items-center gap-1">
           <a
             href="#/informe/nuevo"
-            className="flex items-center gap-1 text-label-caps font-label-caps font-bold tracking-wider hover:bg-primary-container active:scale-95 transition-all px-3 py-1.5 rounded"
+            className="flex items-center gap-1.5 text-label-caps font-label-caps font-bold tracking-wider bg-gradient-to-br from-white to-sky-100 text-primary px-4 py-2 rounded-lg shadow-lg shadow-black/30 ring-1 ring-white/50 hover:brightness-105 hover:scale-[1.03] active:scale-95 transition-all"
           >
-            <Icono nombre="add" className="w-[16px] h-[16px]" />
+            <Icono nombre="add" className="w-[17px] h-[17px]" />
             NUEVO
           </a>
           <MenuPerfil sesion={sesion} />

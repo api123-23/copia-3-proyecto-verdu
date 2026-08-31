@@ -213,6 +213,44 @@ select public.garantizar_cascade('informes_vehiculos');
 select public.garantizar_cascade('informes_grupo_electrogeno');
 select public.garantizar_cascade('informe_archivos');
 
+-- Al borrar un usuario (admin), sus informes deben conservarse pero desvincularse
+-- del técnico. informes_generales.tecnico_id → auth.users(id) se creó sin
+-- "on delete" (RESTRICT por defecto), lo que impedía borrar técnicos con informes.
+-- Esta función hace la columna nullable y re-crea la FK con on delete set null.
+create or replace function public.garantizar_tecnico_set_null()
+returns void
+language plpgsql
+set search_path = public
+as $$
+declare c record;
+begin
+  alter table informes_generales alter column tecnico_id drop not null;
+  for c in (
+    select con.conname
+    from pg_constraint con
+    join pg_class cl on cl.oid = con.conrelid
+    join pg_namespace ns on ns.oid = cl.relnamespace
+    where ns.nspname = 'public'
+      and cl.relname = 'informes_generales'
+      and con.contype = 'f'
+      and exists (
+        select 1
+        from unnest(con.conkey) k
+        join pg_attribute a on a.attrelid = con.conrelid and a.attnum = k
+        where a.attname = 'tecnico_id'
+      )
+  ) loop
+    execute format('alter table %I.%I drop constraint %I', 'public', 'informes_generales', c.conname);
+  end loop;
+  execute format(
+    'alter table %I.%I add constraint %I foreign key (tecnico_id) references auth.users (id) on delete set null',
+    'public', 'informes_generales', 'informes_generales_tecnico_id_fk'
+  );
+end;
+$$;
+
+select public.garantizar_tecnico_set_null();
+
 alter table informes_generales alter column horas_trabajadas type numeric(10, 2);
 
 -- Ayuda idempotente: elimina TODOS los checks de una columna (incluso si el nombre

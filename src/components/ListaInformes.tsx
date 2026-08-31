@@ -124,9 +124,9 @@ export function ListaInformes() {
         <div className="flex items-center justify-center gap-sm">
           <a
             href="#/informe/nuevo"
-            className="inline-flex items-center gap-1 bg-primary text-on-primary rounded px-md py-1.5 text-title-md font-bold uppercase tracking-wider active:scale-95 transition-all"
+            className="inline-flex items-center gap-1.5 bg-gradient-to-b from-primary to-primary-container text-on-primary rounded-lg px-5 py-2.5 text-title-md font-title-md font-bold uppercase tracking-wider shadow-lg shadow-primary/40 hover:brightness-110 hover:scale-[1.03] active:scale-95 transition-all"
           >
-            <Icono nombre="add" className="w-[16px] h-[16px]" />
+            <Icono nombre="add" className="w-[18px] h-[18px]" />
             Crear informe
           </a>
           {online ? (

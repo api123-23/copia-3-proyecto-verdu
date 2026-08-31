@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePerfil } from "@/lib/usePerfil";
+import { supabase } from "@/lib/supabase";
 import { LogoTipo } from "@/components/LogoTipo";
 import { Icono } from "@/components/Icono";
 
@@ -27,11 +28,24 @@ export function PanelAdmin() {
   const [ok, setOk] = useState<string | null>(null);
   const [creando, setCreando] = useState(false);
 
+  async function authFetch(path: string, init?: RequestInit) {
+    const { data: ses } = await supabase().auth.getSession();
+    const token = ses?.session?.access_token;
+    return fetch(path, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...init?.headers,
+      },
+    });
+  }
+
   async function cargar() {
     setCargandoLista(true);
     setError(null);
     try {
-      const res = await fetch("/api/usuarios");
+      const res = await authFetch("/api/usuarios");
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? "No se pudo cargar usuarios.");
       setUsuarios(data.usuarios ?? []);
@@ -70,9 +84,8 @@ export function PanelAdmin() {
     setOk(null);
     setCreando(true);
     try {
-      const res = await fetch("/api/usuarios", {
+      const res = await authFetch("/api/usuarios", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, rol, nombre: nombreNuevo, apellido: apellidoNuevo }),
       });
       const data = await res.json();
@@ -87,6 +100,33 @@ export function PanelAdmin() {
       setError(e instanceof Error ? e.message : "Error al crear el usuario.");
     } finally {
       setCreando(false);
+    }
+  }
+
+  async function eliminar(u: Usuario) {
+    const { data: ses } = await supabase().auth.getSession();
+    const uidActual = ses?.session?.user?.id;
+    if (uidActual && uidActual === u.id) {
+      setError("No podés eliminar tu propio usuario.");
+      return;
+    }
+    const confirma = window.confirm(
+      `¿Eliminar al usuario ${u.nombre || u.apellido || u.email}? Esta acción no se puede deshacer.`
+    );
+    if (!confirma) return;
+    setError(null);
+    setOk(null);
+    try {
+      const res = await authFetch("/api/usuarios", {
+        method: "DELETE",
+        body: JSON.stringify({ id: u.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? "No se pudo eliminar el usuario.");
+      setOk("Usuario eliminado.");
+      void cargar();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al eliminar el usuario.");
     }
   }
 
@@ -238,6 +278,14 @@ export function PanelAdmin() {
                     {new Date(u.creado_en).toLocaleDateString("es-AR")}
                   </p>
                 </div>
+                <button
+                  type="button"
+                  title="Eliminar usuario"
+                  onClick={() => void eliminar(u)}
+                  className="p-1.5 rounded-lg hover:bg-error-container/40 active:scale-95 transition-all shrink-0"
+                >
+                  <Icono nombre="delete" className="w-[18px] h-[18px] text-error" />
+                </button>
               </li>
             ))}
           </ul>

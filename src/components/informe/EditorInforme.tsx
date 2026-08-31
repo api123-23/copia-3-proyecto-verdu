@@ -313,13 +313,13 @@ export function EditorInforme({ id }: { id: string }) {
         <button
           type="button"
           disabled={enviando}
-          className="flex items-center gap-1 text-label-caps font-label-caps font-bold tracking-wider hover:bg-primary-container active:scale-95 transition-all px-3 py-1.5 rounded disabled:opacity-60"
+          className="flex items-center gap-1.5 text-label-caps font-label-caps font-bold tracking-wider bg-gradient-to-br from-white to-sky-100 text-primary px-4 py-2 rounded-lg shadow-lg shadow-black/30 ring-1 ring-white/50 hover:brightness-105 hover:scale-[1.03] active:scale-95 transition-all disabled:opacity-60 disabled:scale-100"
           onClick={enviar}
         >
           {enviando ? (
-            <span className="w-4 h-4 rounded-full border-2 border-on-primary border-t-transparent animate-spin" />
+            <span className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
           ) : (
-            <Icono nombre="send" className="w-[16px] h-[16px]" />
+            <Icono nombre="send" className="w-[17px] h-[17px]" />
           )}
           {enviando ? "ENVIANDO" : "ENVIAR"}
         </button>

@@ -47,10 +47,6 @@ function SelectorCliente({
     };
   }, []);
 
-  useEffect(() => {
-    setSeleccion(informe.cliente_id ?? "");
-  }, [informe.cliente_id]);
-
   function alSeleccionar(id: string) {
     setSeleccion(id);
     if (!id) return;

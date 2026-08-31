@@ -1,16 +1,52 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-export async function GET() {
+function sinClave(metodo: string): NextResponse {
+  return NextResponse.json(
+    {
+      error: `SUPABASE_SERVICE_ROLE_KEY no está configurada en el servidor (${metodo}).`,
+    },
+    { status: 500 }
+  );
+}
+
+async function esAdminAutenticado(
+  req: Request,
+  admin: SupabaseClient
+): Promise<boolean> {
+  const auth = req.headers.get("authorization");
+  const token = auth?.startsWith("Bearer ") ? auth.slice(7) : null;
+  if (!token) return false;
+
+  try {
+    const { data: userData, error: userError } = await admin.auth.getUser(token);
+    if (userError || !userData?.user) return false;
+
+    const { data: perfil } = await admin
+      .from("perfiles")
+      .select("rol")
+      .eq("id", userData.user.id)
+      .maybeSingle();
+    return perfil?.rol === "admin";
+  } catch {
+    return false;
+  }
+}
+
+function crearAdmin(url: string, key: string) {
+  return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+}
+
+export async function GET(req: Request) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) {
-    return NextResponse.json(
-      { error: "SUPABASE_SERVICE_ROLE_KEY no está configurada en el servidor." },
-      { status: 500 }
-    );
+  if (!url || !key) return sinClave("GET");
+  const admin = crearAdmin(url, key);
+  if (!(await esAdminAutenticado(req, admin))) {
+    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   }
-  const admin = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+
   const { data, error } = await admin.auth.admin.listUsers({ perPage: 1000 });
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -39,11 +75,10 @@ export async function GET() {
 export async function POST(req: Request) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) {
-    return NextResponse.json(
-      { error: "SUPABASE_SERVICE_ROLE_KEY no está configurada en el servidor." },
-      { status: 500 }
-    );
+  if (!url || !key) return sinClave("POST");
+  const admin = crearAdmin(url, key);
+  if (!(await esAdminAutenticado(req, admin))) {
+    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   }
 
   let body: { email?: string; password?: string; rol?: string; nombre?: string; apellido?: string };
@@ -66,8 +101,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "La contraseña debe tener al menos 6 caracteres." }, { status: 400 });
   }
 
-  const admin = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
-
   const { data, error } = await admin.auth.admin.createUser({
     email,
     password,
@@ -88,4 +121,33 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ ok: true, id: uid });
+}
+
+export async function DELETE(req: Request) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return sinClave("DELETE");
+  const admin = crearAdmin(url, key);
+  if (!(await esAdminAutenticado(req, admin))) {
+    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  }
+
+  let body: { id?: string };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
+  }
+
+  const id = String(body.id ?? "").trim();
+  if (!id) {
+    return NextResponse.json({ error: "Falta el id del usuario." }, { status: 400 });
+  }
+
+  const { error } = await admin.auth.admin.deleteUser(id);
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  return NextResponse.json({ ok: true, id });
 }
