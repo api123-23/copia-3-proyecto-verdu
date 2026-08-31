@@ -11,6 +11,7 @@ import { PantallaCarga } from "@/components/PantallaCarga";
 import { AvisoSyncActivo } from "@/components/AvisoSyncActivo";
 import { MenuPerfil } from "@/components/MenuPerfil";
 import { PanelAdmin } from "@/components/PanelAdmin";
+import { GestionClientes } from "@/components/GestionClientes";
 
 export default function Home() {
   const { cargando, sesion } = useSesion(true);
@@ -26,6 +27,8 @@ export default function Home() {
       <AvisoSyncActivo />
       {ruta.tipo === "admin" ? (
         <PanelAdmin />
+      ) : ruta.tipo === "clientes" ? (
+        <GestionClientes />
       ) : ruta.tipo === "nuevo" ? (
         <NuevoInforme />
       ) : ruta.tipo === "informe" ? (

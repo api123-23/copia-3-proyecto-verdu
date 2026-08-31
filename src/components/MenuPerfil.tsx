@@ -89,13 +89,22 @@ export function MenuPerfil({ sesion }: { sesion: Session | null }) {
                   Cambiar contraseña
                 </button>
                 {esAdmin ? (
-                  <a
-                    href="#/admin"
-                    className="text-left px-2 py-2 rounded-lg hover:bg-surface-container-low text-body-md active:scale-[0.98] transition-all"
-                    onClick={() => setAbierto(false)}
-                  >
-                    Panel de administración
-                  </a>
+                  <>
+                    <a
+                      href="#/clientes"
+                      className="hidden md:block text-left px-2 py-2 rounded-lg hover:bg-surface-container-low text-body-md active:scale-[0.98] transition-all"
+                      onClick={() => setAbierto(false)}
+                    >
+                      Gestionar clientes
+                    </a>
+                    <a
+                      href="#/admin"
+                      className="text-left px-2 py-2 rounded-lg hover:bg-surface-container-low text-body-md active:scale-[0.98] transition-all"
+                      onClick={() => setAbierto(false)}
+                    >
+                      Panel de administración
+                    </a>
+                  </>
                 ) : null}
               </div>
               <div className="border-t border-outline-variant mt-sm pt-sm">

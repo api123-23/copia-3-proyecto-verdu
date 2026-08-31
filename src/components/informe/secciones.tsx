@@ -1,11 +1,91 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import type { InformeGeneral } from "@/lib/types";
 import { TIPOS_EQUIPO } from "@/lib/informes";
+import { supabase } from "@/lib/supabase";
 import { Label, Seccion } from "@/components/ui";
 import { Icono } from "@/components/Icono";
 
 type PatchInforme = Partial<InformeGeneral>;
+
+type ClienteOpcion = {
+  id: string;
+  nombre: string;
+  telefono: string | null;
+  direccion: string | null;
+};
+
+function SelectorCliente({
+  informe,
+  onChange,
+}: {
+  informe: InformeGeneral;
+  onChange: (p: PatchInforme) => void;
+}) {
+  const [clientes, setClientes] = useState<ClienteOpcion[]>([]);
+  const [seleccion, setSeleccion] = useState<string>(informe.cliente_id ?? "");
+
+  useEffect(() => {
+    let activo = true;
+    (async () => {
+      try {
+        const { data, error } = await supabase()
+          .from("clientes")
+          .select("id, nombre, telefono, direccion")
+          .order("nombre", { ascending: true });
+        if (error) throw error;
+        if (!activo) return;
+        setClientes((data ?? []) as ClienteOpcion[]);
+      } catch {
+        if (!activo) return;
+        setClientes([]);
+      }
+    })();
+    return () => {
+      activo = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    setSeleccion(informe.cliente_id ?? "");
+  }, [informe.cliente_id]);
+
+  function alSeleccionar(id: string) {
+    setSeleccion(id);
+    if (!id) return;
+    const c = clientes.find((x) => x.id === id);
+    if (!c) return;
+    onChange({
+      cliente_id: c.id,
+      cliente_nombre: c.nombre,
+      cliente_telefono: c.telefono,
+      cliente_direccion: c.direccion,
+    });
+  }
+
+  return (
+    <div className="md:col-span-2">
+      <Label>Cliente guardado (opcional)</Label>
+      <select
+        className="input-technical w-full h-[28px] py-0"
+        value={seleccion}
+        onChange={(e) => alSeleccionar(e.target.value)}
+      >
+        <option value="">— Seleccionar o cargar manual —</option>
+        {clientes.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.nombre}
+            {c.telefono ? ` · ${c.telefono}` : ""}
+          </option>
+        ))}
+      </select>
+      <p className="text-[10px] text-on-surface-variant">
+        Al elegir un cliente se completan nombre, teléfono y ubicación automáticamente.
+      </p>
+    </div>
+  );
+}
 
 export function SeccionCliente({
   informe,
@@ -17,6 +97,7 @@ export function SeccionCliente({
   return (
     <Seccion titulo="Datos del Cliente" badge="Obligatorio">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-sm">
+        <SelectorCliente informe={informe} onChange={onChange} />
         <div>
           <Label>Cliente / Empresa</Label>
           <input

@@ -25,10 +25,12 @@ export type Ruta =
   | { tipo: "lista" }
   | { tipo: "nuevo" }
   | { tipo: "informe"; id: string }
-  | { tipo: "admin" };
+  | { tipo: "admin" }
+  | { tipo: "clientes" };
 
 export function parsearRuta(hash: string): Ruta {
   const h = hash.replace(/^#/, "");
+  if (/^\/clientes\/?$/.test(h)) return { tipo: "clientes" };
   if (/^\/admin\/?$/.test(h)) return { tipo: "admin" };
   if (/^\/informe\/nuevo\/?$/.test(h)) return { tipo: "nuevo" };
   const mInforme = h.match(/^\/informe\/(.+?)\/?$/);
