@@ -1,3 +1,5 @@
+"use client";
+
 import type { InformeGeneral } from "@/lib/types";
 import { TIPOS_EQUIPO } from "@/lib/informes";
 import { Label, Seccion } from "@/components/ui";
@@ -94,10 +96,15 @@ export function SeccionCliente({
 export function SeccionTrabajos({
   informe,
   onChange,
+  onGenerarInforme,
+  generandoInforme,
 }: {
   informe: InformeGeneral;
   onChange: (p: PatchInforme) => void;
+  onGenerarInforme?: () => void;
+  generandoInforme?: boolean;
 }) {
+  const planilla = `${informe.cliente_nombre || "Cliente"} | ${TIPOS_EQUIPO.find((t) => t.value === informe.tipo_equipo)?.label ?? informe.tipo_equipo} | ${informe.observaciones || ""}`;
   return (
     <Seccion titulo="Trabajos Realizados / Observaciones">
       <div className="flex flex-col gap-sm">
@@ -107,14 +114,25 @@ export function SeccionTrabajos({
           value={informe.observaciones ?? ""}
           onChange={(e) => onChange({ observaciones: e.target.value || null })}
         />
-        <div className="flex justify-end">
-          <button
-            type="button"
-            className="border border-primary text-primary rounded px-md py-1 text-title-md font-title-md hover:bg-primary hover:text-white transition-colors text-[13px] h-[32px] uppercase tracking-wider font-bold whitespace-nowrap"
-          >
-            GENERAR INFORME
-          </button>
-        </div>
+        {onGenerarInforme ? (
+          <div className="flex justify-end">
+            <button
+              type="button"
+              disabled={generandoInforme}
+              className="border border-primary text-primary rounded-lg px-md py-1.5 text-title-md font-title-md hover:bg-primary hover:text-white transition-colors text-[13px] h-[36px] uppercase tracking-wider font-bold whitespace-nowrap flex items-center gap-2 disabled:opacity-50"
+              onClick={onGenerarInforme}
+            >
+              {generandoInforme ? (
+                <>
+                  <span className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                  Generando...
+                </>
+              ) : (
+                "GENERAR INFORME"
+              )}
+            </button>
+          </div>
+        ) : null}
         {informe.observaciones_ia ? (
           <textarea
             className="input-technical h-24 resize-none py-1 w-full bg-surface-container-low"
@@ -122,6 +140,13 @@ export function SeccionTrabajos({
             onChange={(e) => onChange({ observaciones_ia: e.target.value || null })}
           />
         ) : null}
+        {onGenerarInforme ? (
+          <p className="text-[10px] text-on-surface-variant italic">
+            El texto de arriba se usa como fuente para la IA. Usá {"\u201C"}GENERAR INFORME{"\u201D"} para redactar
+            las observaciones con Gemini.
+          </p>
+        ) : null}
+        <span className="sr-only">{planilla}</span>
       </div>
     </Seccion>
   );
@@ -135,7 +160,7 @@ export function SeccionHoras({
   onChange: (p: PatchInforme) => void;
 }) {
   return (
-    <Seccion titulo="Horas Trabajadas">
+    <Seccion titulo="Horas Trabajadas" badge="Obligatorio">
       <div>
         <Label>
           Total Horas Trabajadas <span className="text-error">*</span>
@@ -194,38 +219,40 @@ export function SeccionOperativa({
   onChange: (p: PatchInforme) => void;
 }) {
   return (
-    <section className="mb-lg bg-white shadow-sm border border-outline-variant mx-4 md:mx-0 rounded-lg overflow-hidden">
-      <div className="p-md">
-        <div className="flex items-center justify-between bg-surface-container-low p-1 rounded">
-          <span className="text-body-md font-body-md text-[12px]">¿La máquina queda operativa?</span>
-          <div className="dual-option w-24">
-            <button
-              type="button"
-              className={informe.maquina_operativa === true ? "selected-ok" : ""}
-              onClick={() => onChange({ maquina_operativa: true })}
-            >
-              Sí
-            </button>
-            <button
-              type="button"
-              className={informe.maquina_operativa === false ? "selected-error" : ""}
-              onClick={() => onChange({ maquina_operativa: false })}
-            >
-              No
-            </button>
-          </div>
+    <Seccion titulo="¿La máquina queda operativa?">
+      <div className="flex items-center justify-between bg-surface-container-low p-1 rounded">
+        <span className="text-body-md font-body-md text-[12px]">Operativa</span>
+        <div className="dual-option w-24">
+          <button
+            type="button"
+            className={informe.maquina_operativa === true ? "selected-ok" : ""}
+            onClick={() => onChange({ maquina_operativa: true })}
+          >
+            Sí
+          </button>
+          <button
+            type="button"
+            className={informe.maquina_operativa === false ? "selected-error" : ""}
+            onClick={() => onChange({ maquina_operativa: false })}
+          >
+            No
+          </button>
         </div>
       </div>
-    </section>
+    </Seccion>
   );
 }
 
 export function SeccionCotizacion({
   informe,
   onChange,
+  onRedactarIA,
+  redactandoIA,
 }: {
   informe: InformeGeneral;
   onChange: (p: PatchInforme) => void;
+  onRedactarIA?: () => void;
+  redactandoIA?: boolean;
 }) {
   return (
     <Seccion titulo="Cotización">
@@ -255,14 +282,25 @@ export function SeccionCotizacion({
               value={informe.cotizacion_notas ?? ""}
               onChange={(e) => onChange({ cotizacion_notas: e.target.value || null })}
             />
-            <div className="flex justify-end">
-              <button
-                type="button"
-                className="border border-primary text-primary rounded px-md py-1 text-title-md font-title-md hover:bg-primary hover:text-white transition-colors text-[13px] h-[32px] uppercase tracking-wider font-bold whitespace-nowrap"
-              >
-                REDACTAR CON IA
-              </button>
-            </div>
+            {onRedactarIA ? (
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  disabled={redactandoIA}
+                  className="border border-primary text-primary rounded-lg px-md py-1.5 text-title-md font-title-md hover:bg-primary hover:text-white transition-colors text-[13px] h-[36px] uppercase tracking-wider font-bold whitespace-nowrap flex items-center gap-2 disabled:opacity-50"
+                  onClick={onRedactarIA}
+                >
+                  {redactandoIA ? (
+                    <>
+                      <span className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                      Redactando...
+                    </>
+                  ) : (
+                    "REDACTAR CON IA"
+                  )}
+                </button>
+              </div>
+            ) : null}
             {informe.cotizacion_notas_ia ? (
               <textarea
                 className="input-technical h-24 resize-none py-1 w-full bg-surface-container-low"

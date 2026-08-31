@@ -7,6 +7,10 @@ import { EditorInforme } from "@/components/informe/EditorInforme";
 import { NuevoInforme } from "@/components/informe/NuevoInforme";
 import { LogoTipo } from "@/components/LogoTipo";
 import { Icono } from "@/components/Icono";
+import { PantallaCarga } from "@/components/PantallaCarga";
+import { AvisoSyncActivo } from "@/components/AvisoSyncActivo";
+import { MenuPerfil } from "@/components/MenuPerfil";
+import { PanelAdmin } from "@/components/PanelAdmin";
 
 export default function Home() {
   const { cargando, sesion } = useSesion(true);
@@ -14,20 +18,26 @@ export default function Home() {
   const ruta = parsearRuta(hash);
 
   if (cargando || !sesion) {
-    return <p className="p-margin text-on-surface-variant">Cargando...</p>;
+    return <PantallaCarga mensaje="Cargando..." />;
   }
 
-  if (ruta.tipo === "nuevo") return <NuevoInforme />;
-  if (ruta.tipo === "informe") return <EditorInforme id={ruta.id} />;
-
   return (
-    <div
-      className="pb-xl"
-      style={{
-        paddingTop: "calc(env(safe-area-inset-top, 0px) + 3rem)",
-        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 3rem)",
-      }}
-    >
+    <>
+      <AvisoSyncActivo />
+      {ruta.tipo === "admin" ? (
+        <PanelAdmin />
+      ) : ruta.tipo === "nuevo" ? (
+        <NuevoInforme />
+      ) : ruta.tipo === "informe" ? (
+        <EditorInforme id={ruta.id} />
+      ) : (
+        <div
+          className="pb-xl"
+          style={{
+            paddingTop: "calc(env(safe-area-inset-top, 0px) + 3rem)",
+            paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 3rem)",
+          }}
+        >
       <header
         className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin bg-primary text-on-primary border-b border-primary-container shadow-sm"
         style={{
@@ -41,13 +51,16 @@ export default function Home() {
             Informes Técnicos
           </h1>
         </div>
-        <a
-          href="#/informe/nuevo"
-          className="flex items-center gap-1 text-label-caps font-label-caps font-bold tracking-wider hover:bg-primary-container active:scale-95 transition-all px-3 py-1.5 rounded"
-        >
-          <Icono nombre="add" className="w-[16px] h-[16px]" />
-          NUEVO
-        </a>
+        <div className="flex items-center gap-1">
+          <a
+            href="#/informe/nuevo"
+            className="flex items-center gap-1 text-label-caps font-label-caps font-bold tracking-wider hover:bg-primary-container active:scale-95 transition-all px-3 py-1.5 rounded"
+          >
+            <Icono nombre="add" className="w-[16px] h-[16px]" />
+            NUEVO
+          </a>
+          <MenuPerfil sesion={sesion} />
+        </div>
       </header>
       <main className="max-w-7xl mx-auto md:px-margin">
         <div className="bg-white border-b border-outline-variant px-md py-1 flex items-center justify-between mb-md shadow-sm">
@@ -58,6 +71,8 @@ export default function Home() {
         </div>
         <ListaInformes />
       </main>
-    </div>
+        </div>
+      )}
+    </>
   );
 }

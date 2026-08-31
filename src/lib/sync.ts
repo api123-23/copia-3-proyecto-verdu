@@ -207,7 +207,7 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       const anexa = await cargarAnexa(informe.tipo_equipo, informe.id);
       const out = construirAnexa(informe.tipo_equipo, informe.id, anexa as ValoresBase);
       if (out) {
-        console.log(`[sync] Anexa ${tabla}:`, out);
+
         await conReintentos(3, async () => {
           const { error: e2 } = await supabase().from(tabla).upsert(out);
           if (e2) throw e2;

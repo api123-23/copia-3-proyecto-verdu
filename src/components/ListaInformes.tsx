@@ -10,6 +10,7 @@ import { intentarSync } from "@/lib/sync";
 import { useSesion } from "@/lib/useSesion";
 import { LogoTipo } from "@/components/LogoTipo";
 import { Icono } from "@/components/Icono";
+import { PantallaCarga } from "@/components/PantallaCarga";
 
 const BADGE_SYNC: Record<string, { label: string; clase: string }> = {
   pendiente: { label: "Subiendo...", clase: "bg-amber-100 text-amber-700 animate-pulse" },
@@ -98,7 +99,7 @@ export function ListaInformes() {
   }, [cargando, sesion, online]);
 
   if (cargando || !locales)
-    return <p className="px-margin text-on-surface-variant">Cargando...</p>;
+    return <PantallaCarga mensaje="Cargando informes..." />;
 
   const pendientesLocales = locales.filter((l) => l.estado_sync !== "sincronizado");
 

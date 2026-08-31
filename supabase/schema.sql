@@ -1,8 +1,19 @@
 create table if not exists perfiles (
   id uuid primary key references auth.users (id) on delete cascade,
   rol text not null default 'tecnico' check (rol in ('tecnico', 'admin')),
+  email text,
   creado_en timestamptz not null default now()
 );
+
+-- La columna email se agrega explícitamente por si la tabla ya existía
+-- (create table if not exists no modifica tablas preexistentes).
+alter table perfiles add column if not exists email text;
+
+-- (opcional) backfill email de perfiles existentes
+update perfiles p
+set email = u.email
+from auth.users u
+where p.id = u.id and (p.email is null or p.email = '');
 
 create table if not exists clientes (
   id uuid primary key default gen_random_uuid(),
@@ -158,6 +169,46 @@ create index if not exists idx_informes_fecha on informes_generales (fecha_hora)
 create index if not exists idx_informes_cliente on informes_generales (cliente_id);
 create index if not exists idx_archivos_informe on informe_archivos (informe_id);
 
+-- INTEGRIDAD: garantiza ON DELETE CASCADE en las tablas dependientes.
+-- create table if not exists NO agrega/repara la FK en tablas ya creadas por
+-- versiones viejas del esquema (borrar informes_generales dejaba huérfanos).
+-- Limpia huérfanos, dropea cualquier FK a informes_generales y la re-crea con cascade.
+create or replace function public.garantizar_cascade(tabla text)
+returns void
+language plpgsql
+set search_path = public
+as $$
+declare c record;
+begin
+  execute format(
+    'delete from %I.%I h where not exists (select 1 from informes_generales g where g.id = h.informe_id)',
+    'public', tabla
+  );
+  for c in (
+    select con.conname
+    from pg_constraint con
+    join pg_class cl on cl.oid = con.conrelid
+    join pg_namespace ns on ns.oid = cl.relnamespace
+    where ns.nspname = 'public'
+      and cl.relname = tabla
+      and con.contype = 'f'
+      and con.confrelid = 'informes_generales'::regclass
+  ) loop
+    execute format('alter table %I.%I drop constraint %I', 'public', tabla, c.conname);
+  end loop;
+  execute format(
+    'alter table %I.%I add constraint %I foreign key (informe_id) references informes_generales (id) on delete cascade',
+    'public', tabla, tabla || '_informe_id_fk'
+  );
+end;
+$$;
+
+select public.garantizar_cascade('informes_motocompresor');
+select public.garantizar_cascade('informes_compresor');
+select public.garantizar_cascade('informes_vehiculos');
+select public.garantizar_cascade('informes_grupo_electrogeno');
+select public.garantizar_cascade('informe_archivos');
+
 alter table informes_generales alter column horas_trabajadas type numeric(10, 2);
 
 -- Ayuda idempotente: elimina TODOS los checks de una columna (incluso si el nombre
@@ -298,24 +349,45 @@ alter table informes_grupo_electrogeno add constraint informes_grupo_electrogeno
 -- NUMERACIÓN: 100% servidor, por orden de llegada.
 -- Una secuencia real garantiza números únicos y consecutivos aunque varios
 -- dispositivos sincronicen en paralelo (nextval es atómico).
+-- Un BEFORE INSERT trigger asigna el número SOLO al INSERTAR un informe nuevo
+-- sin número. Editar o firmar un informe ya cargado ejecuta INSERT ... ON
+-- CONFLICT (id) DO UPDATE sobre una fila existente: el trigger no corre
+-- (es BEFORE INSERT, con when numero_registro is null), por lo que el número
+-- de un informe cargado NUNCA cambia ni consume una posición de la secuencia.
 create sequence if not exists public.numero_informe_seq;
-alter table informes_generales
-  alter column numero_registro set default nextval('public.numero_informe_seq');
-select setval(
-  'public.numero_informe_seq',
-  case
-    when exists (select 1 from informes_generales)
-      then greatest(
-        (select last_value from public.numero_informe_seq),
-        (select max(numero_registro) from informes_generales)
-      )
-    else 0
-  end
-);
 
--- Se retira el mecanismo anterior (tabla contador + trigger)
+create or replace function public.asignar_numero_informe()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  new.numero_registro := nextval('public.numero_informe_seq');
+  return new;
+end;
+$$;
+
 drop trigger if exists trg_asignar_numero on informes_generales;
-drop function if exists public.asignar_numero_informe();
+create trigger trg_asignar_numero
+  before insert on informes_generales
+  for each row
+  when (new.numero_registro is null)
+  execute function public.asignar_numero_informe();
+
+-- Se retira el default: la única fuente de numeración es el trigger, para que
+-- nunca compitan dos mecanismos y un UPDATE no pueda tocar el número.
+alter table informes_generales
+  alter column numero_registro drop default;
+
+-- Reset de la numeración en cada ejecución del schema:
+-- con is_called=false, el próximo nextval devuelve 1 → el próximo
+-- informe nuevo arranca en № 1.
+-- OJO: si ya existen informes con numero_registro asignado, los nuevos
+-- podrían chocar con el unique de numero_registro. Si querés numeración
+-- consecutiva limpia, vaciá la tabla antes (delete from informes_generales).
+select setval('public.numero_informe_seq', 1, false);
+
+-- Se retira el mecanismo anterior (tabla contador + trigger viejo)
 drop table if exists public.contador_informes;
 
 create or replace function public.rol_actual()
@@ -348,8 +420,8 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.perfiles (id, rol)
-  values (new.id, 'tecnico')
+  insert into public.perfiles (id, rol, email)
+  values (new.id, 'tecnico', new.email)
   on conflict (id) do nothing;
   return new;
 end;

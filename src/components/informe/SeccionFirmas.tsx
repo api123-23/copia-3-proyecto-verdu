@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import SignaturePad from "signature_pad";
@@ -18,6 +20,12 @@ function ModalFirma({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const padRef = useRef<SignaturePad | null>(null);
   const [puedeConfirmar, setPuedeConfirmar] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onCerrar(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onCerrar]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -48,19 +56,19 @@ function ModalFirma({
 
   return (
     <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-margin">
-      <div className="bg-white rounded-lg w-full max-w-lg p-md space-y-md">
+      <div className="bg-white rounded-xl w-full max-w-lg p-md space-y-md">
         <h3 className="text-title-md font-title-md font-bold text-primary uppercase tracking-wider">
           {titulo}
         </h3>
         <canvas
           ref={canvasRef}
-          className="w-full h-64 bg-white rounded border border-outline-variant"
+          className="w-full h-64 bg-white rounded-lg border border-outline-variant"
           style={{ touchAction: "none" }}
         />
         <div className="flex items-center justify-between gap-sm">
           <button
             type="button"
-            className="text-[12px] text-on-surface-variant underline"
+            className="text-body-md text-on-surface-variant underline px-2 py-1 min-h-[44px]"
             onClick={() => {
               padRef.current?.clear();
               setPuedeConfirmar(false);
@@ -71,7 +79,7 @@ function ModalFirma({
           <div className="flex gap-sm">
             <button
               type="button"
-              className="border border-outline-variant rounded px-md py-1 text-[13px]"
+              className="border border-outline-variant rounded-lg px-md py-1.5 text-title-md"
               onClick={onCerrar}
             >
               Cancelar
@@ -79,7 +87,7 @@ function ModalFirma({
             <button
               type="button"
               disabled={!puedeConfirmar}
-              className="bg-primary text-on-primary rounded px-md py-1 text-[13px] font-bold uppercase tracking-wider hover:bg-primary-container transition-colors disabled:opacity-40"
+              className="bg-primary text-on-primary rounded-lg px-md py-1.5 text-title-md font-bold uppercase tracking-wider hover:bg-primary-container transition-colors disabled:opacity-40"
               onClick={confirmar}
             >
               Confirmar
@@ -123,10 +131,11 @@ function BloqueFirma({
     supabase().storage
       .from("informe-archivos")
       .createSignedUrl(existente.url, 3600)
-      .then(({ data }) => {
+      .then(({ data, error }) => {
         if (!cancelado && data?.signedUrl) setRemoteUrl(data.signedUrl);
+        if (!cancelado && error) console.warn("[firmas] Error signed URL:", error.message);
       })
-      .catch(() => {});
+      .catch((e) => console.warn("[firmas] Error fetching signed URL:", e));
     return () => { cancelado = true; };
   }, [registro, remoteUrl, existente?.url]);
 
@@ -165,13 +174,13 @@ function BloqueFirma({
   }
 
   async function limpiar() {
-    if (existente) {
-      await db.transaction("rw", [db.archivos, db.blobs], async () => {
-        await db.archivos.delete(existente.id);
-        await db.blobs.delete(existente.id);
-      });
-      onEliminar?.();
-    }
+    if (!existente) return;
+    if (!window.confirm("¿Eliminar esta firma?")) return;
+    await db.transaction("rw", [db.archivos, db.blobs], async () => {
+      await db.archivos.delete(existente.id);
+      await db.blobs.delete(existente.id);
+    });
+    onEliminar?.();
   }
 
   return (
@@ -186,7 +195,11 @@ function BloqueFirma({
             alt={titulo}
             className="h-20 flex-1 object-contain bg-white rounded border border-outline-variant"
           />
-          <button type="button" className="text-[11px] text-on-surface-variant underline" onClick={limpiar}>
+          <button
+            type="button"
+            className="text-body-md text-on-surface-variant underline px-2 py-1 min-h-[44px]"
+            onClick={limpiar}
+          >
             Rehacer
           </button>
         </div>
@@ -194,7 +207,7 @@ function BloqueFirma({
         <button
           type="button"
           onClick={() => setAbierto(true)}
-          className="w-full h-20 bg-white rounded border border-dashed border-outline-variant flex items-center justify-center text-on-surface-variant opacity-70"
+          className="w-full h-20 bg-white rounded border border-dashed border-outline-variant flex items-center justify-center text-on-surface-variant opacity-70 min-h-[44px]"
         >
           Tocar para firmar
         </button>

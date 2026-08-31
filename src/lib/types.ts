@@ -26,6 +26,8 @@ export type OptimoBajoAlto = "optimo" | "bajo" | "alto" | null;
 
 export type OkBajoAlto = "ok" | "bajo" | "alto" | null;
 
+export type OkNo = "ok" | "no" | null;
+
 export type BajaAlta = "ok" | "baja" | "alta" | null;
 
 export type FotoEstado = "ok" | "si" | "no" | null;
@@ -100,13 +102,13 @@ export interface ValoresBase {
   temp_refrigerante: number | null;
   presion_unidad_comp: number | null;
   presion_aceite_motor: Nivel;
-  circuito_refr_m: SiNo;
+  circuito_refr_m: OkMal;
   circuito_despresuriz: SiNo;
-  circuito_arranque: SiNo;
-  circuito_seguridad: SiNo;
-  circuito_electr: SiNo;
-  tiempo_y_delta: string | null;
-  diferencial: string | null;
+  circuito_arranque: OkMal;
+  circuito_seguridad: OkMal;
+  circuito_electr: OkMal;
+  tiempo_y_delta: OkBajoAlto;
+  diferencial: OkNo;
   perdida_aceite_motor: SiNo;
   perdida_refrigerante: SiNo;
   perdida_aire: SiNo;

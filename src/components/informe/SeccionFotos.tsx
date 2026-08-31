@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -25,6 +27,12 @@ function Lightbox({
   nombre: string;
   onCerrar: () => void;
 }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onCerrar(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onCerrar]);
+
   return createPortal(
     <div
       className="fixed inset-0 z-[70] bg-black/80 flex flex-col items-center justify-center p-margin"
@@ -40,13 +48,13 @@ function Lightbox({
         <a
           href={url}
           download={nombre}
-          className="bg-primary text-on-primary rounded px-md py-1 text-[13px] font-bold uppercase tracking-wider"
+          className="bg-primary text-on-primary rounded-lg px-md py-1.5 text-title-md font-bold uppercase tracking-wider"
         >
           Descargar
         </a>
         <button
           type="button"
-          className="border border-outline-variant rounded px-md py-1 text-[13px] text-white"
+          className="border border-outline-variant rounded-lg px-md py-1.5 text-title-md text-white"
           onClick={onCerrar}
         >
           Cerrar
@@ -67,10 +75,11 @@ function FotoItem({ archivo, cerrado }: { archivo: ArchivoLocal; cerrado: boolea
     supabase().storage
       .from("informe-archivos")
       .createSignedUrl(archivo.url, 3600)
-      .then(({ data }) => {
+      .then(({ data, error }) => {
         if (!cancelado && data?.signedUrl) setRemoteUrl(data.signedUrl);
+        if (!cancelado && error) console.warn("[fotos] Error signed URL:", error.message);
       })
-      .catch(() => {});
+      .catch((e) => console.warn("[fotos] Error fetching signed URL:", e));
     return () => { cancelado = true; };
   }, [registro, remoteUrl, archivo.url]);
 
@@ -101,13 +110,16 @@ function FotoItem({ archivo, cerrado }: { archivo: ArchivoLocal; cerrado: boolea
       {!cerrado ? (
         <button
           type="button"
-          className="absolute top-0 right-0 bg-error text-on-error rounded-full w-5 h-5 flex items-center justify-center"
-          onClick={() =>
-            db.transaction("rw", [db.archivos, db.blobs], async () => {
-              await db.archivos.delete(archivo.id);
-              await db.blobs.delete(archivo.id);
-            })
-          }
+          className="absolute -top-1 -right-1 bg-error text-on-error rounded-full w-7 h-7 min-w-[28px] min-h-[28px] flex items-center justify-center shadow-sm hover:scale-110 active:scale-95 transition-all"
+          onClick={() => {
+            if (window.confirm("¿Eliminar esta foto?")) {
+              db.transaction("rw", [db.archivos, db.blobs], async () => {
+                await db.archivos.delete(archivo.id);
+                await db.blobs.delete(archivo.id);
+              });
+            }
+          }}
+          aria-label="Eliminar foto"
         >
           <Icono nombre="close" className="w-[14px] h-[14px]" />
         </button>
@@ -190,6 +202,7 @@ export default function SeccionFotos({
             ref={inputRef}
             type="file"
             accept="image/*"
+            capture="environment"
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];

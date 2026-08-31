@@ -19,9 +19,11 @@ import { intentarSync } from "@/lib/sync";
 import { Icono } from "@/components/Icono";
 import { traerInformeRemoto } from "@/lib/remoto";
 import { navegar } from "@/lib/hashRuta";
+import { gemini } from "@/lib/gemini";
 import type { InformeGeneral, InformeGrupoElectrogeno, ValoresBase } from "@/lib/types";
-import { Divisor } from "@/components/ui";
+import { Divisor, Toast } from "@/components/ui";
 import { LogoTipo } from "@/components/LogoTipo";
+import { PantallaCarga } from "@/components/PantallaCarga";
 import {
   SeccionCliente,
   SeccionTrabajos,
@@ -41,6 +43,10 @@ export function EditorInforme({ id }: { id: string }) {
   const [valoresGE, setValoresGE] = useState<InformeGrupoElectrogeno>(valoresVaciosGE());
   const [fallo, setFallo] = useState(false);
   const [intento, setIntento] = useState(0);
+  const [enviando, setEnviando] = useState(false);
+  const [generandoInforme, setGenerandoInforme] = useState(false);
+  const [redactandoIA, setRedactandoIA] = useState(false);
+  const [toast, setToast] = useState<{ mensaje: string; tipo: "exito" | "error" | "info" } | null>(null);
   const sucioRef = useRef(false);
   const estadoRef = useRef<{
     informe: InformeGeneral | null;
@@ -123,6 +129,7 @@ export function EditorInforme({ id }: { id: string }) {
   }
 
   async function enviar() {
+    if (enviando) return;
     const { informe: inf, valores: val, valoresGE: ge } = estadoRef.current;
     if (!inf) return;
     const faltantes: string[] = [];
@@ -144,28 +151,89 @@ export function EditorInforme({ id }: { id: string }) {
     const fotos = await db.archivos.where({ informe_id: inf.id, tipo: "foto" }).count();
     if (fotos === 0) faltantes.push("Registro Fotográfico (mínimo 1 foto)");
     if (faltantes.length > 0) {
-      alert(`Completá los campos obligatorios:\n- ${faltantes.join("\n- ")}`);
+      setToast({ mensaje: `Faltan: ${faltantes.slice(0, 3).join(", ")}...`, tipo: "error" });
       return;
     }
-    const cerrado = inf.estado_firma === "firmado";
-    const yaSincronizado = inf.estado_sync === "sincronizado";
-    const archivosPendientes = await db.archivos
-      .where("informe_id")
-      .equals(inf.id)
-      .filter((a) => a.estado_sync !== "sincronizado")
-      .count();
-    const hayCambios = sucioRef.current || archivosPendientes > 0;
-    const resincronizar = !yaSincronizado || hayCambios;
-    const guardado = {
-      ...inf,
-      estado_sync: resincronizar ? ("pendiente" as const) : ("sincronizado" as const),
-      cerrado: inf.cerrado || cerrado,
-    };
-    estadoRef.current.informe = guardado;
-    setInforme(guardado);
-    await guardarBorrador(guardado, val, inf.tipo_equipo === "grupo_electrogeno" ? ge : undefined);
-    if (resincronizar) intentarSync();
-    navegar("#/");
+    setEnviando(true);
+    try {
+      const cerrado = inf.estado_firma === "firmado";
+      const yaSincronizado = inf.estado_sync === "sincronizado";
+      const archivosPendientes = await db.archivos
+        .where("informe_id")
+        .equals(inf.id)
+        .filter((a) => a.estado_sync !== "sincronizado")
+        .count();
+      const hayCambios = sucioRef.current || archivosPendientes > 0;
+      const resincronizar = !yaSincronizado || hayCambios;
+      const guardado = {
+        ...inf,
+        estado_sync: resincronizar ? ("pendiente" as const) : ("sincronizado" as const),
+        cerrado: inf.cerrado || cerrado,
+      };
+      estadoRef.current.informe = guardado;
+      setInforme(guardado);
+      await guardarBorrador(guardado, val, inf.tipo_equipo === "grupo_electrogeno" ? ge : undefined);
+      if (resincronizar) intentarSync();
+      setToast({ mensaje: "Informe guardado. Sincronizando...", tipo: "exito" });
+      setTimeout(() => navegar("#/"), 700);
+    } catch {
+      setToast({ mensaje: "No se pudo guardar el informe. Reintentá.", tipo: "error" });
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  async function generarInforme() {
+    const inf = estadoRef.current.informe;
+    if (!inf || generandoInforme) return;
+    const fuente =
+      inf.observaciones?.trim() ||
+      `Cliente: ${inf.cliente_nombre} | Equipo: ${inf.tipo_equipo} | Dirección: ${inf.cliente_direccion ?? ""}`;
+    setGenerandoInforme(true);
+    try {
+      const texto = await gemini(
+        `Sos un redactor técnico de informes de mantenimiento de equipos. A partir de estos datos, redactá las observaciones y los trabajos realizados de forma corta, simple, formal y descriptiva. No inventes datos que no estén indicados. Escribí en primera persona, en español, sin títulos ni markdown:\n\n${fuente}`
+      );
+      patchInforme({
+        observaciones: texto.trim(),
+        observaciones_ia: "Generado con IA (revisar antes de enviar).",
+      });
+      setToast({ mensaje: "Informe generado con IA.", tipo: "exito" });
+    } catch (e) {
+      setToast({
+        mensaje: e instanceof Error ? e.message : "No se pudo generar con IA.",
+        tipo: "error",
+      });
+    } finally {
+      setGenerandoInforme(false);
+    }
+  }
+
+  async function redactarConIA() {
+    const inf = estadoRef.current.informe;
+    if (!inf || redactandoIA) return;
+    const fuente = inf.cotizacion_notas?.trim();
+    if (!fuente) {
+      setToast({ mensaje: "Escribí qué se debe cotizar primero.", tipo: "info" });
+      return;
+    }
+    setRedactandoIA(true);
+    try {
+      const texto = await gemini(
+        `Sos un asistente de cotizaciones técnicas. A partir de este detalle, organizá los ítems a cotizar de manera clara y concisa, respetando exactamente lo indicado sin inventar nada. Usá bullets simples en español, sin precios:\n\n${fuente}`
+      );
+      patchInforme({
+        cotizacion_notas_ia: texto.trim(),
+      });
+      setToast({ mensaje: "Cotización redactada con IA.", tipo: "exito" });
+    } catch (e) {
+      setToast({
+        mensaje: e instanceof Error ? e.message : "No se pudo redactar con IA.",
+        tipo: "error",
+      });
+    } finally {
+      setRedactandoIA(false);
+    }
   }
 
   if (fallo) {
@@ -194,7 +262,7 @@ export function EditorInforme({ id }: { id: string }) {
   }
 
   if (!informe) {
-    return <p className="p-margin text-on-surface-variant">Cargando informe...</p>;
+    return <PantallaCarga mensaje="Cargando informe..." />;
   }
 
   const fecha = new Date(informe.fecha_hora).toLocaleDateString("es-AR", {
@@ -233,11 +301,16 @@ export function EditorInforme({ id }: { id: string }) {
         </div>
         <button
           type="button"
-          className="flex items-center gap-1 text-label-caps font-label-caps font-bold tracking-wider hover:bg-primary-container active:scale-95 transition-all px-3 py-1.5 rounded"
+          disabled={enviando}
+          className="flex items-center gap-1 text-label-caps font-label-caps font-bold tracking-wider hover:bg-primary-container active:scale-95 transition-all px-3 py-1.5 rounded disabled:opacity-60"
           onClick={enviar}
         >
-          ENVIAR
-          <Icono nombre="send" className="w-[16px] h-[16px]" />
+          {enviando ? (
+            <span className="w-4 h-4 rounded-full border-2 border-on-primary border-t-transparent animate-spin" />
+          ) : (
+            <Icono nombre="send" className="w-[16px] h-[16px]" />
+          )}
+          {enviando ? "ENVIANDO" : "ENVIAR"}
         </button>
       </header>
       <main className="max-w-7xl mx-auto md:px-margin">
@@ -255,7 +328,12 @@ export function EditorInforme({ id }: { id: string }) {
         <fieldset disabled={informe.cerrado} className="m-0 min-w-0 border-0 p-0">
           <SeccionCliente informe={informe} onChange={patchInforme} />
           <Divisor />
-          <SeccionTrabajos informe={informe} onChange={patchInforme} />
+          <SeccionTrabajos
+            informe={informe}
+            onChange={patchInforme}
+            onGenerarInforme={generarInforme}
+            generandoInforme={generandoInforme}
+          />
           <SeccionValores
             tipo={informe.tipo_equipo}
             valores={valores}
@@ -270,13 +348,25 @@ export function EditorInforme({ id }: { id: string }) {
           <Divisor />
           <SeccionRepuestos informe={informe} onChange={patchInforme} />
           <Divisor />
-          <SeccionCotizacion informe={informe} onChange={patchInforme} />
+          <SeccionCotizacion
+            informe={informe}
+            onChange={patchInforme}
+            onRedactarIA={redactarConIA}
+            redactandoIA={redactandoIA}
+          />
           <Divisor />
           <SeccionFotos informeId={informe.id} cerrado={informe.cerrado} />
           <Divisor />
           <SeccionFirmas informe={informe} onChange={patchInforme} />
         </fieldset>
       </main>
+      {toast ? (
+        <Toast
+          mensaje={toast.mensaje}
+          tipo={toast.tipo}
+          onCerrar={() => setToast(null)}
+        />
+      ) : null}
     </div>
   );
 }

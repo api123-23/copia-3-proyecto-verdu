@@ -2,7 +2,6 @@ import Dexie, { type Table } from "dexie";
 import type {
   ArchivoLocal,
   BlobArchivo,
-  Cliente,
   InformeCompresor,
   InformeGeneral,
   InformeGrupoElectrogeno,
@@ -12,7 +11,6 @@ import type {
 
 class AppDB extends Dexie {
   informes!: Table<InformeGeneral, string>;
-  clientes!: Table<Cliente, string>;
   valores_motocompresor!: Table<InformeMotocompresor, string>;
   valores_compresor!: Table<InformeCompresor, string>;
   valores_vehiculos!: Table<InformeVehiculos, string>;
@@ -25,7 +23,6 @@ class AppDB extends Dexie {
     this.version(1).stores({
       informes:
         "id, numero_registro, cliente_id, tecnico_id, tipo_equipo, estado_firma, estado_sync, fecha_hora",
-      clientes: "id, nombre",
       valores_motocompresor: "informe_id",
       valores_compresor: "informe_id",
       valores_vehiculos: "informe_id",
@@ -36,7 +33,6 @@ class AppDB extends Dexie {
       .stores({
         informes:
           "id, numero_registro, cliente_id, tecnico_id, tipo_equipo, estado_firma, estado_sync, fecha_hora",
-        clientes: "id, nombre",
         valores_motocompresor: "informe_id",
         valores_compresor: "informe_id",
         valores_vehiculos: "informe_id",
@@ -58,7 +54,6 @@ class AppDB extends Dexie {
     this.version(3).stores({
       informes:
         "id, numero_registro, cliente_id, tecnico_id, tipo_equipo, estado_firma, estado_sync, fecha_hora",
-      clientes: "id, nombre",
       valores_motocompresor: "informe_id",
       valores_compresor: "informe_id",
       valores_vehiculos: "informe_id",

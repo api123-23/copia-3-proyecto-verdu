@@ -1,3 +1,5 @@
+"use client";
+
 import type { InformeGrupoElectrogeno, TipoEquipo, ValoresBase } from "@/lib/types";
 import { aplica, valoresVaciosGE } from "@/lib/informes";
 import {
@@ -12,6 +14,7 @@ import {
   OPCIONES_OK_NO,
   OPCIONES_OPTIMO_BAJO_ALTO,
   OPCIONES_SI_NO,
+  Seccion,
   SubTitulo,
 } from "@/components/ui";
 
@@ -121,16 +124,9 @@ export default function SeccionValores({
   if (tipo === "grupo_electrogeno") {
     if (!onChangeGE) return null;
     return (
-      <section className="mb-lg bg-white shadow-sm border border-outline-variant mx-4 md:mx-0 rounded-lg overflow-hidden">
-        <div className="bg-primary-container text-on-primary py-1 px-md flex items-center justify-between mb-sm">
-          <h2 className="text-title-md font-title-md font-bold uppercase tracking-wider text-[13px]">
-            VALORES
-          </h2>
-        </div>
-        <div className="p-md space-y-md">
-          <SeccionValoresGE valoresGE={valoresGE ?? valoresVaciosGE()} onChangeGE={onChangeGE} />
-        </div>
-      </section>
+      <Seccion titulo="Valores">
+        <SeccionValoresGE valoresGE={valoresGE ?? valoresVaciosGE()} onChangeGE={onChangeGE} />
+      </Seccion>
     );
   }
 
@@ -168,14 +164,8 @@ export default function SeccionValores({
     aplica(tipo, "perdida_combustible");
 
   return (
-    <section className="mb-lg bg-white shadow-sm border border-outline-variant mx-4 md:mx-0 rounded-lg overflow-hidden">
-      <div className="bg-primary-container text-on-primary py-1 px-md flex items-center justify-between mb-sm">
-        <h2 className="text-title-md font-title-md font-bold uppercase tracking-wider text-[13px]">
-          VALORES
-        </h2>
-        <span className="required-badge">Obligatorio</span>
-      </div>
-      <div className="p-md space-y-md">
+    <Seccion titulo="Valores" badge="Obligatorio">
+      <div className="space-y-md">
         {bloqueDetenido ? (
           <div>
             <SubTitulo>Con Motor Detenido</SubTitulo>
@@ -324,6 +314,6 @@ export default function SeccionValores({
           </div>
         ) : null}
       </div>
-    </section>
+    </Seccion>
   );
 }

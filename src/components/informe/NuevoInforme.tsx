@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSesion } from "@/lib/useSesion";
 import { crearInforme } from "@/lib/informes";
 import { navegar } from "@/lib/hashRuta";
+import { PantallaCarga } from "@/components/PantallaCarga";
 import { EditorInforme } from "./EditorInforme";
 
 export function NuevoInforme() {
@@ -21,7 +22,7 @@ export function NuevoInforme() {
   }, [cargando, sesion]);
 
   if (!id) {
-    return <p className="p-margin text-on-surface-variant">Creando informe...</p>;
+    return <PantallaCarga mensaje="Creando informe..." />;
   }
 
   return <EditorInforme id={id} />;

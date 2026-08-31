@@ -125,11 +125,6 @@ export const OPCIONES_OK_NO = [
   { value: "no", label: "No" },
 ];
 
-export const OPCIONES_OPTIMO_BAJO = [
-  { value: "optimo", label: "Óptimo" },
-  { value: "bajo", label: "Bajo" },
-];
-
 export const OPCIONES_OPTIMO_BAJO_ALTO = [
   { value: "optimo", label: "Óptimo" },
   { value: "bajo", label: "Bajo" },
@@ -139,11 +134,6 @@ export const OPCIONES_OPTIMO_BAJO_ALTO = [
 export const OPCIONES_OK_BAJO = [
   { value: "ok", label: "Ok" },
   { value: "bajo", label: "Bajo" },
-];
-
-export const OPCIONES_OK_ALTO = [
-  { value: "ok", label: "Ok" },
-  { value: "alto", label: "Alto" },
 ];
 
 export const OPCIONES_BAJA_ALTA = [
@@ -185,31 +175,60 @@ export function CampoNumero({
   );
 }
 
-export function CampoTexto({
-  etiqueta,
-  valor,
-  onChange,
-  placeholder,
+export function Divisor() {
+  return <div className="divider" />;
+}
+
+export function BotonPrimario({
+  children,
+  onClick,
+  disabled,
+  cargando,
+  className = "",
 }: {
-  etiqueta: string;
-  valor: string | null;
-  onChange: (v: string | null) => void;
-  placeholder?: string;
+  children: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+  cargando?: boolean;
+  className?: string;
 }) {
   return (
-    <div>
-      <Label>{etiqueta}</Label>
-      <input
-        className="input-technical"
-        type="text"
-        placeholder={placeholder}
-        value={valor ?? ""}
-        onChange={(e) => onChange(e.target.value === "" ? null : e.target.value)}
-      />
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled || cargando}
+      className={`bg-primary text-on-primary rounded-lg px-md py-1.5 text-title-md font-title-md font-bold uppercase tracking-wider hover:bg-primary-container active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ${className}`}
+    >
+      {cargando ? (
+        <span className="w-4 h-4 rounded-full border-2 border-on-primary border-t-transparent animate-spin" />
+      ) : null}
+      {children}
+    </button>
   );
 }
 
-export function Divisor() {
-  return <div className="divider" />;
+export function Toast({
+  mensaje,
+  tipo = "exito",
+  onCerrar,
+}: {
+  mensaje: string;
+  tipo?: "exito" | "error" | "info";
+  onCerrar: () => void;
+}) {
+  const colores = {
+    exito: "bg-green-600 text-white",
+    error: "bg-error text-on-error",
+    info: "bg-primary text-on-primary",
+  };
+  return (
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[90] animate-[slideDown_0.3s_ease-out]">
+      <div className={`flex items-center gap-2 px-md py-2 rounded-lg shadow-lg ${colores[tipo]}`}>
+        <span className="text-body-md font-body-md">{mensaje}</span>
+        <button type="button" onClick={onCerrar} className="text-white/80 hover:text-white text-lg leading-none">
+          &times;
+        </button>
+      </div>
+    </div>
+  );
 }
