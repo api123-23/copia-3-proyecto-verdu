@@ -372,10 +372,13 @@ alter table informes_grupo_electrogeno add constraint informes_grupo_electrogeno
 -- vía la función siguiente_numero_informe(), y nunca se toca al editar/firmar.
 create sequence if not exists public.numero_informe_seq;
 
+-- NOTA: la RPC debe ser VOLATILE (no STABLE/IMMUTABLE). Si es STABLE, PostgREST
+-- la ejecuta en una transacción de SOLO LECTURA y nextval() fallaría con
+-- "cannot execute nextval() in a read-only transaction".
 create or replace function public.siguiente_numero_informe()
 returns bigint
 language sql
-stable
+volatile
 set search_path = public
 as $$
   select nextval('public.numero_informe_seq');
