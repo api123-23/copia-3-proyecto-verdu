@@ -18,6 +18,18 @@ const CATEGORIAS: { value: CategoriaFoto; label: string }[] = [
   { value: "falla", label: "Falla" },
 ];
 
+function generarId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  // Fallback para navegadores/iOS que no exponen crypto.randomUUID.
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 function Lightbox({
   url,
   nombre,
@@ -150,8 +162,16 @@ export default function SeccionFotos({
   async function onFile(file: File) {
     setSubiendo(true);
     try {
-      const blob = await comprimirImagenWebp(file);
-      const id = crypto.randomUUID();
+      let blob: Blob;
+      try {
+        blob = await comprimirImagenWebp(file);
+      } catch (e) {
+        // Si la compresión falla (p. ej. HEIC no decodificable), se usa el
+        // archivo original para no perder la foto.
+        console.warn("[fotos] Falló la compresión, se usa el original:", e);
+        blob = file;
+      }
+      const id = generarId();
       await db.transaction("rw", [db.archivos, db.blobs], async () => {
         await db.blobs.put({ id, blob });
         await db.archivos.put({
@@ -164,6 +184,8 @@ export default function SeccionFotos({
           creado_en: new Date().toISOString(),
         });
       });
+    } catch (e) {
+      console.error("[fotos] Error al guardar la foto:", e);
     } finally {
       setSubiendo(false);
       if (camaraRef.current) camaraRef.current.value = "";

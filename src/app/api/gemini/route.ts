@@ -2,11 +2,14 @@ import { NextResponse } from "next/server";
 
 // Modelos en orden: más barato/accesible primero. Se prueba en secuencia porque
 // algunos modelos pueden estar descontinuados o no habilitados para la API key
-// (p. ej. las keys gratuitas no siempre exponen todos los modelos).
+// (p. ej. las keys gratuitas solo exponen modelos Flash/Flash-Lite y los 2.x
+// están siendo retirados y pueden devolver 404).
 const MODELOS = [
+  "gemini-3.1-flash-lite",
+  "gemini-3-flash-preview",
+  "gemini-3.5-flash",
   "gemini-2.5-flash-lite",
   "gemini-2.5-flash",
-  "gemini-2.0-flash",
 ];
 
 // Health check: sirve para verificar en el deploy que el endpoint /api/gemini

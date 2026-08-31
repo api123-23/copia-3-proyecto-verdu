@@ -387,14 +387,20 @@ $$;
 grant execute on function public.siguiente_numero_informe() to authenticated;
 grant usage on sequence public.numero_informe_seq to authenticated;
 
--- Asegura que la secuencia continúa a partir del máximo existente
--- (idempotente: no baja el valor si ya se superó).
+-- Asegura que la secuencia continúa a partir del máximo existente, o arranca en
+-- 1 si la tabla está vacía (p. ej. recién creada).
+-- Si borraste todos los informes y querés reiniciar la numeración en 1, este
+-- bloque lo hace automáticamente cuando no quedan filas.
 do $$
+declare
+  maximo bigint;
 begin
-  perform setval('public.numero_informe_seq', greatest(
-    (select coalesce(max(numero_registro), 0)::bigint from public.informes_generales),
-    (select last_value from public.numero_informe_seq)
-  ), true);
+  select coalesce(max(numero_registro), 0)::bigint into maximo from public.informes_generales;
+  if maximo = 0 then
+    perform setval('public.numero_informe_seq', 1, false);
+  else
+    perform setval('public.numero_informe_seq', greatest(maximo, (select last_value from public.numero_informe_seq)), true);
+  end if;
 end $$;
 
 -- Se retiran el trigger y la función de la numeración automática anterior.
