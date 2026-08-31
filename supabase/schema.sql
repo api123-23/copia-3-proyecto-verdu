@@ -520,7 +520,7 @@ alter table informe_archivos enable row level security;
 
 drop policy if exists perfiles_select on perfiles;
 create policy perfiles_select on perfiles for select to authenticated
-  using (id = auth.uid() or public.es_admin());
+  using (true);
 drop policy if exists perfiles_insert_admin on perfiles;
 create policy perfiles_insert_admin on perfiles for insert to authenticated
   with check (public.es_admin());
