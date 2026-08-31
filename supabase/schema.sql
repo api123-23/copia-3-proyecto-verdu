@@ -2,12 +2,16 @@ create table if not exists perfiles (
   id uuid primary key references auth.users (id) on delete cascade,
   rol text not null default 'tecnico' check (rol in ('tecnico', 'admin')),
   email text,
+  nombre text,
+  apellido text,
   creado_en timestamptz not null default now()
 );
 
--- La columna email se agrega explícitamente por si la tabla ya existía
+-- Las columnas nuevas se agregan explícitamente por si la tabla ya existía
 -- (create table if not exists no modifica tablas preexistentes).
 alter table perfiles add column if not exists email text;
+alter table perfiles add column if not exists nombre text;
+alter table perfiles add column if not exists apellido text;
 
 -- (opcional) backfill email de perfiles existentes
 update perfiles p
@@ -60,7 +64,7 @@ create table if not exists informes_motocompresor (
   informe_id uuid primary key references informes_generales (id) on delete cascade,
   horometro numeric(10, 2),
   aceite_motor text check (aceite_motor in ('ok', 'alto', 'bajo')),
-  aceite_unidad text check (aceite_unidad in ('si', 'no')),
+  aceite_unidad text check (aceite_unidad in ('ok', 'alto', 'bajo')),
   refrig_radiador text check (refrig_radiador in ('ok', 'alto', 'bajo')),
   estado_bateria text check (estado_bateria in ('ok', 'mal')),
   conec_purga text check (conec_purga in ('si', 'no')),
@@ -270,6 +274,15 @@ alter table informes_compresor drop column if exists tension_linea_f1;
 alter table informes_compresor drop column if exists tension_linea_f2;
 alter table informes_compresor drop column if exists tension_linea_f3;
 
+-- MOTORCOMPRESOR: aceite unidad pasa a ok/bajo/alto (legacy si/no)
+select public.dropar_checks_de_columna('informes_motocompresor', 'aceite_unidad');
+update informes_motocompresor set aceite_unidad = case
+  when aceite_unidad = 'si' then 'ok'
+  when aceite_unidad = 'no' then 'bajo'
+  else aceite_unidad end;
+alter table informes_motocompresor add constraint informes_motocompresor_aceite_unidad_check
+  check (aceite_unidad in ('ok', 'bajo', 'alto'));
+
 -- COMPRESOR: aceite unidad pasa a ok/bajo/alto (legacy si/no)
 select public.dropar_checks_de_columna('informes_compresor', 'aceite_unidad');
 update informes_compresor set aceite_unidad = case
@@ -465,6 +478,12 @@ create policy perfiles_insert_admin on perfiles for insert to authenticated
 drop policy if exists perfiles_update_admin on perfiles;
 create policy perfiles_update_admin on perfiles for update to authenticated
   using (public.es_admin()) with check (public.es_admin());
+-- Cualquier usuario puede actualizar sus propios datos (nombre/apellido),
+-- pero NO puede cambiarse el rol.
+drop policy if exists perfiles_update_own on perfiles;
+create policy perfiles_update_own on perfiles for update to authenticated
+  using (id = auth.uid())
+  with check (id = auth.uid() and rol is not distinct from (select rol from perfiles where id = auth.uid()));
 
 drop policy if exists clientes_select on clientes;
 create policy clientes_select on clientes for select to authenticated using (true);

@@ -5,7 +5,14 @@ import { usePerfil } from "@/lib/usePerfil";
 import { LogoTipo } from "@/components/LogoTipo";
 import { Icono } from "@/components/Icono";
 
-type Usuario = { id: string; email: string | null; creado_en: string };
+type Usuario = {
+  id: string;
+  email: string | null;
+  rol: string;
+  nombre: string | null;
+  apellido: string | null;
+  creado_en: string;
+};
 
 export function PanelAdmin() {
   const { cargando, esAdmin } = usePerfil();
@@ -13,6 +20,8 @@ export function PanelAdmin() {
   const [cargandoLista, setCargandoLista] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [nombreNuevo, setNombreNuevo] = useState("");
+  const [apellidoNuevo, setApellidoNuevo] = useState("");
   const [rol, setRol] = useState<"tecnico" | "admin">("tecnico");
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
@@ -64,13 +73,15 @@ export function PanelAdmin() {
       const res = await fetch("/api/usuarios", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, rol }),
+        body: JSON.stringify({ email, password, rol, nombre: nombreNuevo, apellido: apellidoNuevo }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error ?? "No se pudo crear el usuario.");
       setOk(`Usuario creado: ${email}`);
       setEmail("");
       setPassword("");
+      setNombreNuevo("");
+      setApellidoNuevo("");
       void cargar();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al crear el usuario.");
@@ -134,6 +145,24 @@ export function PanelAdmin() {
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="new-password"
           />
+          <div className="grid grid-cols-2 gap-sm">
+            <input
+              className="input-technical w-full h-[36px]"
+              type="text"
+              placeholder="Nombre"
+              value={nombreNuevo}
+              onChange={(e) => setNombreNuevo(e.target.value)}
+              autoComplete="off"
+            />
+            <input
+              className="input-technical w-full h-[36px]"
+              type="text"
+              placeholder="Apellido"
+              value={apellidoNuevo}
+              onChange={(e) => setApellidoNuevo(e.target.value)}
+              autoComplete="off"
+            />
+          </div>
           <div className="flex items-center gap-sm">
             <span className="text-[13px] text-on-surface-variant">Rol:</span>
             <div className="dual-option w-48">
@@ -197,10 +226,18 @@ export function PanelAdmin() {
           <ul className="divide-y divide-outline-variant">
             {usuarios.map((u) => (
               <li key={u.id} className="py-2 flex items-center justify-between gap-sm">
-                <span className="text-body-md text-on-surface break-all">{u.email ?? "sin email"}</span>
-                <span className="text-[11px] text-on-surface-variant">
-                  {new Date(u.creado_en).toLocaleDateString("es-AR")}
-                </span>
+                <div className="min-w-0">
+                  <p className="text-body-md text-on-surface truncate">
+                    {u.nombre || u.apellido
+                      ? `${u.nombre ?? ""} ${u.apellido ?? ""}`.trim()
+                      : u.email ?? "sin email"}
+                  </p>
+                  <p className="text-[11px] text-on-surface-variant truncate">{u.email}</p>
+                  <p className="text-[11px] text-on-surface-variant">
+                    {u.rol === "admin" ? "Administrador" : "Técnico"} ·{" "}
+                    {new Date(u.creado_en).toLocaleDateString("es-AR")}
+                  </p>
+                </div>
               </li>
             ))}
           </ul>

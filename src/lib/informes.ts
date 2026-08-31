@@ -344,12 +344,14 @@ export function normalizarValores(
     ]) {
       if (ge[campo] === "mal") ge[campo] = "bajo";
     }
-  } else if (tipo === "compresor") {
+  } else if (tipo === "compresor" || tipo === "motocompresor") {
     if (valores.aceite_unidad === "si") valores.aceite_unidad = "ok";
     else if (valores.aceite_unidad === "no") valores.aceite_unidad = "bajo";
-    if (valores.tiempo_y_delta === "si") valores.tiempo_y_delta = "ok";
-    else if (valores.tiempo_y_delta === "no" || valores.tiempo_y_delta === "mal")
-      valores.tiempo_y_delta = "bajo";
+    if (tipo === "compresor") {
+      if (valores.tiempo_y_delta === "si") valores.tiempo_y_delta = "ok";
+      else if (valores.tiempo_y_delta === "no" || valores.tiempo_y_delta === "mal")
+        valores.tiempo_y_delta = "bajo";
+    }
   }
 }
 

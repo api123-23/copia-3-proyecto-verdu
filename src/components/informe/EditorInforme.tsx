@@ -149,7 +149,7 @@ export function EditorInforme({ id }: { id: string }) {
       }
     }
     const fotos = await db.archivos.where({ informe_id: inf.id, tipo: "foto" }).count();
-    if (fotos === 0) faltantes.push("Registro Fotográfico (mínimo 1 foto)");
+    if (fotos < 3) faltantes.push("Registro Fotográfico (mínimo 3 fotos)");
     if (faltantes.length > 0) {
       setToast({ mensaje: `Faltan: ${faltantes.slice(0, 3).join(", ")}...`, tipo: "error" });
       return;

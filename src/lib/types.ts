@@ -78,7 +78,7 @@ export interface InformeGeneral {
 export interface ValoresBase {
   horometro: number | null;
   aceite_motor: Nivel;
-  aceite_unidad: SiNo;
+  aceite_unidad: OkBajoAlto;
   refrig_radiador: Nivel;
   estado_bateria: OkMal;
   conec_purga: SiNo;

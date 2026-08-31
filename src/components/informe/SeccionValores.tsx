@@ -180,7 +180,7 @@ export default function SeccionValores({
                 <ItemSelect etiqueta="Aceite Motor" opciones={OPCIONES_NIVEL} valor={valores.aceite_motor} onChange={set("aceite_motor")} />
               ) : null}
               {aplica(tipo, "aceite_unidad") ? (
-                <ItemSelect etiqueta="Aceite Unidad" opciones={esCompresor ? OPCIONES_NIVEL : OPCIONES_SI_NO} valor={valores.aceite_unidad} onChange={set("aceite_unidad")} />
+                <ItemSelect etiqueta="Aceite Unidad" opciones={OPCIONES_NIVEL} valor={valores.aceite_unidad} onChange={set("aceite_unidad")} />
               ) : null}
               {aplica(tipo, "refrig_radiador") ? (
                 <ItemSelect etiqueta="Refrig. Rad." opciones={OPCIONES_NIVEL} valor={valores.refrig_radiador} onChange={set("refrig_radiador")} />

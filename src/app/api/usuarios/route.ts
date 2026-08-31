@@ -15,11 +15,24 @@ export async function GET() {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-  const usuarios = data.users.map((u) => ({
-    id: u.id,
-    email: u.email,
-    creado_en: u.created_at,
-  }));
+  const perfiles = await admin.from("perfiles").select("id, rol, email, nombre, apellido");
+  const perfilPorId = new Map<string, { rol: string; email: string | null; nombre: string | null; apellido: string | null }>();
+  if (!perfiles.error) {
+    for (const p of perfiles.data ?? []) {
+      perfilPorId.set(p.id, p);
+    }
+  }
+  const usuarios = data.users.map((u) => {
+    const per = perfilPorId.get(u.id);
+    return {
+      id: u.id,
+      email: per?.email ?? u.email ?? null,
+      rol: per?.rol ?? "tecnico",
+      nombre: per?.nombre ?? null,
+      apellido: per?.apellido ?? null,
+      creado_en: u.created_at,
+    };
+  });
   return NextResponse.json({ usuarios });
 }
 
@@ -33,7 +46,7 @@ export async function POST(req: Request) {
     );
   }
 
-  let body: { email?: string; password?: string; rol?: string };
+  let body: { email?: string; password?: string; rol?: string; nombre?: string; apellido?: string };
   try {
     body = await req.json();
   } catch {
@@ -43,6 +56,8 @@ export async function POST(req: Request) {
   const email = String(body.email ?? "").trim().toLowerCase();
   const password = String(body.password ?? "");
   const rol = body.rol === "admin" ? "admin" : "tecnico";
+  const nombre = String(body.nombre ?? "").trim() || null;
+  const apellido = String(body.apellido ?? "").trim() || null;
 
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return NextResponse.json({ error: "Email inválido." }, { status: 400 });
@@ -66,7 +81,7 @@ export async function POST(req: Request) {
   if (uid) {
     const { error: perfilError } = await admin
       .from("perfiles")
-      .upsert({ id: uid, rol, email });
+      .upsert({ id: uid, rol, email, nombre, apellido });
     if (perfilError) {
       console.error("[usuarios] error al asignar rol:", perfilError.message);
     }

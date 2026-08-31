@@ -140,7 +140,8 @@ export default function SeccionFotos({
 }) {
   const [categoria, setCategoria] = useState<CategoriaFoto>("inicial");
   const [subiendo, setSubiendo] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const camaraRef = useRef<HTMLInputElement>(null);
+  const galeriaRef = useRef<HTMLInputElement>(null);
   const fotos = useLiveQuery(
     () => db.archivos.where({ informe_id: informeId, tipo: "foto" }).toArray(),
     [informeId]
@@ -165,7 +166,8 @@ export default function SeccionFotos({
       });
     } finally {
       setSubiendo(false);
-      if (inputRef.current) inputRef.current.value = "";
+      if (camaraRef.current) camaraRef.current.value = "";
+      if (galeriaRef.current) galeriaRef.current.value = "";
     }
   }
 
@@ -187,22 +189,45 @@ export default function SeccionFotos({
               ))}
             </select>
           </div>
-          <button
-            type="button"
-            className="flex flex-col items-center justify-center w-full p-lg bg-surface-container-low border-2 border-dashed border-outline-variant rounded-xl hover:bg-surface-container-high transition-colors cursor-pointer group"
-            onClick={() => inputRef.current?.click()}
-            disabled={subiendo}
-          >
-            <Icono nombre="add_a_photo" className="w-[32px] h-[32px] text-primary mb-2" />
-            <span className="text-title-md font-bold text-primary uppercase tracking-wider">
-              {subiendo ? "Procesando..." : "Tomar o Subir Foto"}
-            </span>
-          </button>
+          <div className="grid grid-cols-2 gap-sm">
+            <button
+              type="button"
+              className="flex flex-col items-center justify-center p-lg bg-surface-container-low border-2 border-dashed border-outline-variant rounded-xl hover:bg-surface-container-high transition-colors cursor-pointer group"
+              onClick={() => camaraRef.current?.click()}
+              disabled={subiendo}
+            >
+              <Icono nombre="add_a_photo" className="w-[28px] h-[28px] text-primary mb-2" />
+              <span className="text-title-md font-bold text-primary uppercase tracking-wider text-center leading-tight">
+                {subiendo ? "Procesando..." : "Tomar Foto"}
+              </span>
+            </button>
+            <button
+              type="button"
+              className="flex flex-col items-center justify-center p-lg bg-surface-container-low border-2 border-dashed border-outline-variant rounded-xl hover:bg-surface-container-high transition-colors cursor-pointer group"
+              onClick={() => galeriaRef.current?.click()}
+              disabled={subiendo}
+            >
+              <Icono nombre="add_a_photo" className="w-[28px] h-[28px] text-primary mb-2" />
+              <span className="text-title-md font-bold text-primary uppercase tracking-wider text-center leading-tight">
+                {subiendo ? "Procesando..." : "De la Galería"}
+              </span>
+            </button>
+          </div>
           <input
-            ref={inputRef}
+            ref={camaraRef}
             type="file"
             accept="image/*"
             capture="environment"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void onFile(f);
+            }}
+          />
+          <input
+            ref={galeriaRef}
+            type="file"
+            accept="image/*"
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
@@ -216,6 +241,9 @@ export default function SeccionFotos({
               ))}
             </div>
           ) : null}
+          <p className="text-[12px] text-on-surface-variant text-center">
+            Mínimo 3 fotos ({fotos ? fotos.length : 0}/3)
+          </p>
         </div>
       </div>
     </Seccion>
