@@ -201,15 +201,25 @@ function Firmas({ archivos }: { archivos: ArchivoLocal[] }) {
 function Fotos({ archivos }: { archivos: ArchivoLocal[] }) {
   const fotos = archivos.filter((x) => x.tipo === "foto");
   if (fotos.length === 0) return null;
+  const paginas: ArchivoLocal[][] = [];
+  for (let i = 0; i < fotos.length; i += 6) paginas.push(fotos.slice(i, i + 6));
   return (
-    <section className="pdf-fotos">
-      <h2>Registro fotográfico</h2>
-      <div className="pdf-fotos-grid">
-        {fotos.map((foto, index) => (
-          <ArchivoVisual key={foto.id} archivo={foto} titulo={CATEGORIAS[foto.categoria ?? ""] || `Fotografía ${index + 1}`} />
-        ))}
-      </div>
-    </section>
+    <>
+      {paginas.map((pagina, paginaIndex) => (
+        <section key={paginaIndex} className={`pdf-fotos ${paginaIndex === 0 ? "pdf-fotos-primera" : ""}`}>
+          <h2>Registro fotográfico{paginaIndex > 0 ? " (continuación)" : ""}</h2>
+          <div className="pdf-fotos-grid">
+            {pagina.map((foto, index) => (
+              <ArchivoVisual
+                key={foto.id}
+                archivo={foto}
+                titulo={CATEGORIAS[foto.categoria ?? ""] || `Fotografía ${paginaIndex * 6 + index + 1}`}
+              />
+            ))}
+          </div>
+        </section>
+      ))}
+    </>
   );
 }
 
