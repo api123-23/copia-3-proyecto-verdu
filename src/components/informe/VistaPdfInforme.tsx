@@ -248,22 +248,24 @@ export function VistaPdfInforme({ id }: { id: string }) {
   return (
     <div className="pdf-shell">
       <div className="pdf-acciones no-print">
-        <a href={`#/informe/${encodeURIComponent(id)}`}>Volver al informe</a>
+        <a href="#/">Volver al listado</a>
         <button type="button" onClick={() => window.print()}>Imprimir</button>
       </div>
       <main className="pdf-hoja">
-        <Cabecera informe={informe} grupo={grupo} />
-        <DatosGenerales informe={informe} />
-        <Bloque titulo="Trabajos realizados / Observaciones">
-          <p className="pdf-parrafo">{texto(informe.observaciones)}</p>
-        </Bloque>
-        {tieneValores ? (
-          <Bloque titulo={grupo ? "Verificaciones" : "Valores funcionales"}>
-            {grupo ? <TablaGE valores={valoresGE} /> : <TablaValores valores={valores} tipo={informe.tipo_equipo} />}
+        <div className="pdf-contenido-principal">
+          <Cabecera informe={informe} grupo={grupo} />
+          <DatosGenerales informe={informe} />
+          <Bloque titulo="Trabajos realizados / Observaciones">
+            <p className="pdf-parrafo">{texto(informe.observaciones)}</p>
           </Bloque>
-        ) : null}
-        <Cierre informe={informe} />
-        <Firmas archivos={archivos} />
+          {tieneValores ? (
+            <Bloque titulo={grupo ? "Verificaciones" : "Valores funcionales"}>
+              {grupo ? <TablaGE valores={valoresGE} /> : <TablaValores valores={valores} tipo={informe.tipo_equipo} />}
+            </Bloque>
+          ) : null}
+          <Cierre informe={informe} />
+          <Firmas archivos={archivos} />
+        </div>
         <Fotos archivos={archivos} />
       </main>
     </div>
