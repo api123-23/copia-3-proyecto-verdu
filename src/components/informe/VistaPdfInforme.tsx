@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
@@ -108,23 +108,11 @@ function TablaGE({ valores }: { valores: InformeGrupoElectrogeno }) {
   );
 }
 
-function ArchivoVisual({ archivo, titulo }: { archivo: ArchivoLocal; titulo: string }) {
-  const blob = useLiveQuery(() => db.blobs.get(archivo.id), [archivo.id]);
-  const [remota, setRemota] = useState<string | null>(null);
-  useEffect(() => {
-    if (blob || remota || !archivo.url) return;
-    let activo = true;
-    supabase().storage.from("informe-archivos").createSignedUrl(archivo.url, 3600).then(({ data }) => {
-      if (activo && data?.signedUrl) setRemota(data.signedUrl);
-    }).catch(() => undefined);
-    return () => { activo = false; };
-  }, [archivo.url, blob, remota]);
-  const url = useMemo(() => blob ? URL.createObjectURL(blob.blob) : remota, [blob, remota]);
-  useEffect(() => () => { if (blob && url) URL.revokeObjectURL(url); }, [blob, url]);
+function ArchivoVisual({ url, titulo }: { url: string | null; titulo: string }) {
   if (!url) return <div className="pdf-archivo-vacio">Imagen no disponible</div>;
   return (
     <figure className="pdf-foto">
-      <img src={url} alt={titulo} />
+      <img src={url} alt={titulo} data-pdf-image="true" />
       <figcaption>{titulo}</figcaption>
     </figure>
   );
@@ -183,14 +171,14 @@ function Cierre({ informe }: { informe: InformeGeneral }) {
   );
 }
 
-function Firmas({ archivos }: { archivos: ArchivoLocal[] }) {
+function Firmas({ archivos, urls }: { archivos: ArchivoLocal[]; urls: Record<string, string | null> }) {
   const tecnico = archivos.find((x) => x.tipo === "firma_tecnico");
   const cliente = archivos.find((x) => x.tipo === "firma_cliente");
   return (
     <Bloque titulo="Firmas" clase="pdf-firmas">
       <div className="pdf-firmas-grid">
-        <div><ArchivoVisual archivo={tecnico ?? { id: "firma-tecnico-vacia", informe_id: "", tipo: "firma_tecnico", categoria: null, url: null, estado_sync: "sincronizado", creado_en: "" }} titulo="Firma Técnico de Air Power S.A." /><span>Firma Técnico de AIR POWER S.A.</span></div>
-        <div><ArchivoVisual archivo={cliente ?? { id: "firma-cliente-vacia", informe_id: "", tipo: "firma_cliente", categoria: null, url: null, estado_sync: "sincronizado", creado_en: "" }} titulo="Firma del cliente" /><span>Firma del Cliente o su representante</span></div>
+        <div><ArchivoVisual url={tecnico ? urls[tecnico.id] ?? null : null} titulo="Firma Técnico de Air Power S.A." /><span>Firma Técnico de AIR POWER S.A.</span></div>
+        <div><ArchivoVisual url={cliente ? urls[cliente.id] ?? null : null} titulo="Firma del cliente" /><span>Firma del Cliente o su representante</span></div>
         <div className="pdf-aclaracion"><span>Aclaración de firma</span></div>
       </div>
       <p className="pdf-conformidad">Doy conformidad y certifico que el trabajo ha sido efectuado de acuerdo a lo detallado en este informe.</p>
@@ -198,7 +186,7 @@ function Firmas({ archivos }: { archivos: ArchivoLocal[] }) {
   );
 }
 
-function Fotos({ archivos }: { archivos: ArchivoLocal[] }) {
+function Fotos({ archivos, urls }: { archivos: ArchivoLocal[]; urls: Record<string, string | null> }) {
   const fotos = archivos.filter((x) => x.tipo === "foto");
   if (fotos.length === 0) return null;
   const paginas: ArchivoLocal[][] = [];
@@ -212,7 +200,7 @@ function Fotos({ archivos }: { archivos: ArchivoLocal[] }) {
             {pagina.map((foto, index) => (
               <ArchivoVisual
                 key={foto.id}
-                archivo={foto}
+                url={urls[foto.id] ?? null}
                 titulo={CATEGORIAS[foto.categoria ?? ""] || `Fotografía ${paginaIndex * 6 + index + 1}`}
               />
             ))}
@@ -228,7 +216,16 @@ export function VistaPdfInforme({ id }: { id: string }) {
   const [valores, setValores] = useState<ValoresBase | null>(null);
   const [valoresGE, setValoresGE] = useState<InformeGrupoElectrogeno>(valoresVaciosGE());
   const [fallo, setFallo] = useState(false);
+  const [precarga, setPrecarga] = useState<{
+    clave: string;
+    urls: Record<string, string | null>;
+    errores: string[];
+  } | null>(null);
   const archivos = useLiveQuery(() => db.archivos.where("informe_id").equals(id).toArray(), [id]);
+  const claveArchivos = archivos?.map((archivo) => `${archivo.id}:${archivo.url ?? ""}`).join("|") ?? null;
+  const cargandoArchivos = archivos === undefined || precarga?.clave !== claveArchivos;
+  const archivosPdf = precarga?.clave === claveArchivos ? precarga.urls : {};
+  const erroresArchivos = precarga?.clave === claveArchivos ? precarga.errores : [];
 
   useEffect(() => {
     let activo = true;
@@ -250,6 +247,66 @@ export function VistaPdfInforme({ id }: { id: string }) {
     return () => { activo = false; };
   }, [id]);
 
+  useEffect(() => {
+    if (!archivos) return;
+    const listaArchivos = archivos;
+    if (!claveArchivos) return;
+    const clave = claveArchivos;
+    let activo = true;
+    const urlsTemporales: string[] = [];
+
+    async function precargarArchivos() {
+      const resultado: Record<string, string | null> = {};
+      const errores: string[] = [];
+      for (const archivo of listaArchivos) {
+        let url: string | null = null;
+        const local = await db.blobs.get(archivo.id).catch(() => undefined);
+        if (local) {
+          url = URL.createObjectURL(local.blob);
+          urlsTemporales.push(url);
+        } else if (archivo.url) {
+          try {
+            const descargado = await supabase().storage.from("informe-archivos").download(archivo.url);
+            if (descargado.data) {
+              await db.blobs.put({ id: archivo.id, blob: descargado.data }).catch(() => undefined);
+              url = URL.createObjectURL(descargado.data);
+              urlsTemporales.push(url);
+            } else {
+              const firmado = await supabase().storage.from("informe-archivos").createSignedUrl(archivo.url, 3600);
+              url = firmado.data?.signedUrl ?? null;
+            }
+          } catch {
+            url = null;
+          }
+        }
+        if (!url && archivo.tipo === "foto") errores.push(archivo.id);
+        resultado[archivo.id] = url;
+      }
+      if (!activo) return;
+      setPrecarga({ clave, urls: resultado, errores });
+    }
+
+    void precargarArchivos();
+    return () => {
+      activo = false;
+      for (const url of urlsTemporales) URL.revokeObjectURL(url);
+    };
+  }, [archivos, claveArchivos]);
+
+  async function imprimir() {
+    if (cargandoArchivos || erroresArchivos.length > 0) return;
+    const imagenes = Array.from(document.querySelectorAll<HTMLImageElement>("[data-pdf-image='true']"));
+    await Promise.all(imagenes.map((imagen) => {
+      if (imagen.complete && imagen.naturalWidth > 0) return Promise.resolve();
+      return new Promise<void>((resolve) => {
+        imagen.addEventListener("load", () => resolve(), { once: true });
+        imagen.addEventListener("error", () => resolve(), { once: true });
+      });
+    }));
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    window.print();
+  }
+
   if (fallo) return <main className="pdf-error"><p>No se pudo cargar el informe.</p><a href="#/">Volver al listado</a></main>;
   if (!informe || !valores || !archivos) return <PantallaCarga mensaje="Preparando informe para imprimir..." />;
   const grupo = informe.tipo_equipo === "grupo_electrogeno";
@@ -259,8 +316,13 @@ export function VistaPdfInforme({ id }: { id: string }) {
     <div className="pdf-shell">
       <div className="pdf-acciones no-print">
         <a href="#/">Volver al listado</a>
-        <button type="button" onClick={() => window.print()}>Imprimir</button>
+        <button type="button" disabled={cargandoArchivos || erroresArchivos.length > 0} onClick={() => void imprimir()}>
+          {cargandoArchivos ? "Preparando imágenes..." : "Imprimir"}
+        </button>
       </div>
+      {!cargandoArchivos && erroresArchivos.length > 0 ? (
+        <p className="pdf-aviso-imagenes no-print">No se pudieron cargar todas las fotos. Revisá la conexión y reintentá.</p>
+      ) : null}
       <main className="pdf-hoja">
         <div className="pdf-contenido-principal">
           <Cabecera informe={informe} grupo={grupo} />
@@ -274,9 +336,9 @@ export function VistaPdfInforme({ id }: { id: string }) {
             </Bloque>
           ) : null}
           <Cierre informe={informe} />
-          <Firmas archivos={archivos} />
+          <Firmas archivos={archivos} urls={archivosPdf} />
         </div>
-        <Fotos archivos={archivos} />
+        <Fotos archivos={archivos} urls={archivosPdf} />
       </main>
     </div>
   );

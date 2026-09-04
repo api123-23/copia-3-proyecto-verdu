@@ -124,6 +124,23 @@
   color: white;
 }
 
+.pdf-acciones button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.pdf-aviso-imagenes {
+  max-width: 210mm;
+  margin: 0 auto 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #e0a100;
+  border-radius: 0.4rem;
+  background: #fff8dc;
+  color: #765500;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
 .pdf-hoja {
   box-sizing: border-box;
   width: 210mm;
