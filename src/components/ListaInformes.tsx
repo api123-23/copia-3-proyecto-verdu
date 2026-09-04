@@ -41,6 +41,7 @@ export function ListaInformes() {
   const [remotos, setRemotos] = useState<InformeGeneral[]>([]);
   const [online, setOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
   const [actualizando, setActualizando] = useState(false);
+  const [cargandoTecnicos, setCargandoTecnicos] = useState(true);
 
   const [esPc, setEsPc] = useState(false);
   const [tecnicos, setTecnicos] = useState<Tecnico[]>([]);
@@ -65,69 +66,80 @@ export function ListaInformes() {
     let activo = true;
     (async () => {
       try {
-        const [{ data: c }] = await Promise.all([
-          supabase()
-            .from("clientes")
-            .select("id, nombre")
-            .order("nombre", { ascending: true }),
-        ]);
+        const { data: c } = await supabase()
+          .from("clientes")
+          .select("id, nombre")
+          .order("nombre", { ascending: true });
         if (!activo) return;
         if (c) setClientes((c ?? []) as ClienteL[]);
       } catch {
         /* ignorar */
       }
-
-      const porId = new Map<string, Tecnico>();
-
-      try {
-        const { data: ses } = await supabase().auth.getSession();
-        const token = ses?.session?.access_token;
-        const res = await fetch("/api/tecnicos", {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        if (res.ok) {
-          const body = (await res.json()) as { tecnicos?: { id: string; nombre: string | null; apellido: string | null }[] };
-          for (const t of body.tecnicos ?? []) {
-            porId.set(t.id, { id: t.id, nombre: t.nombre, apellido: t.apellido, rol: "tecnico" });
-          }
-        }
-      } catch (e) {
-        console.warn("[lista] no se pudo listar técnicos por API:", e);
-      }
-
-      if (porId.size === 0) {
-        try {
-          const { data } = await supabase()
-            .from("perfiles")
-            .select("id, nombre, apellido, rol");
-          for (const t of (data ?? []) as Tecnico[]) porId.set(t.id, t);
-        } catch {
-          /* ignorar */
-        }
-      }
-
-      try {
-        const { data: filas } = await supabase()
-          .from("informes_generales")
-          .select("tecnico_id")
-          .not("tecnico_id", "is", null);
-        for (const f of filas ?? []) {
-          const id = (f as { tecnico_id: string }).tecnico_id;
-          if (id && !porId.has(id)) {
-            porId.set(id, { id, nombre: null, apellido: null, rol: "tecnico" });
-          }
-        }
-      } catch {
-        /* ignorar */
-      }
-
-      if (!activo) return;
-      setTecnicos([...porId.values()]);
     })();
     return () => {
       activo = false;
     };
   }, [online, remotos]);
+
+  useEffect(() => {
+    if (!online) return;
+    let activo = true;
+    (async () => {
+      try {
+        const porId = new Map<string, Tecnico>();
+
+        try {
+          const { data: ses } = await supabase().auth.getSession();
+          const token = ses?.session?.access_token;
+          const res = await fetch("/api/tecnicos", {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          });
+          if (res.ok) {
+            const body = (await res.json()) as { tecnicos?: { id: string; nombre: string | null; apellido: string | null }[] };
+            for (const t of body.tecnicos ?? []) {
+              porId.set(t.id, { id: t.id, nombre: t.nombre, apellido: t.apellido, rol: "tecnico" });
+            }
+          }
+        } catch (e) {
+          console.warn("[lista] no se pudo listar técnicos por API:", e);
+        }
+
+        if (porId.size === 0) {
+          try {
+            const { data } = await supabase()
+              .from("perfiles")
+              .select("id, nombre, apellido, rol");
+            for (const t of (data ?? []) as Tecnico[]) porId.set(t.id, t);
+          } catch {
+            /* ignorar */
+          }
+        }
+
+        try {
+          const { data: filas } = await supabase()
+            .from("informes_generales")
+            .select("tecnico_id")
+            .not("tecnico_id", "is", null);
+          for (const f of filas ?? []) {
+            const id = (f as { tecnico_id: string }).tecnico_id;
+            if (id && !porId.has(id)) {
+              porId.set(id, { id, nombre: null, apellido: null, rol: "tecnico" });
+            }
+          }
+        } catch {
+          /* ignorar */
+        }
+
+        if (!activo) return;
+        setTecnicos([...porId.values()]);
+      } finally {
+        if (activo) setCargandoTecnicos(false);
+      }
+    })();
+    return () => {
+      activo = false;
+    };
+  }, [online]);
 
   async function actualizar() {
     if (actualizando) return;
@@ -197,7 +209,7 @@ export function ListaInformes() {
     };
   }, [cargando, sesion, online]);
 
-  if (cargando || !locales)
+  if (cargando || !locales || (online && cargandoTecnicos))
     return <PantallaCarga mensaje="Cargando informes..." />;
 
   const pendientesLocales = locales.filter((l) => l.estado_sync !== "sincronizado");
