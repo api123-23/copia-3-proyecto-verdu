@@ -466,8 +466,9 @@ export function ListaInformes() {
               <th className="px-3 py-2 font-bold">Cliente</th>
               <th className="px-3 py-2 font-bold">Técnico</th>
               <th className="px-3 py-2 font-bold">Equipo</th>
-              <th className="px-3 py-2 font-bold">Firma</th>
-              <th className="px-3 py-2 font-bold">Sync</th>
+               <th className="px-3 py-2 font-bold">Firma</th>
+               <th className="px-3 py-2 font-bold">Sync</th>
+               <th className="px-3 py-2 font-bold text-right">PDF</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-outline-variant">
@@ -490,7 +491,7 @@ export function ListaInformes() {
                     {nombreTecnico(inf.tecnico_id)}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">{tipo}</td>
-                  <td className="px-3 py-2 whitespace-nowrap">
+                   <td className="px-3 py-2 whitespace-nowrap">
                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase ${estadoFirmaClase(inf)}`}>
                       {inf.estado_firma === "firmado" ? "Firmado" : "Sin firma"}
                     </span>
@@ -502,8 +503,17 @@ export function ListaInformes() {
                       </span>
                     ) : (
                       <span className="text-[10px] text-on-surface-variant">—</span>
-                    )}
-                  </td>
+                     )}
+                   </td>
+                   <td className="px-3 py-2 text-right">
+                     <a
+                       href={`#/informe/${encodeURIComponent(inf.id)}/pdf`}
+                       onClick={(e) => e.stopPropagation()}
+                       className="inline-flex items-center rounded border border-primary px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-primary hover:bg-primary hover:text-white active:scale-95 transition-all"
+                     >
+                       PDF
+                     </a>
+                   </td>
                 </tr>
               );
             })}
@@ -519,10 +529,18 @@ export function ListaInformes() {
           const sync = esLocal ? BADGE_SYNC[inf.estado_sync] ?? BADGE_SYNC.pendiente : null;
           const fecha = formatoFecha(inf.fecha_hora);
           return (
-            <a
-              key={inf.id}
-              href={`#/informe/${encodeURIComponent(inf.id)}`}
-              className="block bg-white border border-outline-variant rounded-lg p-md shadow-sm hover:bg-surface-container-low hover:shadow-md active:scale-[0.99] transition-all"
+             <div
+               key={inf.id}
+               role="link"
+               tabIndex={0}
+               onClick={() => { window.location.hash = `#/informe/${encodeURIComponent(inf.id)}`; }}
+               onKeyDown={(e) => {
+                 if (e.key === "Enter" || e.key === " ") {
+                   e.preventDefault();
+                   window.location.hash = `#/informe/${encodeURIComponent(inf.id)}`;
+                 }
+               }}
+               className="block bg-white border border-outline-variant rounded-lg p-md shadow-sm hover:bg-surface-container-low hover:shadow-md active:scale-[0.99] transition-all"
             >
               <div className="flex justify-between items-center mb-xs">
                 <span className="text-title-md font-bold text-primary">
@@ -545,7 +563,7 @@ export function ListaInformes() {
                   </span>
                 ) : null}
               </div>
-              {esLocal && inf.estado_sync === "error" ? (
+               {esLocal && inf.estado_sync === "error" ? (
                 <div className="mt-xs">
                   {inf.error_sync ? (
                     <p className="text-[10px] text-error break-words">{inf.error_sync}</p>
@@ -562,8 +580,20 @@ export function ListaInformes() {
                     Reintentar sincronización
                   </button>
                 </div>
-              ) : null}
-            </a>
+               ) : null}
+               <div className="mt-sm flex justify-end">
+                 <button
+                    type="button"
+                    className="inline-flex items-center rounded border border-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-primary active:scale-95 transition-all"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.location.hash = `#/informe/${encodeURIComponent(inf.id)}/pdf`;
+                   }}
+                 >
+                   Ver PDF
+                 </button>
+               </div>
+              </div>
           );
         })}
       </div>

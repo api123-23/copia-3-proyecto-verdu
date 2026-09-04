@@ -88,3 +88,348 @@
     background-size: 1.2em 1.2em;
   }
 }
+
+.pdf-shell {
+  min-height: 100vh;
+  background: #e5e7eb;
+  padding: 1.5rem 1rem 3rem;
+  color: #17202a;
+}
+
+.pdf-acciones {
+  max-width: 210mm;
+  margin: 0 auto 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pdf-acciones a,
+.pdf-acciones button,
+.pdf-error a {
+  border: 1px solid #003e7a;
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.9rem;
+  background: white;
+  color: #003e7a;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pdf-acciones button {
+  background: #003e7a;
+  color: white;
+}
+
+.pdf-hoja {
+  box-sizing: border-box;
+  width: 210mm;
+  max-width: 100%;
+  min-height: 297mm;
+  margin: 0 auto;
+  padding: 12mm;
+  background: white;
+  box-shadow: 0 0.2rem 1rem rgb(0 0 0 / 15%);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 9pt;
+}
+
+.pdf-cabecera {
+  display: grid;
+  grid-template-columns: 1.1fr 1.7fr 0.65fr;
+  gap: 0.7rem;
+  align-items: center;
+  padding-bottom: 0.7rem;
+  border-bottom: 2px solid #174e81;
+}
+
+.pdf-marca {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #174e81;
+}
+
+.pdf-marca img {
+  width: 42px;
+  height: 42px;
+  border-radius: 0.35rem;
+  object-fit: cover;
+}
+
+.pdf-marca strong,
+.pdf-marca small {
+  display: block;
+}
+
+.pdf-marca strong {
+  font-size: 12pt;
+  letter-spacing: 0.06em;
+}
+
+.pdf-marca small {
+  font-size: 7pt;
+}
+
+.pdf-titulo {
+  text-align: center;
+  color: #174e81;
+}
+
+.pdf-titulo h1 {
+  margin: 0;
+  font-size: 14pt;
+  font-weight: 700;
+}
+
+.pdf-titulo p {
+  margin: 0.2rem 0 0;
+  font-size: 11pt;
+  font-weight: 700;
+}
+
+.pdf-fecha {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  border: 1px solid #7891aa;
+  padding: 0.4rem;
+  color: #174e81;
+  text-align: center;
+}
+
+.pdf-fecha span {
+  font-size: 7pt;
+  text-transform: uppercase;
+}
+
+.pdf-fecha strong {
+  font-size: 10pt;
+}
+
+.pdf-bloque {
+  margin-top: 0.7rem;
+  break-inside: avoid;
+}
+
+.pdf-bloque h2,
+.pdf-fotos h2 {
+  margin: 0;
+  padding: 0.3rem 0.45rem;
+  border: 1px solid #7891aa;
+  background: #edf3f8;
+  color: #174e81;
+  font-size: 9pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pdf-datos-grid,
+.pdf-tabla-valores {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-left: 1px solid #7891aa;
+  border-top: 1px solid #7891aa;
+}
+
+.pdf-fila {
+  min-height: 1.45rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.4rem;
+  border-right: 1px solid #7891aa;
+  border-bottom: 1px solid #7891aa;
+}
+
+.pdf-fila span {
+  color: #34495e;
+}
+
+.pdf-fila strong {
+  color: #17202a;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.pdf-parrafo {
+  min-height: 3.5rem;
+  margin: 0;
+  padding: 0.5rem;
+  border: 1px solid #7891aa;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.pdf-dos-columnas,
+.pdf-textos,
+.pdf-firmas-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.pdf-textos > div {
+  min-height: 2.8rem;
+  border: 1px solid #7891aa;
+  padding: 0.4rem;
+}
+
+.pdf-textos strong {
+  display: block;
+  color: #174e81;
+  font-size: 8pt;
+  text-transform: uppercase;
+}
+
+.pdf-textos p {
+  margin: 0.3rem 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.pdf-ge-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.pdf-ge-grid > div {
+  border: 1px solid #7891aa;
+}
+
+.pdf-ge-grid h3 {
+  margin: 0;
+  padding: 0.35rem;
+  background: #edf3f8;
+  border-bottom: 1px solid #7891aa;
+  color: #174e81;
+  font-size: 8pt;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.pdf-ge-grid .pdf-fila {
+  border-right: 0;
+}
+
+.pdf-firmas-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  padding-top: 1.5rem;
+}
+
+.pdf-firmas-grid > div {
+  min-height: 4.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  text-align: center;
+}
+
+.pdf-firmas-grid > div > span,
+.pdf-aclaracion span {
+  display: block;
+  padding-top: 0.35rem;
+  border-top: 1px dotted #34495e;
+  font-size: 7pt;
+}
+
+.pdf-firma-vacia,
+.pdf-archivo-vacio {
+  height: 3rem;
+}
+
+.pdf-firmas .pdf-foto,
+.pdf-firmas figure {
+  margin: 0;
+}
+
+.pdf-firmas figure img {
+  height: 3rem;
+}
+
+.pdf-firmas figcaption {
+  display: none;
+}
+
+.pdf-conformidad {
+  margin: 1rem 0 0;
+  text-align: center;
+  font-size: 7pt;
+  font-style: italic;
+}
+
+.pdf-fotos {
+  margin-top: 0;
+  padding-top: 1rem;
+  break-before: page;
+}
+
+.pdf-fotos-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  padding-top: 0.8rem;
+}
+
+.pdf-foto {
+  margin: 0;
+  break-inside: avoid;
+  text-align: center;
+}
+
+.pdf-foto img {
+  display: block;
+  width: 100%;
+  height: 85mm;
+  object-fit: contain;
+  border: 1px solid #7891aa;
+}
+
+.pdf-foto figcaption {
+  padding-top: 0.3rem;
+  color: #174e81;
+  font-size: 8pt;
+  font-weight: 700;
+}
+
+.pdf-error {
+  min-height: 100vh;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 1rem;
+}
+
+@media (max-width: 700px) {
+  .pdf-shell { padding: 0; }
+  .pdf-acciones { padding: 0.75rem; margin: 0; }
+  .pdf-hoja { min-height: 0; padding: 1rem; box-shadow: none; }
+  .pdf-cabecera { grid-template-columns: 1fr 1fr; }
+  .pdf-titulo { grid-column: 1 / -1; grid-row: 1; }
+  .pdf-marca { grid-row: 2; }
+  .pdf-fecha { grid-row: 2; }
+  .pdf-datos-grid,
+  .pdf-tabla-valores,
+  .pdf-dos-columnas,
+  .pdf-textos,
+  .pdf-ge-grid,
+  .pdf-fotos-grid { grid-template-columns: 1fr; }
+  .pdf-firmas-grid { grid-template-columns: 1fr; gap: 1.25rem; }
+  .pdf-firmas-grid > div { min-height: 4rem; }
+}
+
+@media print {
+  @page { size: A4 portrait; margin: 0; }
+  html, body { background: white !important; }
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .no-print { display: none !important; }
+  .pdf-shell { min-height: 0; padding: 0; background: white; }
+  .pdf-hoja { width: auto; max-width: none; min-height: 0; margin: 0; padding: 12mm; box-shadow: none; }
+}

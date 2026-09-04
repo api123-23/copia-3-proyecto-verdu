@@ -4,6 +4,7 @@ import { useSesion } from "@/lib/useSesion";
 import { useHash, parsearRuta } from "@/lib/hashRuta";
 import { ListaInformes } from "@/components/ListaInformes";
 import { EditorInforme } from "@/components/informe/EditorInforme";
+import { VistaPdfInforme } from "@/components/informe/VistaPdfInforme";
 import { NuevoInforme } from "@/components/informe/NuevoInforme";
 import { LogoTipo } from "@/components/LogoTipo";
 import { Icono } from "@/components/Icono";
@@ -33,6 +34,8 @@ export default function Home() {
         <NuevoInforme />
       ) : ruta.tipo === "informe" ? (
         <EditorInforme id={ruta.id} />
+      ) : ruta.tipo === "pdf" ? (
+        <VistaPdfInforme id={ruta.id} />
       ) : (
         <div
           className="pb-xl"

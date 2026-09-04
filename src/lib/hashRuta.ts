@@ -25,6 +25,7 @@ export type Ruta =
   | { tipo: "lista" }
   | { tipo: "nuevo" }
   | { tipo: "informe"; id: string }
+  | { tipo: "pdf"; id: string }
   | { tipo: "admin" }
   | { tipo: "clientes" };
 
@@ -33,6 +34,8 @@ export function parsearRuta(hash: string): Ruta {
   if (/^\/clientes\/?$/.test(h)) return { tipo: "clientes" };
   if (/^\/admin\/?$/.test(h)) return { tipo: "admin" };
   if (/^\/informe\/nuevo\/?$/.test(h)) return { tipo: "nuevo" };
+  const mPdf = h.match(/^\/informe\/(.+?)\/pdf\/?$/);
+  if (mPdf) return { tipo: "pdf", id: decodeURIComponent(mPdf[1]) };
   const mInforme = h.match(/^\/informe\/(.+?)\/?$/);
   if (mInforme) return { tipo: "informe", id: decodeURIComponent(mInforme[1]) };
   return { tipo: "lista" };
