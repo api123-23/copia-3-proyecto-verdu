@@ -248,7 +248,15 @@ export function ListaInformes() {
 
   if (informes.length === 0 && !tieneFiltros) {
     return (
-      <div className="mx-4 md:mx-0 p-xl bg-white border border-outline-variant rounded-lg text-center">
+      <div>
+        {!online ? (
+          <div className="mx-4 md:mx-0 mb-sm flex items-center gap-2 rounded-lg bg-yellow-100 border border-yellow-300 px-3 py-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse shrink-0" />
+            <p className="text-[13px] font-bold text-yellow-800">Offline</p>
+            <p className="text-[12px] text-yellow-700 truncate">Mostrando informes locales. Sin conexión a internet.</p>
+          </div>
+        ) : null}
+        <div className="mx-4 md:mx-0 p-xl bg-white border border-outline-variant rounded-lg text-center">
         <div className="flex items-center justify-center mb-md">
           <LogoTipo className="w-14 h-14 rounded-2xl opacity-90" />
         </div>
@@ -276,6 +284,7 @@ export function ListaInformes() {
             </button>
           ) : null}
         </div>
+      </div>
       </div>
     );
   }
@@ -371,6 +380,13 @@ export function ListaInformes() {
 
   return (
     <div className="mx-4 md:mx-0 space-y-sm">
+      {!online ? (
+        <div className="flex items-center gap-2 rounded-lg bg-yellow-100 border border-yellow-300 px-3 py-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse shrink-0" />
+          <p className="text-[13px] font-bold text-yellow-800">Offline</p>
+          <p className="text-[12px] text-yellow-700 truncate">Mostrando informes locales. Sin conexión a internet.</p>
+        </div>
+      ) : null}
       <div className="flex items-center justify-between">
         <p className="text-[12px] font-bold text-on-surface-variant hidden md:block">
           {informes.length} informe{informes.length === 1 ? "" : "s"}
@@ -393,12 +409,6 @@ export function ListaInformes() {
       </div>
 
       {panelFiltros}
-
-      {!online ? (
-        <p className="text-[12px] text-on-surface-variant px-1">
-          Sin conexión — mostrando informes locales pendientes.
-        </p>
-      ) : null}
 
       {informes.length === 0 && tieneFiltros ? (
         <div className="p-lg bg-white border border-outline-variant rounded-lg text-center">
