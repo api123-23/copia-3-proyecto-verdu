@@ -441,9 +441,10 @@
     justify-content: space-between;
     break-inside: avoid;
     page-break-inside: avoid;
-    transform: scale(0.94);
+    overflow: hidden;
+    transform: scale(0.8);
     transform-origin: top left;
-    width: 106.383%;
+    width: 125%;
   }
   .pdf-cabecera { gap: 0.35rem; padding-bottom: 0.35rem; }
   .pdf-marca img { width: 30px; height: 30px; }
