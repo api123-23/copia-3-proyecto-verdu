@@ -470,8 +470,29 @@
   .pdf-firmas figure img { height: 1.8rem; }
   .pdf-fotos { padding-top: 4mm; }
   .pdf-fotos-primera { break-before: auto; page-break-before: auto; }
-  .pdf-fotos-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4mm; padding-top: 0.5rem; }
-  .pdf-foto { break-inside: avoid; page-break-inside: avoid; margin: 0; }
-  .pdf-foto img { height: 72mm; }
+  .pdf-fotos {
+    box-sizing: border-box;
+    height: calc(297mm - 16mm);
+    overflow: hidden;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .pdf-fotos-grid {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 0;
+    padding-top: 0.5rem;
+  }
+  .pdf-foto {
+    box-sizing: border-box;
+    flex: 0 0 50%;
+    height: 78mm;
+    padding: 0 2mm 5mm;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin: 0;
+  }
+  .pdf-foto img { height: 68mm; }
   .pdf-foto figcaption { font-size: 7pt; }
 }
