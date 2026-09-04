@@ -65,45 +65,64 @@ export function ListaInformes() {
     let activo = true;
     (async () => {
       try {
-        const [p, c] = await Promise.all([
-          supabase()
-            .from("perfiles")
-            .select("id, nombre, apellido, rol")
-            .order("nombre", { ascending: true }),
+        const [{ data: c }] = await Promise.all([
           supabase()
             .from("clientes")
             .select("id, nombre")
             .order("nombre", { ascending: true }),
         ]);
         if (!activo) return;
-        const perfiles = (p.data ?? []) as Tecnico[];
-        if (p.error) {
-          console.warn("[lista] no se pudieron leer perfiles:", p.error.message);
+        if (c) setClientes((c ?? []) as ClienteL[]);
+      } catch {
+        /* ignorar */
+      }
+
+      const porId = new Map<string, Tecnico>();
+
+      try {
+        const { data: ses } = await supabase().auth.getSession();
+        const token = ses?.session?.access_token;
+        const res = await fetch("/api/tecnicos", {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (res.ok) {
+          const body = (await res.json()) as { tecnicos?: { id: string; nombre: string | null; apellido: string | null }[] };
+          for (const t of body.tecnicos ?? []) {
+            porId.set(t.id, { id: t.id, nombre: t.nombre, apellido: t.apellido, rol: "tecnico" });
+          }
         }
-        if (!c.error) setClientes((c.data ?? []) as ClienteL[]);
+      } catch (e) {
+        console.warn("[lista] no se pudo listar técnicos por API:", e);
+      }
 
-        const porId = new Map<string, Tecnico>();
-        for (const t of perfiles) porId.set(t.id, t);
+      if (porId.size === 0) {
+        try {
+          const { data } = await supabase()
+            .from("perfiles")
+            .select("id, nombre, apellido, rol");
+          for (const t of (data ?? []) as Tecnico[]) porId.set(t.id, t);
+        } catch {
+          /* ignorar */
+        }
+      }
 
-        const idsPerfil = new Set(perfiles.map((t) => t.id));
-
+      try {
         const { data: filas } = await supabase()
           .from("informes_generales")
           .select("tecnico_id")
           .not("tecnico_id", "is", null);
-        if (!activo) return;
-
         for (const f of filas ?? []) {
           const id = (f as { tecnico_id: string }).tecnico_id;
-          if (id && !idsPerfil.has(id)) {
+          if (id && !porId.has(id)) {
             porId.set(id, { id, nombre: null, apellido: null, rol: "tecnico" });
           }
         }
-
-        setTecnicos([...porId.values()]);
       } catch {
-        if (!activo) return;
+        /* ignorar */
       }
+
+      if (!activo) return;
+      setTecnicos([...porId.values()]);
     })();
     return () => {
       activo = false;
