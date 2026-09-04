@@ -13,7 +13,6 @@ type ClienteOpcion = {
   id: string;
   nombre: string;
   telefono: string | null;
-  direccion: string | null;
 };
 
 function SelectorCliente({
@@ -32,7 +31,7 @@ function SelectorCliente({
       try {
         const { data, error } = await supabase()
           .from("clientes")
-          .select("id, nombre, telefono, direccion")
+          .select("id, nombre, telefono")
           .order("nombre", { ascending: true });
         if (error) throw error;
         if (!activo) return;
@@ -56,7 +55,6 @@ function SelectorCliente({
       cliente_id: c.id,
       cliente_nombre: c.nombre,
       cliente_telefono: c.telefono,
-      cliente_direccion: c.direccion,
     });
   }
 
@@ -77,7 +75,7 @@ function SelectorCliente({
         ))}
       </select>
       <p className="text-[10px] text-on-surface-variant">
-        Al elegir un cliente se completan nombre, teléfono y ubicación automáticamente.
+        Al elegir un cliente se completan nombre y teléfono automáticamente. La ubicación se carga manual.
       </p>
     </div>
   );

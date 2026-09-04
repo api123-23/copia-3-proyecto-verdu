@@ -50,6 +50,7 @@ export function ListaInformes() {
   const [filtroFecha, setFiltroFecha] = useState("");
   const [filtroCliente, setFiltroCliente] = useState("");
   const [filtroTecnico, setFiltroTecnico] = useState("");
+  const [filtroEquipo, setFiltroEquipo] = useState("");
 
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 768px)");
@@ -205,7 +206,8 @@ export function ListaInformes() {
     filtroNumeroTrim ||
     filtroFecha ||
     filtroClienteTrim ||
-    filtroTecnico
+    filtroTecnico ||
+    filtroEquipo
   ) {
     informes = informes.filter((inf) => {
       if (filtroNumeroTrim) {
@@ -225,17 +227,21 @@ export function ListaInformes() {
       if (filtroTecnico) {
         if (inf.tecnico_id !== filtroTecnico) return false;
       }
+      if (filtroEquipo) {
+        if (inf.tipo_equipo !== filtroEquipo) return false;
+      }
       return true;
     });
   }
 
-  const tieneFiltros = !!(filtroNumeroTrim || filtroFecha || filtroClienteTrim || filtroTecnico);
+  const tieneFiltros = !!(filtroNumeroTrim || filtroFecha || filtroClienteTrim || filtroTecnico || filtroEquipo);
 
   function limpiarFiltros() {
     setFiltroNumero("");
     setFiltroFecha("");
     setFiltroCliente("");
     setFiltroTecnico("");
+    setFiltroEquipo("");
   }
 
   const filtroBarClass = "bg-surface-container-low/60 border border-outline-variant rounded-lg px-2 py-1.5 text-[13px] h-[32px] w-full focus:outline-none focus:ring-2 focus:ring-primary";
@@ -292,7 +298,7 @@ export function ListaInformes() {
             </button>
           ) : null}
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-2">
           <div>
             <label className="text-[11px] font-bold text-on-surface-variant block mb-0.5">Número</label>
             <input
@@ -340,6 +346,21 @@ export function ListaInformes() {
               {tecnicos.map((t) => (
                 <option key={t.id} value={t.id}>
                   {tecnicoNombre.get(t.id) ?? t.id.slice(0, 8)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-[11px] font-bold text-on-surface-variant block mb-0.5">Equipo</label>
+            <select
+              value={filtroEquipo}
+              onChange={(e) => setFiltroEquipo(e.target.value)}
+              className={filtroBarClass}
+            >
+              <option value="">Todos</option>
+              {TIPOS_EQUIPO.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
                 </option>
               ))}
             </select>

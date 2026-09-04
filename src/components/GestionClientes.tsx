@@ -10,10 +10,9 @@ import type { Cliente } from "@/lib/types";
 type ClienteForm = {
   nombre: string;
   telefono: string;
-  direccion: string;
 };
 
-const VACIO: ClienteForm = { nombre: "", telefono: "", direccion: "" };
+const VACIO: ClienteForm = { nombre: "", telefono: "" };
 
 function useEsPc() {
   const [esPc, setEsPc] = useState(false);
@@ -47,7 +46,7 @@ export function GestionClientes() {
     try {
       const { data, error } = await supabase()
         .from("clientes")
-        .select("id, nombre, telefono, direccion, creado_en, actualizado_en")
+        .select("id, nombre, telefono, creado_en, actualizado_en")
         .order("nombre", { ascending: true });
       if (error) throw error;
       setClientes((data ?? []) as Cliente[]);
@@ -102,7 +101,7 @@ export function GestionClientes() {
   }
 
   function abrirEditar(c: Cliente) {
-    setForm({ nombre: c.nombre, telefono: c.telefono ?? "", direccion: c.direccion ?? "" });
+    setForm({ nombre: c.nombre, telefono: c.telefono ?? "" });
     setEditandoId(c.id);
     setModo("editar");
     setError(null);
@@ -128,7 +127,6 @@ export function GestionClientes() {
       const payload = {
         nombre: form.nombre.trim(),
         telefono: form.telefono.trim() || null,
-        direccion: form.direccion.trim() || null,
       };
       if (modo === "editar" && editandoId) {
         const { error } = await supabase().from("clientes").update(payload).eq("id", editandoId);
@@ -236,7 +234,7 @@ export function GestionClientes() {
 
         {modo !== null ? (
           <form onSubmit={guardar} className="bg-surface-container-low/50 border border-outline-variant rounded-lg p-sm mb-md space-y-sm">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-sm">
               <input
                 className="input-technical w-full h-[36px]"
                 type="text"
@@ -252,13 +250,6 @@ export function GestionClientes() {
                 placeholder="Teléfono"
                 value={form.telefono}
                 onChange={(e) => setForm((f) => ({ ...f, telefono: e.target.value }))}
-              />
-              <input
-                className="input-technical w-full h-[36px]"
-                type="text"
-                placeholder="Ubicación / Dirección"
-                value={form.direccion}
-                onChange={(e) => setForm((f) => ({ ...f, direccion: e.target.value }))}
               />
             </div>
             <div className="flex gap-1">
@@ -292,9 +283,6 @@ export function GestionClientes() {
                   <p className="text-body-md text-on-surface truncate font-bold">{c.nombre}</p>
                   {c.telefono ? (
                     <p className="text-[12px] text-on-surface-variant truncate">Tel: {c.telefono}</p>
-                  ) : null}
-                  {c.direccion ? (
-                    <p className="text-[12px] text-on-surface-variant truncate">Ubicación: {c.direccion}</p>
                   ) : null}
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
