@@ -15,7 +15,7 @@ import {
   valoresVacios,
   valoresVaciosGE,
 } from "@/lib/informes";
-import { intentarSync } from "@/lib/sync";
+import { bloquearInformeSync, desbloquearInformeSync, intentarSync } from "@/lib/sync";
 import { Icono } from "@/components/Icono";
 import { traerInformeRemoto } from "@/lib/remoto";
 import { navegar } from "@/lib/hashRuta";
@@ -48,6 +48,11 @@ export function EditorInforme({ id }: { id: string }) {
   const [redactandoIA, setRedactandoIA] = useState(false);
   const [toast, setToast] = useState<{ mensaje: string; tipo: "exito" | "error" | "info" } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    bloquearInformeSync(id);
+    return () => desbloquearInformeSync(id);
+  }, [id]);
 
   function mostrarToast(t: { mensaje: string; tipo: "exito" | "error" | "info" }) {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -182,8 +187,9 @@ export function EditorInforme({ id }: { id: string }) {
       };
       estadoRef.current.informe = guardado;
       setInforme(guardado);
-      await guardarBorrador(guardado, val, inf.tipo_equipo === "grupo_electrogeno" ? ge : undefined);
-      if (resincronizar) intentarSync();
+       await guardarBorrador(guardado, val, inf.tipo_equipo === "grupo_electrogeno" ? ge : undefined);
+       desbloquearInformeSync(inf.id);
+       if (resincronizar) intentarSync();
       mostrarToast({ mensaje: "Informe guardado. Sincronizando...", tipo: "exito" });
       setTimeout(() => navegar("#/"), 700);
     } catch {

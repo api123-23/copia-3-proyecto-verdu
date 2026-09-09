@@ -1,7 +1,7 @@
 import { db } from "./db";
 import { supabase } from "./supabase";
 import { CAMPOS_GE, cargarAnexa, cargarAnexaGE, construirAnexa } from "./informes";
-import type { InformeGeneral, TipoEquipo, ValoresBase } from "./types";
+import type { ArchivoLocal, InformeGeneral, TipoEquipo, ValoresBase } from "./types";
 
 const BUCKET = "informe-archivos";
 const BACKOFF_INICIAL = 5000;
@@ -10,6 +10,15 @@ const BACKOFF_MAX = 300000;
 let backoff = BACKOFF_INICIAL;
 let timer: ReturnType<typeof setTimeout> | null = null;
 let corriendo = false;
+const informesEnEdicion = new Set<string>();
+
+export function bloquearInformeSync(id: string): void {
+  informesEnEdicion.add(id);
+}
+
+export function desbloquearInformeSync(id: string): void {
+  informesEnEdicion.delete(id);
+}
 
 export function tablaAnexa(tipo: TipoEquipo): string | null {
   switch (tipo) {
@@ -45,6 +54,9 @@ async function hayConexion(): Promise<boolean> {
 async function conReintentos<T>(intentos: number, operacion: () => Promise<T>): Promise<T> {
   let ultimo: unknown = null;
   for (let i = 0; i < intentos; i++) {
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      throw new Error("Conexión perdida; la sincronización quedó pendiente.");
+    }
     try {
       return await operacion();
     } catch (e) {
@@ -53,6 +65,15 @@ async function conReintentos<T>(intentos: number, operacion: () => Promise<T>): 
     }
   }
   throw ultimo;
+}
+
+async function exigirConexion(): Promise<void> {
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    throw new Error("Conexión perdida; la sincronización quedó pendiente.");
+  }
+  if (!(await hayConexion())) {
+    throw new Error("No hay conexión estable; la sincronización quedó pendiente.");
+  }
 }
 
 function mensajeDe(e: unknown): string {
@@ -99,6 +120,7 @@ async function ejecutar() {
       .toArray();
     pendientes.sort((a, b) => a.creado_en.localeCompare(b.creado_en));
     for (const informe of pendientes) {
+      if (informesEnEdicion.has(informe.id)) continue;
       try {
         await sincronizarInforme(informe);
       } catch {
@@ -118,7 +140,11 @@ async function ejecutar() {
 
 async function sincronizarInforme(informeOriginal: InformeGeneral) {
   let informe = informeOriginal;
+  if (informesEnEdicion.has(informe.id)) return;
+  const rutasIntento: string[] = [];
+  let archivosIniciales: ArchivoLocal[] = [];
   try {
+    await exigirConexion();
     if (!informe.tecnico_id) {
       const { data } = await supabase().auth.getSession();
       const uid = data.session?.user.id ?? null;
@@ -128,18 +154,31 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
     }
     await db.informes.update(informe.id, { estado_sync: "subiendo_imagenes", error_sync: null });
     const archivos = await db.archivos.where("informe_id").equals(informe.id).toArray();
+    archivosIniciales = archivos;
+    const archivosPendientes = archivos.filter((archivo) => !archivo.url);
+    const rutasPendientes = archivosPendientes.map((archivo) => `${informe.id}/${archivo.id}`);
+
+    // Limpia restos de un intento anterior antes de volver a subir. Los blobs
+    // locales se conservan; solo se eliminan objetos remotos incompletos.
+    if (rutasPendientes.length > 0) {
+      await supabase().storage.from(BUCKET).remove(rutasPendientes);
+      const idsPendientes = archivosPendientes.map((archivo) => archivo.id);
+      await supabase().from("informe_archivos").delete().in("id", idsPendientes);
+    }
+
     for (const archivo of archivos) {
       if (archivo.url) {
         await db.archivos.update(archivo.id, { estado_sync: "sincronizado" });
         continue;
       }
+      await exigirConexion();
       const registro = await db.blobs.get(archivo.id);
       if (!registro) {
-        await db.archivos.update(archivo.id, { estado_sync: "sincronizado" });
-        continue;
+        throw new Error(`No se encontró la cache local del archivo ${archivo.id}.`);
       }
       await db.archivos.update(archivo.id, { estado_sync: "subiendo" });
       const path = `${informe.id}/${archivo.id}`;
+      rutasIntento.push(path);
       const blob = registro.blob;
       await conReintentos(4, async () => {
         const { error } = await supabase()
@@ -154,6 +193,7 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       });
       await db.archivos.update(archivo.id, { url: path, estado_sync: "sincronizado" });
     }
+    await exigirConexion();
     await db.informes.update(informe.id, { estado_sync: "imagenes_ok" });
 
     const archivosOk = await db.archivos.where("informe_id").equals(informe.id).toArray();
@@ -229,6 +269,7 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       throw new Error(`Guardado del informe en servidor (${mensajeDe(e)})`);
     });
 
+    await exigirConexion();
     const tabla = tablaAnexa(informe.tipo_equipo);
     if (tabla && informe.tipo_equipo !== "grupo_electrogeno") {
       const anexa = await cargarAnexa(informe.tipo_equipo, informe.id);
@@ -258,6 +299,7 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       }
     }
 
+    await exigirConexion();
     const filasArchivos = archivosOk
       .filter((a) => a.url)
       .map((a) => ({
@@ -319,7 +361,19 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
   } catch (e) {
     const mensaje = mensajeDe(e);
     console.error(`Sync ${informe.id}:`, mensaje);
-    await db.informes.update(informe.id, { estado_sync: "error", error_sync: mensaje });
+    if (rutasIntento.length > 0) {
+      await supabase().storage.from(BUCKET).remove(rutasIntento).catch(() => undefined);
+    }
+    const archivosParaResetear = archivosIniciales.filter((archivo) => !archivo.url);
+    await db.transaction("rw", [db.informes, db.archivos], async () => {
+      for (const archivo of archivosParaResetear) {
+        await db.archivos.update(archivo.id, { url: null, estado_sync: "pendiente" });
+      }
+      await db.informes.update(informe.id, {
+        estado_sync: "error",
+        error_sync: mensaje,
+      });
+    });
     throw e;
   }
 }
