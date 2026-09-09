@@ -3,7 +3,8 @@ export type TipoEquipo =
   | "compresor"
   | "grupo_electrogeno"
   | "extraordinarios"
-  | "vehiculos";
+  | "vehiculos"
+  | "observacion";
 
 export type EstadoFirma = "pendiente" | "firmado";
 
@@ -20,6 +21,8 @@ export type Nivel = "si" | "no" | "ok" | "mal" | "optimo" | "bajo" | "alto" | nu
 
 export type OkMal = "ok" | "mal" | null;
 
+export type OkMalNoTiene = "ok" | "mal" | "no_tiene" | null;
+
 export type SiNoOkMal = "si" | "no" | "ok" | "mal" | null;
 
 export type OptimoBajoAlto = "optimo" | "bajo" | "alto" | null;
@@ -32,7 +35,7 @@ export type BajaAlta = "ok" | "baja" | "alta" | null;
 
 export type FotoEstado = "ok" | "si" | "no" | null;
 
-export type CategoriaFoto = "inicial" | "desarrollo" | "repuestos" | "final" | "falla";
+export type CategoriaFoto = "inicial" | "desarrollo" | "repuestos" | "final" | "falla" | "horometro";
 
 export interface Cliente {
   id: string;
@@ -50,6 +53,8 @@ export interface InformeGeneral {
   cliente_nombre: string;
   cliente_telefono: string | null;
   cliente_direccion: string | null;
+  modelo: string | null;
+  numero_serie: string | null;
   tecnico_id: string | null;
   fecha_hora: string;
   tipo_equipo: TipoEquipo;
@@ -77,6 +82,7 @@ export interface InformeGeneral {
 
 export interface ValoresBase {
   horometro: number | null;
+  kilometros: number | null;
   aceite_motor: Nivel;
   aceite_unidad: OkBajoAlto;
   refrig_radiador: Nivel;
@@ -117,6 +123,7 @@ export interface ValoresBase {
 
 export type InformeMotocompresor = { informe_id: string } & Omit<
   ValoresBase,
+  | "kilometros"
   | "rpm_min"
   | "rpm_max"
   | "tension_linea"
@@ -136,7 +143,10 @@ export type InformeMotocompresor = { informe_id: string } & Omit<
   | "circuito_electr"
   | "tiempo_y_delta"
   | "diferencial"
->;
+  | "estado_bateria"
+> & {
+  estado_bateria: OkMalNoTiene;
+};
 
 export type InformeCompresor = { informe_id: string } & Omit<
   ValoresBase,
@@ -146,6 +156,7 @@ export type InformeCompresor = { informe_id: string } & Omit<
   | "conec_purga"
   | "carroceria"
   | "aceite_unidad"
+  | "kilometros"
   | "rpm_min"
   | "rpm_max"
   | "tension_gen_f1"
@@ -230,6 +241,7 @@ export interface InformeGrupoElectrogeno {
   ge_funcionamiento_amperaje_f3: number | null;
   ge_funcionamiento_tension_linea_carga: BajaAlta;
   ge_funcionamiento_temp_ambiente: number | null;
+  ge_funcionamiento_temp_refrigerante: number | null;
   ge_funcionamiento_inspeccion_bateria: OkMal;
   ge_funcionamiento_accion_electrico: SiNo;
 }

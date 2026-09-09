@@ -35,10 +35,12 @@ create table if not exists informes_generales (
   cliente_nombre text not null,
   cliente_telefono text,
   cliente_direccion text,
+  modelo text,
+  numero_serie text,
   tecnico_id uuid not null default auth.uid() references auth.users (id),
   fecha_hora timestamptz not null,
   tipo_equipo text not null check (tipo_equipo in (
-    'motocompresor', 'compresor', 'grupo_electrogeno', 'extraordinarios', 'vehiculos'
+    'motocompresor', 'compresor', 'grupo_electrogeno', 'extraordinarios', 'vehiculos', 'observacion'
   )),
   observaciones text,
   observaciones_ia text,
@@ -66,7 +68,7 @@ create table if not exists informes_motocompresor (
   aceite_motor text check (aceite_motor in ('ok', 'alto', 'bajo')),
   aceite_unidad text check (aceite_unidad in ('ok', 'alto', 'bajo')),
   refrig_radiador text check (refrig_radiador in ('ok', 'alto', 'bajo')),
-  estado_bateria text check (estado_bateria in ('ok', 'mal')),
+  estado_bateria text check (estado_bateria in ('ok', 'mal', 'no_tiene')),
   conec_purga text check (conec_purga in ('si', 'no')),
   inst_electrica text check (inst_electrica in ('ok', 'mal')),
   carroceria text check (carroceria in ('ok', 'mal')),
@@ -99,12 +101,13 @@ create table if not exists informes_compresor (
   circuito_electr text check (circuito_electr in ('ok', 'mal')),
   tiempo_y_delta text check (tiempo_y_delta in ('ok', 'bajo', 'alto')),
   diferencial text,
-  perdida_aceite_motor text check (perdida_aceite_motor in ('si', 'no'))
+  perdida_aceite_unidad text check (perdida_aceite_unidad in ('si', 'no'))
 );
 
 create table if not exists informes_vehiculos (
   informe_id uuid primary key references informes_generales (id) on delete cascade,
   horometro numeric(10, 2),
+  kilometros numeric(10, 2),
   aceite_motor text check (aceite_motor in ('ok', 'alto', 'bajo')),
   refrig_radiador text check (refrig_radiador in ('ok', 'alto', 'bajo')),
   estado_bateria text check (estado_bateria in ('ok', 'mal')),
@@ -133,7 +136,7 @@ create table if not exists informes_grupo_electrogeno (
   ge_motor_detenido_lineas_combustible text check (ge_motor_detenido_lineas_combustible in ('ok', 'mal')),
   ge_funcionamiento_sistema_arranque text check (ge_funcionamiento_sistema_arranque in ('ok', 'mal')),
   ge_funcionamiento_mangueras text check (ge_funcionamiento_mangueras in ('ok', 'mal')),
-  ge_funcionamiento_presion_aceite text check (ge_funcionamiento_presion_aceite in ('ok', 'bajo')),
+  ge_funcionamiento_presion_aceite text check (ge_funcionamiento_presion_aceite in ('ok', 'bajo', 'alto')),
   ge_funcionamiento_temp_agua text check (ge_funcionamiento_temp_agua in ('optimo', 'bajo', 'alto')),
   ge_funcionamiento_diferencial_temp text check (ge_funcionamiento_diferencial_temp in ('optimo', 'bajo', 'alto')),
   ge_funcionamiento_vibraciones text check (ge_funcionamiento_vibraciones in ('si', 'no')),
@@ -148,13 +151,14 @@ create table if not exists informes_grupo_electrogeno (
   ge_funcionamiento_perdidas_combustible text check (ge_funcionamiento_perdidas_combustible in ('si', 'no')),
   ge_funcionamiento_restriccion_escape text check (ge_funcionamiento_restriccion_escape in ('si', 'no')),
   ge_funcionamiento_restriccion_aire text check (ge_funcionamiento_restriccion_aire in ('si', 'no')),
-  ge_funcionamiento_frecuencia text check (ge_funcionamiento_frecuencia in ('ok', 'baja', 'alta')),
-  ge_funcionamiento_tension_linea text check (ge_funcionamiento_tension_linea in ('ok', 'baja', 'alta')),
+  ge_funcionamiento_frecuencia text check (ge_funcionamiento_frecuencia in ('optimo', 'baja', 'alta')),
+  ge_funcionamiento_tension_linea text check (ge_funcionamiento_tension_linea in ('optimo', 'baja', 'alta')),
   ge_funcionamiento_amperaje_f1 numeric(10, 2),
   ge_funcionamiento_amperaje_f2 numeric(10, 2),
   ge_funcionamiento_amperaje_f3 numeric(10, 2),
   ge_funcionamiento_tension_linea_carga text check (ge_funcionamiento_tension_linea_carga in ('ok', 'baja', 'alta')),
   ge_funcionamiento_temp_ambiente numeric(10, 2),
+  ge_funcionamiento_temp_refrigerante numeric(10, 2),
   ge_funcionamiento_inspeccion_bateria text check (ge_funcionamiento_inspeccion_bateria in ('ok', 'mal')),
   ge_funcionamiento_accion_electrico text check (ge_funcionamiento_accion_electrico in ('si', 'no'))
 );
@@ -163,7 +167,7 @@ create table if not exists informe_archivos (
   id uuid primary key,
   informe_id uuid not null references informes_generales (id) on delete cascade,
   tipo text not null check (tipo in ('foto', 'firma_tecnico', 'firma_cliente')),
-  categoria text check (categoria in ('inicial', 'desarrollo', 'repuestos', 'final', 'falla')),
+  categoria text check (categoria in ('inicial', 'desarrollo', 'repuestos', 'final', 'falla', 'horometro')),
   url text not null,
   creado_en timestamptz not null default now()
 );
@@ -396,6 +400,59 @@ update informes_grupo_electrogeno set ge_funcionamiento_inspeccion_bateria = cas
   where ge_funcionamiento_inspeccion_bateria in ('si', 'no');
 alter table informes_grupo_electrogeno add constraint informes_grupo_electrogeno_ge_funcionamiento_inspeccion_bateria_check
   check (ge_funcionamiento_inspeccion_bateria in ('ok', 'mal'));
+
+-- NUEVOS CAMPOS: modelo y número de serie
+alter table informes_generales add column if not exists modelo text;
+alter table informes_generales add column if not exists numero_serie text;
+
+-- Nuevo tipo de equipo: observación (solo requiere texto)
+alter table informes_generales drop constraint if exists informes_generales_tipo_equipo_check;
+alter table informes_generales add constraint informes_generales_tipo_equipo_check
+  check (tipo_equipo in ('motocompresor', 'compresor', 'grupo_electrogeno', 'extraordinarios', 'vehiculos', 'observacion'));
+
+-- Vehículos: campo kilometros (independiente de horómetro)
+alter table informes_vehiculos add column if not exists kilometros numeric(10, 2);
+
+-- Motocompresor: estado_bateria agrega 'no_tiene'
+select public.dropar_checks_de_columna('informes_motocompresor', 'estado_bateria');
+alter table informes_motocompresor add constraint informes_motocompresor_estado_bateria_check
+  check (estado_bateria in ('ok', 'mal', 'no_tiene'));
+
+-- Compresor: renombrar perdida_aceite_motor → perdida_aceite_unidad
+do $$
+begin
+  if exists (select 1 from information_schema.columns where table_name = 'informes_compresor' and column_name = 'perdida_aceite_motor') then
+    alter table informes_compresor rename column perdida_aceite_motor to perdida_aceite_unidad;
+  end if;
+end $$;
+select public.dropar_checks_de_columna('informes_compresor', 'perdida_aceite_unidad');
+alter table informes_compresor add constraint informes_compresor_perdida_aceite_unidad_check
+  check (perdida_aceite_unidad in ('si', 'no'));
+
+-- GE: presion_aceite agrega 'alto'
+select public.dropar_checks_de_columna('informes_grupo_electrogeno', 'ge_funcionamiento_presion_aceite');
+alter table informes_grupo_electrogeno add constraint informes_grupo_electrogeno_ge_funcionamiento_presion_aceite_check
+  check (ge_funcionamiento_presion_aceite in ('ok', 'bajo', 'alto'));
+
+-- GE: frecuencia OK → Óptimo
+select public.dropar_checks_de_columna('informes_grupo_electrogeno', 'ge_funcionamiento_frecuencia');
+update informes_grupo_electrogeno set ge_funcionamiento_frecuencia = 'optimo' where ge_funcionamiento_frecuencia = 'ok';
+alter table informes_grupo_electrogeno add constraint informes_grupo_electrogeno_ge_funcionamiento_frecuencia_check
+  check (ge_funcionamiento_frecuencia in ('optimo', 'baja', 'alta'));
+
+-- GE: tensión de línea OK → Óptimo
+select public.dropar_checks_de_columna('informes_grupo_electrogeno', 'ge_funcionamiento_tension_linea');
+update informes_grupo_electrogeno set ge_funcionamiento_tension_linea = 'optimo' where ge_funcionamiento_tension_linea = 'ok';
+alter table informes_grupo_electrogeno add constraint informes_grupo_electrogeno_ge_funcionamiento_tension_linea_check
+  check (ge_funcionamiento_tension_linea in ('optimo', 'baja', 'alta'));
+
+-- GE: nueva columna temperatura líquido refrigerante
+alter table informes_grupo_electrogeno add column if not exists ge_funcionamiento_temp_refrigerante numeric(10, 2);
+
+-- Fotos: categoría horómetro
+select public.dropar_checks_de_columna('informe_archivos', 'categoria');
+alter table informe_archivos add constraint informe_archivos_categoria_check
+  check (categoria in ('inicial', 'desarrollo', 'repuestos', 'final', 'falla', 'horometro'));
 
 -- NUMERACIÓN: 100% servidor, por orden de llegada.
 -- Una secuencia real garantiza números únicos y consecutivos aunque varios

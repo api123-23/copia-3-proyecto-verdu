@@ -163,6 +163,30 @@ export function SeccionCliente({
             ))}
           </select>
         </div>
+        {informe.tipo_equipo !== "observacion" ? (
+          <>
+            <div>
+              <Label>Modelo</Label>
+              <input
+                className="input-technical"
+                placeholder="Ej: XRT-500"
+                type="text"
+                value={informe.modelo ?? ""}
+                onChange={(e) => onChange({ modelo: e.target.value || null })}
+              />
+            </div>
+            <div>
+              <Label>Número de Serie</Label>
+              <input
+                className="input-technical"
+                placeholder="Ej: SN-12345"
+                type="text"
+                value={informe.numero_serie ?? ""}
+                onChange={(e) => onChange({ numero_serie: e.target.value || null })}
+              />
+            </div>
+          </>
+        ) : null}
       </div>
     </Seccion>
   );
