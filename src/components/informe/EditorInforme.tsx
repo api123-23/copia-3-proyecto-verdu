@@ -164,6 +164,7 @@ export function EditorInforme({ id }: { id: string }) {
         }
       } else {
         for (const campo of CAMPOS_POR_TIPO[inf.tipo_equipo]) {
+          if (inf.tipo_equipo === "vehiculos" && (campo === "horometro" || campo === "kilometros")) continue;
           if (val[campo] === null) faltantes.push(CAMPO_LABELS[campo]);
         }
       }
