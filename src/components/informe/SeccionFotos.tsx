@@ -16,7 +16,6 @@ const CATEGORIAS: { value: CategoriaFoto; label: string }[] = [
   { value: "repuestos", label: "Repuestos" },
   { value: "final", label: "Estado Final" },
   { value: "falla", label: "Falla" },
-  { value: "horometro", label: "Horómetro" },
 ];
 
 function generarId(): string {

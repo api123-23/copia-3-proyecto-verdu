@@ -235,8 +235,6 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       cliente_nombre: informe.cliente_nombre,
       cliente_telefono: informe.cliente_telefono,
       cliente_direccion: informe.cliente_direccion,
-      modelo: informe.modelo ?? null,
-      numero_serie: informe.numero_serie ?? null,
       tecnico_id: informe.tecnico_id,
       fecha_hora: informe.fecha_hora,
       tipo_equipo: informe.tipo_equipo,

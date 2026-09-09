@@ -12,7 +12,6 @@ export const TIPOS_EQUIPO: { value: TipoEquipo; label: string }[] = [
   { value: "grupo_electrogeno", label: "Grupo Electrógeno" },
   { value: "extraordinarios", label: "Extraordinarios" },
   { value: "vehiculos", label: "Vehículos Móviles y Máquinas Viales" },
-  { value: "observacion", label: "Observación" },
 ];
 
 export function crearInforme(tecnico_id: string | null): InformeGeneral {
@@ -24,8 +23,6 @@ export function crearInforme(tecnico_id: string | null): InformeGeneral {
     cliente_nombre: "",
     cliente_telefono: null,
     cliente_direccion: null,
-    modelo: null,
-    numero_serie: null,
     tecnico_id,
     fecha_hora: ahora,
     tipo_equipo: "motocompresor",
@@ -59,7 +56,6 @@ export function formatNumero(n: number | null): string {
 export function valoresVacios(): ValoresBase {
   return {
     horometro: null,
-    kilometros: null,
     aceite_motor: null,
     aceite_unidad: null,
     refrig_radiador: null,
@@ -137,7 +133,6 @@ export function valoresVaciosGE(): InformeGrupoElectrogeno {
     ge_funcionamiento_amperaje_f3: null,
     ge_funcionamiento_tension_linea_carga: null,
     ge_funcionamiento_temp_ambiente: null,
-    ge_funcionamiento_temp_refrigerante: null,
     ge_funcionamiento_inspeccion_bateria: null,
     ge_funcionamiento_accion_electrico: null,
   };
@@ -172,6 +167,7 @@ export const CAMPOS_POR_TIPO: Record<TipoEquipo, (keyof ValoresBase)[]> = {
     "aislacion_suelo",
     "tension_linea",
     "temp_ambiente",
+    "temp_refrigerante",
     "circuito_refr_m",
     "circuito_despresuriz",
     "circuito_arranque",
@@ -183,7 +179,6 @@ export const CAMPOS_POR_TIPO: Record<TipoEquipo, (keyof ValoresBase)[]> = {
   ],
   vehiculos: [
     "horometro",
-    "kilometros",
     "aceite_motor",
     "refrig_radiador",
     "estado_bateria",
@@ -197,13 +192,11 @@ export const CAMPOS_POR_TIPO: Record<TipoEquipo, (keyof ValoresBase)[]> = {
     "perdida_combustible",
   ],
   extraordinarios: [],
-  observacion: [],
   grupo_electrogeno: [],
 };
 
 export const CAMPO_LABELS: Record<keyof ValoresBase, string> = {
   horometro: "Horómetro",
-  kilometros: "Kilómetros",
   aceite_motor: "Aceite Motor",
   aceite_unidad: "Aceite Unidad",
   refrig_radiador: "Refrig. Rad.",
@@ -278,7 +271,6 @@ export const CAMPOS_GE: (keyof InformeGrupoElectrogeno)[] = [
   "ge_funcionamiento_amperaje_f3",
   "ge_funcionamiento_tension_linea_carga",
   "ge_funcionamiento_temp_ambiente",
-  "ge_funcionamiento_temp_refrigerante",
   "ge_funcionamiento_inspeccion_bateria",
   "ge_funcionamiento_accion_electrico",
 ];
@@ -320,7 +312,6 @@ export const CAMPO_LABELS_GE: Record<keyof InformeGrupoElectrogeno, string> = {
   ge_funcionamiento_amperaje_f3: "Amperaje F3",
   ge_funcionamiento_tension_linea_carga: "Tensión Línea Carga",
   ge_funcionamiento_temp_ambiente: "Temp. Ambiente",
-  ge_funcionamiento_temp_refrigerante: "Temp. Líq. Refrigerante",
   ge_funcionamiento_inspeccion_bateria: "Inspección Batería",
   ge_funcionamiento_accion_electrico: "Acción Eléctrico",
 };
@@ -373,11 +364,6 @@ export function construirAnexa(
   if (tipo === "grupo_electrogeno") return null;
   const out: Record<string, unknown> = { informe_id };
   for (const campo of CAMPOS_POR_TIPO[tipo]) out[campo] = v[campo];
-  if (tipo === "compresor") {
-    // En DB la columna del compresor se llama perdida_aceite_unidad.
-    out["perdida_aceite_unidad"] = out["perdida_aceite_motor"];
-    delete out["perdida_aceite_motor"];
-  }
   normalizarValores(tipo, out);
   return out;
 }
@@ -438,11 +424,6 @@ export async function cargarAnexa(
   if (!fila) return {};
   const resto = { ...fila } as unknown as Record<string, unknown>;
   delete resto.informe_id;
-  if (tipo === "compresor") {
-    // En DB la columna del compresor se llama perdida_aceite_unidad.
-    resto["perdida_aceite_motor"] = resto["perdida_aceite_unidad"];
-    delete resto["perdida_aceite_unidad"];
-  }
   normalizarValores(tipo, resto);
   return resto as Partial<ValoresBase>;
 }

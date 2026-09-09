@@ -16,8 +16,6 @@ function normalizar(f: FilaServidor): InformeGeneral {
     cliente_nombre: String(f.cliente_nombre ?? ""),
     cliente_telefono: (f.cliente_telefono as string) ?? null,
     cliente_direccion: (f.cliente_direccion as string) ?? null,
-    modelo: (f.modelo as string) ?? null,
-    numero_serie: (f.numero_serie as string) ?? null,
     tecnico_id: (f.tecnico_id as string) ?? null,
     fecha_hora: String(f.fecha_hora),
     tipo_equipo: f.tipo_equipo as TipoEquipo,
@@ -71,10 +69,6 @@ export async function traerInformeRemoto(id: string): Promise<boolean> {
     if (filaAnexa) {
       const resto = { ...(filaAnexa as FilaServidor) };
       delete resto.informe_id;
-      if (informe.tipo_equipo === "compresor") {
-        resto["perdida_aceite_motor"] = resto["perdida_aceite_unidad"];
-        delete resto["perdida_aceite_unidad"];
-      }
       normalizarValores(informe.tipo_equipo, resto);
       anexa = resto as Partial<ValoresBase>;
     }

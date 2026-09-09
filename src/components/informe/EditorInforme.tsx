@@ -149,14 +149,9 @@ export function EditorInforme({ id }: { id: string }) {
     if (!inf) return;
     const faltantes: string[] = [];
     if (!inf.cliente_nombre.trim()) faltantes.push("Cliente / Empresa");
-    if (inf.tipo_equipo === "observacion") {
-      if (!inf.observaciones?.trim()) faltantes.push("Trabajo Realizado / Observaciones");
-    }
-    if (inf.tipo_equipo !== "observacion") {
-      if (inf.horas_trabajadas === null) faltantes.push("Total Horas Trabajadas");
-      if (inf.maquina_operativa === null) faltantes.push("¿La máquina queda operativa?");
-    }
-    if (inf.tipo_equipo !== "extraordinarios" && inf.tipo_equipo !== "observacion") {
+    if (inf.horas_trabajadas === null) faltantes.push("Total Horas Trabajadas");
+    if (inf.maquina_operativa === null) faltantes.push("¿La máquina queda operativa?");
+    if (inf.tipo_equipo !== "extraordinarios") {
       if (inf.tipo_equipo === "grupo_electrogeno") {
         for (const campo of CAMPOS_GE) {
           if (campo === "informe_id") continue;
@@ -164,13 +159,12 @@ export function EditorInforme({ id }: { id: string }) {
         }
       } else {
         for (const campo of CAMPOS_POR_TIPO[inf.tipo_equipo]) {
-          if (inf.tipo_equipo === "vehiculos" && (campo === "horometro" || campo === "kilometros")) continue;
           if (val[campo] === null) faltantes.push(CAMPO_LABELS[campo]);
         }
       }
     }
     const fotos = await db.archivos.where({ informe_id: inf.id, tipo: "foto" }).count();
-    if (inf.tipo_equipo !== "observacion" && fotos < 3) faltantes.push("Registro Fotográfico (mínimo 3 fotos)");
+    if (fotos < 3) faltantes.push("Registro Fotográfico (mínimo 3 fotos)");
     if (faltantes.length > 0) {
       mostrarToast({ mensaje: `Faltan: ${faltantes.slice(0, 3).join(", ")}...`, tipo: "error" });
       return;

@@ -114,12 +114,6 @@ export const OPCIONES_OK_MAL = [
   { value: "mal", label: "Mal" },
 ];
 
-export const OPCIONES_OK_MAL_NO_TIENE = [
-  { value: "ok", label: "Ok" },
-  { value: "mal", label: "Mal" },
-  { value: "no_tiene", label: "No tiene" },
-];
-
 export const OPCIONES_NIVEL = [
   { value: "ok", label: "Ok" },
   { value: "bajo", label: "Bajo" },
