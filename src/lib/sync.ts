@@ -260,10 +260,15 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       sincronizado_en: new Date().toISOString(),
     };
     const data = await conReintentos(3, async () => {
-      const { error } = await supabase()
+      const actualizado = await supabase()
         .from("informes_generales")
-        .upsert(payload);
-      if (error) throw error;
+        .update(payload, { count: "exact" })
+        .eq("id", informe.id);
+      if (actualizado.error) throw actualizado.error;
+      if ((actualizado.count ?? 0) === 0) {
+        const insertado = await supabase().from("informes_generales").insert(payload);
+        if (insertado.error) throw insertado.error;
+      }
       return { numero_registro: numeroRegistro };
     }).catch((e) => {
       throw new Error(`Guardado del informe en servidor (${mensajeDe(e)})`);
