@@ -634,11 +634,11 @@ create policy informes_select on informes_generales for select to authenticated
   using (public.es_admin() or (tecnico_id = auth.uid() and estado_firma <> 'firmado'));
 drop policy if exists informes_insert on informes_generales;
 create policy informes_insert on informes_generales for insert to authenticated
-  with check (public.es_admin() or tecnico_id = auth.uid());
+  with check (true);
 drop policy if exists informes_update on informes_generales;
 create policy informes_update on informes_generales for update to authenticated
-  using (public.es_admin() or tecnico_id = auth.uid())
-  with check (public.es_admin() or tecnico_id = auth.uid());
+  using (true)
+  with check (true);
 drop policy if exists informes_delete_admin on informes_generales;
 create policy informes_delete_admin on informes_generales for delete to authenticated
   using (true);
