@@ -239,7 +239,6 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       numero_serie: informe.numero_serie ?? null,
       tecnico_id: informe.tecnico_id,
       fecha_hora: informe.fecha_hora,
-      modo_informe: informe.modo_informe ?? "comun",
       tipo_equipo: informe.tipo_equipo,
       observaciones: informe.observaciones,
       observaciones_ia: informe.observaciones_ia,

@@ -27,7 +27,6 @@ export function crearInforme(tecnico_id: string | null): InformeGeneral {
     numero_serie: null,
     tecnico_id,
     fecha_hora: ahora,
-    modo_informe: "comun",
     tipo_equipo: "motocompresor",
     observaciones: null,
     observaciones_ia: null,

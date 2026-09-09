@@ -124,22 +124,19 @@ export default function SeccionValores({
   onChange,
   valoresGE,
   onChangeGE,
-  obligatoria,
 }: {
   tipo: TipoEquipo;
   valores: ValoresBase;
   onChange: (p: Patch) => void;
   valoresGE?: InformeGrupoElectrogeno;
   onChangeGE?: (p: PatchGE) => void;
-  obligatoria?: boolean;
 }) {
-  const badge = obligatoria === false ? "Opcional" : "Obligatorio";
   if (tipo === "extraordinarios") return null;
 
   if (tipo === "grupo_electrogeno") {
     if (!onChangeGE) return null;
     return (
-        <Seccion titulo="Valores" badge={badge}>
+        <Seccion titulo="Valores" badge="Obligatorio">
         <SeccionValoresGE valoresGE={valoresGE ?? valoresVaciosGE()} onChangeGE={onChangeGE} />
       </Seccion>
     );
@@ -179,7 +176,7 @@ export default function SeccionValores({
     aplica(tipo, "perdida_combustible");
 
   return (
-    <Seccion titulo="Valores" badge={badge}>
+    <Seccion titulo="Valores" badge="Obligatorio">
       <div className="space-y-md">
         {bloqueDetenido ? (
           <div>

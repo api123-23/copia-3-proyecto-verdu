@@ -39,7 +39,6 @@ create table if not exists informes_generales (
   numero_serie text,
   tecnico_id uuid not null default auth.uid() references auth.users (id),
   fecha_hora timestamptz not null,
-  modo_informe text not null default 'comun' check (modo_informe in ('comun', 'observacion')),
   tipo_equipo text not null check (tipo_equipo in (
     'motocompresor', 'compresor', 'grupo_electrogeno', 'extraordinarios', 'vehiculos'
   )),
@@ -62,6 +61,13 @@ create table if not exists informes_generales (
   actualizado_en timestamptz not null default now(),
   sincronizado_en timestamptz
 );
+
+-- MIGRACIÓN CRÍTICA: debe ejecutarse inmediatamente después de la tabla base.
+-- Se repite de forma idempotente más abajo junto con el resto de migraciones,
+-- pero mantenerla aquí evita que un error posterior deje al cliente enviando
+-- columnas que todavía no existen en instalaciones antiguas.
+alter table public.informes_generales add column if not exists modelo text;
+alter table public.informes_generales add column if not exists numero_serie text;
 
 create table if not exists informes_motocompresor (
   informe_id uuid primary key references informes_generales (id) on delete cascade,
@@ -261,12 +267,6 @@ alter table informes_generales alter column horas_trabajadas type numeric(10, 2)
 -- existentes, porque CREATE TABLE IF NOT EXISTS no modifica tablas previas.
 alter table informes_generales add column if not exists modelo text;
 alter table informes_generales add column if not exists numero_serie text;
-alter table informes_generales add column if not exists modo_informe text default 'comun';
-update informes_generales set modo_informe = 'comun' where modo_informe is null;
-alter table informes_generales drop constraint if exists informes_generales_modo_informe_check;
-alter table informes_generales add constraint informes_generales_modo_informe_check
-  check (modo_informe in ('comun', 'observacion'));
-alter table informes_generales alter column modo_informe set not null;
 
 -- Vehículos: horómetro y kilómetros son mediciones independientes y ambas
 -- pueden quedar vacías.

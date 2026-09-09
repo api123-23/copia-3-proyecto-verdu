@@ -5,8 +5,6 @@ export type TipoEquipo =
   | "extraordinarios"
   | "vehiculos";
 
-export type ModoInforme = "comun" | "observacion";
-
 export type EstadoFirma = "pendiente" | "firmado";
 
 export type EstadoSync =
@@ -56,7 +54,6 @@ export interface InformeGeneral {
   numero_serie: string | null;
   tecnico_id: string | null;
   fecha_hora: string;
-  modo_informe: ModoInforme;
   tipo_equipo: TipoEquipo;
   observaciones: string | null;
   observaciones_ia: string | null;

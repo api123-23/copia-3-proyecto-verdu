@@ -20,7 +20,6 @@ function normalizar(f: FilaServidor): InformeGeneral {
     numero_serie: (f.numero_serie as string) ?? null,
     tecnico_id: (f.tecnico_id as string) ?? null,
     fecha_hora: String(f.fecha_hora),
-    modo_informe: (f.modo_informe as "comun" | "observacion") ?? "comun",
     tipo_equipo: f.tipo_equipo as TipoEquipo,
     observaciones: (f.observaciones as string) ?? null,
     observaciones_ia: (f.observaciones_ia as string) ?? null,
