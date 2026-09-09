@@ -5,6 +5,8 @@ export type TipoEquipo =
   | "extraordinarios"
   | "vehiculos";
 
+export type ModoInforme = "comun" | "observacion";
+
 export type EstadoFirma = "pendiente" | "firmado";
 
 export type EstadoSync =
@@ -32,7 +34,7 @@ export type BajaAlta = "ok" | "baja" | "alta" | null;
 
 export type FotoEstado = "ok" | "si" | "no" | null;
 
-export type CategoriaFoto = "inicial" | "desarrollo" | "repuestos" | "final" | "falla";
+export type CategoriaFoto = "inicial" | "desarrollo" | "repuestos" | "final" | "falla" | "horometro";
 
 export interface Cliente {
   id: string;
@@ -50,8 +52,11 @@ export interface InformeGeneral {
   cliente_nombre: string;
   cliente_telefono: string | null;
   cliente_direccion: string | null;
+  modelo: string | null;
+  numero_serie: string | null;
   tecnico_id: string | null;
   fecha_hora: string;
+  modo_informe: ModoInforme;
   tipo_equipo: TipoEquipo;
   observaciones: string | null;
   observaciones_ia: string | null;
@@ -77,10 +82,11 @@ export interface InformeGeneral {
 
 export interface ValoresBase {
   horometro: number | null;
+  kilometros: number | null;
   aceite_motor: Nivel;
   aceite_unidad: OkBajoAlto;
   refrig_radiador: Nivel;
-  estado_bateria: OkMal;
+  estado_bateria: OkMal | "no_tiene";
   conec_purga: SiNo;
   inst_electrica: OkMal;
   carroceria: OkMal;
@@ -117,6 +123,7 @@ export interface ValoresBase {
 
 export type InformeMotocompresor = { informe_id: string } & Omit<
   ValoresBase,
+  | "kilometros"
   | "rpm_min"
   | "rpm_max"
   | "tension_linea"
@@ -146,6 +153,7 @@ export type InformeCompresor = { informe_id: string } & Omit<
   | "conec_purga"
   | "carroceria"
   | "aceite_unidad"
+  | "temp_refrigerante"
   | "rpm_min"
   | "rpm_max"
   | "tension_gen_f1"
@@ -160,6 +168,7 @@ export type InformeCompresor = { informe_id: string } & Omit<
   | "perdida_refrigerante"
   | "perdida_aire"
   | "perdida_combustible"
+  | "kilometros"
 > & {
   aceite_unidad: OkBajoAlto;
 };
@@ -208,7 +217,7 @@ export interface InformeGrupoElectrogeno {
   ge_motor_detenido_lineas_combustible: OkMal;
   ge_funcionamiento_sistema_arranque: OkMal;
   ge_funcionamiento_mangueras: OkMal;
-  ge_funcionamiento_presion_aceite: OkMal;
+  ge_funcionamiento_presion_aceite: OkBajoAlto;
   ge_funcionamiento_temp_agua: OptimoBajoAlto;
   ge_funcionamiento_diferencial_temp: OptimoBajoAlto;
   ge_funcionamiento_vibraciones: SiNo;
@@ -223,13 +232,14 @@ export interface InformeGrupoElectrogeno {
   ge_funcionamiento_perdidas_combustible: SiNo;
   ge_funcionamiento_restriccion_escape: SiNo;
   ge_funcionamiento_restriccion_aire: SiNo;
-  ge_funcionamiento_frecuencia: BajaAlta;
-  ge_funcionamiento_tension_linea: BajaAlta;
+  ge_funcionamiento_frecuencia: OptimoBajoAlto;
+  ge_funcionamiento_tension_linea: OptimoBajoAlto;
   ge_funcionamiento_amperaje_f1: number | null;
   ge_funcionamiento_amperaje_f2: number | null;
   ge_funcionamiento_amperaje_f3: number | null;
   ge_funcionamiento_tension_linea_carga: BajaAlta;
   ge_funcionamiento_temp_ambiente: number | null;
+  ge_funcionamiento_temp_refrigerante: number | null;
   ge_funcionamiento_inspeccion_bateria: OkMal;
   ge_funcionamiento_accion_electrico: SiNo;
 }

@@ -96,6 +96,12 @@ export function EditorInforme({ id }: { id: string }) {
         if (activo) setFallo(true);
         return;
       }
+      inf = {
+        ...inf,
+        modelo: inf.modelo ?? null,
+        numero_serie: inf.numero_serie ?? null,
+        modo_informe: inf.modo_informe ?? "comun",
+      };
       const anexa = await cargarAnexa(inf.tipo_equipo, inf.id);
       let anexaGE = valoresVaciosGE();
       if (inf.tipo_equipo === "grupo_electrogeno") {
@@ -148,23 +154,28 @@ export function EditorInforme({ id }: { id: string }) {
     const { informe: inf, valores: val, valoresGE: ge } = estadoRef.current;
     if (!inf) return;
     const faltantes: string[] = [];
-    if (!inf.cliente_nombre.trim()) faltantes.push("Cliente / Empresa");
-    if (inf.horas_trabajadas === null) faltantes.push("Total Horas Trabajadas");
-    if (inf.maquina_operativa === null) faltantes.push("¿La máquina queda operativa?");
-    if (inf.tipo_equipo !== "extraordinarios") {
-      if (inf.tipo_equipo === "grupo_electrogeno") {
-        for (const campo of CAMPOS_GE) {
-          if (campo === "informe_id") continue;
-          if (ge[campo] === null || ge[campo] === undefined) faltantes.push(CAMPO_LABELS_GE[campo]);
-        }
-      } else {
-        for (const campo of CAMPOS_POR_TIPO[inf.tipo_equipo]) {
-          if (val[campo] === null) faltantes.push(CAMPO_LABELS[campo]);
+    if (inf.modo_informe === "observacion") {
+      if (!inf.observaciones?.trim()) faltantes.push("Trabajos realizados / Observaciones");
+    } else {
+      if (!inf.cliente_nombre.trim()) faltantes.push("Cliente / Empresa");
+      if (inf.horas_trabajadas === null) faltantes.push("Total Horas Trabajadas");
+      if (inf.maquina_operativa === null) faltantes.push("¿La máquina queda operativa?");
+      if (inf.tipo_equipo !== "extraordinarios") {
+        if (inf.tipo_equipo === "grupo_electrogeno") {
+          for (const campo of CAMPOS_GE) {
+            if (campo === "informe_id") continue;
+            if (ge[campo] === null || ge[campo] === undefined) faltantes.push(CAMPO_LABELS_GE[campo]);
+          }
+        } else {
+          for (const campo of CAMPOS_POR_TIPO[inf.tipo_equipo]) {
+            if (inf.tipo_equipo === "vehiculos" && (campo === "horometro" || campo === "kilometros")) continue;
+            if (val[campo] === null) faltantes.push(CAMPO_LABELS[campo]);
+          }
         }
       }
+      const fotos = await db.archivos.where({ informe_id: inf.id, tipo: "foto" }).count();
+      if (fotos < 3) faltantes.push("Registro Fotográfico (mínimo 3 fotos)");
     }
-    const fotos = await db.archivos.where({ informe_id: inf.id, tipo: "foto" }).count();
-    if (fotos < 3) faltantes.push("Registro Fotográfico (mínimo 3 fotos)");
     if (faltantes.length > 0) {
       mostrarToast({ mensaje: `Faltan: ${faltantes.slice(0, 3).join(", ")}...`, tipo: "error" });
       return;
@@ -355,13 +366,14 @@ export function EditorInforme({ id }: { id: string }) {
             tipo={informe.tipo_equipo}
             valores={valores}
             onChange={patchValores}
-            valoresGE={valoresGE}
-            onChangeGE={patchValoresGE}
+             valoresGE={valoresGE}
+             onChangeGE={patchValoresGE}
+             obligatoria={informe.modo_informe !== "observacion"}
           />
           <Divisor />
           <SeccionOperativa informe={informe} onChange={patchInforme} />
           <Divisor />
-          <SeccionHoras informe={informe} onChange={patchInforme} />
+           <SeccionHoras informe={informe} onChange={patchInforme} obligatoria={informe.modo_informe !== "observacion"} />
           <Divisor />
           <SeccionRepuestos informe={informe} onChange={patchInforme} />
           <Divisor />
@@ -372,7 +384,7 @@ export function EditorInforme({ id }: { id: string }) {
             redactandoIA={redactandoIA}
           />
           <Divisor />
-          <SeccionFotos informeId={informe.id} cerrado={informe.cerrado} />
+           <SeccionFotos informeId={informe.id} cerrado={informe.cerrado} obligatoria={informe.modo_informe !== "observacion"} />
           <Divisor />
           <SeccionFirmas informe={informe} onChange={patchInforme} />
         </fieldset>

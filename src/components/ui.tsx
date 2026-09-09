@@ -114,6 +114,12 @@ export const OPCIONES_OK_MAL = [
   { value: "mal", label: "Mal" },
 ];
 
+export const OPCIONES_OK_MAL_NO_TIENE = [
+  { value: "ok", label: "Ok" },
+  { value: "mal", label: "Mal" },
+  { value: "no_tiene", label: "No tiene" },
+];
+
 export const OPCIONES_NIVEL = [
   { value: "ok", label: "Ok" },
   { value: "bajo", label: "Bajo" },
@@ -134,6 +140,12 @@ export const OPCIONES_OPTIMO_BAJO_ALTO = [
 export const OPCIONES_OK_BAJO = [
   { value: "ok", label: "Ok" },
   { value: "bajo", label: "Bajo" },
+];
+
+export const OPCIONES_OK_BAJO_ALTO = [
+  { value: "ok", label: "Ok" },
+  { value: "bajo", label: "Bajo" },
+  { value: "alto", label: "Alto" },
 ];
 
 export const OPCIONES_BAJA_ALTA = [

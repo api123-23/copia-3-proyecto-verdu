@@ -16,6 +16,7 @@ const CATEGORIAS: { value: CategoriaFoto; label: string }[] = [
   { value: "repuestos", label: "Repuestos" },
   { value: "final", label: "Estado Final" },
   { value: "falla", label: "Falla" },
+  { value: "horometro", label: "Horómetro" },
 ];
 
 function generarId(): string {
@@ -146,9 +147,11 @@ function FotoItem({ archivo, cerrado }: { archivo: ArchivoLocal; cerrado: boolea
 export default function SeccionFotos({
   informeId,
   cerrado,
+  obligatoria = true,
 }: {
   informeId: string;
   cerrado: boolean;
+  obligatoria?: boolean;
 }) {
   const [categoria, setCategoria] = useState<CategoriaFoto>("inicial");
   const [subiendo, setSubiendo] = useState(false);
@@ -194,7 +197,7 @@ export default function SeccionFotos({
   }
 
   return (
-    <Seccion titulo="Registro Fotográfico" badge="Obligatorio">
+    <Seccion titulo="Registro Fotográfico" badge={obligatoria ? "Obligatorio" : "Opcional"}>
       <div className="flex flex-col items-center gap-md">
         <div className="w-full max-w-xs space-y-md">
           <div className="space-y-sm">
@@ -264,7 +267,7 @@ export default function SeccionFotos({
             </div>
           ) : null}
           <p className="text-[12px] text-on-surface-variant text-center">
-            Mínimo 3 fotos ({fotos ? fotos.length : 0}/3)
+             {obligatoria ? `Mínimo 3 fotos (${fotos ? fotos.length : 0}/3)` : `Fotos opcionales (${fotos ? fotos.length : 0})`}
           </p>
         </div>
       </div>

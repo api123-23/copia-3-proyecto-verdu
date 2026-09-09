@@ -35,8 +35,11 @@ create table if not exists informes_generales (
   cliente_nombre text not null,
   cliente_telefono text,
   cliente_direccion text,
+  modelo text,
+  numero_serie text,
   tecnico_id uuid not null default auth.uid() references auth.users (id),
   fecha_hora timestamptz not null,
+  modo_informe text not null default 'comun' check (modo_informe in ('comun', 'observacion')),
   tipo_equipo text not null check (tipo_equipo in (
     'motocompresor', 'compresor', 'grupo_electrogeno', 'extraordinarios', 'vehiculos'
   )),
@@ -66,7 +69,7 @@ create table if not exists informes_motocompresor (
   aceite_motor text check (aceite_motor in ('ok', 'alto', 'bajo')),
   aceite_unidad text check (aceite_unidad in ('ok', 'alto', 'bajo')),
   refrig_radiador text check (refrig_radiador in ('ok', 'alto', 'bajo')),
-  estado_bateria text check (estado_bateria in ('ok', 'mal')),
+  estado_bateria text check (estado_bateria in ('ok', 'mal', 'no_tiene')),
   conec_purga text check (conec_purga in ('si', 'no')),
   inst_electrica text check (inst_electrica in ('ok', 'mal')),
   carroceria text check (carroceria in ('ok', 'mal')),
@@ -91,7 +94,6 @@ create table if not exists informes_compresor (
   aislacion_suelo text check (aislacion_suelo in ('si', 'no')),
   tension_linea numeric(10, 2),
   temp_ambiente numeric(10, 2),
-  temp_refrigerante numeric(10, 2),
   circuito_refr_m text check (circuito_refr_m in ('ok', 'mal')),
   circuito_despresuriz text check (circuito_despresuriz in ('si', 'no')),
   circuito_arranque text check (circuito_arranque in ('ok', 'mal')),
@@ -99,12 +101,13 @@ create table if not exists informes_compresor (
   circuito_electr text check (circuito_electr in ('ok', 'mal')),
   tiempo_y_delta text check (tiempo_y_delta in ('ok', 'bajo', 'alto')),
   diferencial text,
-  perdida_aceite_motor text check (perdida_aceite_motor in ('si', 'no'))
+  perdida_aceite_unidad text check (perdida_aceite_unidad in ('si', 'no'))
 );
 
 create table if not exists informes_vehiculos (
   informe_id uuid primary key references informes_generales (id) on delete cascade,
   horometro numeric(10, 2),
+  kilometros numeric(10, 2),
   aceite_motor text check (aceite_motor in ('ok', 'alto', 'bajo')),
   refrig_radiador text check (refrig_radiador in ('ok', 'alto', 'bajo')),
   estado_bateria text check (estado_bateria in ('ok', 'mal')),
@@ -133,7 +136,7 @@ create table if not exists informes_grupo_electrogeno (
   ge_motor_detenido_lineas_combustible text check (ge_motor_detenido_lineas_combustible in ('ok', 'mal')),
   ge_funcionamiento_sistema_arranque text check (ge_funcionamiento_sistema_arranque in ('ok', 'mal')),
   ge_funcionamiento_mangueras text check (ge_funcionamiento_mangueras in ('ok', 'mal')),
-  ge_funcionamiento_presion_aceite text check (ge_funcionamiento_presion_aceite in ('ok', 'bajo')),
+  ge_funcionamiento_presion_aceite text check (ge_funcionamiento_presion_aceite in ('ok', 'bajo', 'alto')),
   ge_funcionamiento_temp_agua text check (ge_funcionamiento_temp_agua in ('optimo', 'bajo', 'alto')),
   ge_funcionamiento_diferencial_temp text check (ge_funcionamiento_diferencial_temp in ('optimo', 'bajo', 'alto')),
   ge_funcionamiento_vibraciones text check (ge_funcionamiento_vibraciones in ('si', 'no')),
@@ -148,13 +151,14 @@ create table if not exists informes_grupo_electrogeno (
   ge_funcionamiento_perdidas_combustible text check (ge_funcionamiento_perdidas_combustible in ('si', 'no')),
   ge_funcionamiento_restriccion_escape text check (ge_funcionamiento_restriccion_escape in ('si', 'no')),
   ge_funcionamiento_restriccion_aire text check (ge_funcionamiento_restriccion_aire in ('si', 'no')),
-  ge_funcionamiento_frecuencia text check (ge_funcionamiento_frecuencia in ('ok', 'baja', 'alta')),
-  ge_funcionamiento_tension_linea text check (ge_funcionamiento_tension_linea in ('ok', 'baja', 'alta')),
+  ge_funcionamiento_frecuencia text check (ge_funcionamiento_frecuencia in ('optimo', 'baja', 'alta')),
+  ge_funcionamiento_tension_linea text check (ge_funcionamiento_tension_linea in ('optimo', 'baja', 'alta')),
   ge_funcionamiento_amperaje_f1 numeric(10, 2),
   ge_funcionamiento_amperaje_f2 numeric(10, 2),
   ge_funcionamiento_amperaje_f3 numeric(10, 2),
   ge_funcionamiento_tension_linea_carga text check (ge_funcionamiento_tension_linea_carga in ('ok', 'baja', 'alta')),
   ge_funcionamiento_temp_ambiente numeric(10, 2),
+  ge_funcionamiento_temp_refrigerante numeric(10, 2),
   ge_funcionamiento_inspeccion_bateria text check (ge_funcionamiento_inspeccion_bateria in ('ok', 'mal')),
   ge_funcionamiento_accion_electrico text check (ge_funcionamiento_accion_electrico in ('si', 'no'))
 );
@@ -163,7 +167,7 @@ create table if not exists informe_archivos (
   id uuid primary key,
   informe_id uuid not null references informes_generales (id) on delete cascade,
   tipo text not null check (tipo in ('foto', 'firma_tecnico', 'firma_cliente')),
-  categoria text check (categoria in ('inicial', 'desarrollo', 'repuestos', 'final', 'falla')),
+  categoria text check (categoria in ('inicial', 'desarrollo', 'repuestos', 'final', 'falla', 'horometro')),
   url text not null,
   creado_en timestamptz not null default now()
 );
@@ -252,6 +256,36 @@ $$;
 select public.garantizar_tecnico_set_null();
 
 alter table informes_generales alter column horas_trabajadas type numeric(10, 2);
+
+-- Datos generales y modo de informe. Se agregan también para instalaciones
+-- existentes, porque CREATE TABLE IF NOT EXISTS no modifica tablas previas.
+alter table informes_generales add column if not exists modelo text;
+alter table informes_generales add column if not exists numero_serie text;
+alter table informes_generales add column if not exists modo_informe text default 'comun';
+update informes_generales set modo_informe = 'comun' where modo_informe is null;
+alter table informes_generales drop constraint if exists informes_generales_modo_informe_check;
+alter table informes_generales add constraint informes_generales_modo_informe_check
+  check (modo_informe in ('comun', 'observacion'));
+alter table informes_generales alter column modo_informe set not null;
+
+-- Vehículos: horómetro y kilómetros son mediciones independientes y ambas
+-- pueden quedar vacías.
+alter table informes_vehiculos add column if not exists kilometros numeric(10, 2);
+
+-- Compresor: se elimina refrigerante y la pérdida de aceite pasa a llamarse
+-- aceite de unidad. La migración conserva los valores existentes.
+alter table informes_compresor drop column if exists temp_refrigerante;
+do $$
+begin
+  if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'informes_compresor' and column_name = 'perdida_aceite_motor')
+     and not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'informes_compresor' and column_name = 'perdida_aceite_unidad') then
+    alter table informes_compresor rename column perdida_aceite_motor to perdida_aceite_unidad;
+  elsif exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'informes_compresor' and column_name = 'perdida_aceite_motor')
+     and exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'informes_compresor' and column_name = 'perdida_aceite_unidad') then
+    update informes_compresor set perdida_aceite_unidad = coalesce(perdida_aceite_unidad, perdida_aceite_motor);
+    alter table informes_compresor drop column perdida_aceite_motor;
+  end if;
+end $$;
 
 -- Ayuda idempotente: elimina TODOS los checks de una columna (incluso si el nombre
 -- cambió por renombres o quedó truncado por el límite de 63 caracteres).
@@ -396,6 +430,36 @@ update informes_grupo_electrogeno set ge_funcionamiento_inspeccion_bateria = cas
   where ge_funcionamiento_inspeccion_bateria in ('si', 'no');
 alter table informes_grupo_electrogeno add constraint informes_grupo_electrogeno_ge_funcionamiento_inspeccion_bateria_check
   check (ge_funcionamiento_inspeccion_bateria in ('ok', 'mal'));
+
+-- MOTOCOMPRESOR: la batería también puede indicar que el equipo no tiene batería.
+select public.dropar_checks_de_columna('informes_motocompresor', 'estado_bateria');
+alter table informes_motocompresor add constraint informes_motocompresor_estado_bateria_no_tiene_check
+  check (estado_bateria in ('ok', 'mal', 'no_tiene'));
+
+-- GRUPO ELECTRÓGENO: nuevos dominios y temperatura del líquido refrigerante.
+select public.dropar_checks_de_columna('informes_grupo_electrogeno', 'ge_funcionamiento_presion_aceite');
+alter table informes_grupo_electrogeno add constraint informes_grupo_electrogeno_presion_aceite_alto_check
+  check (ge_funcionamiento_presion_aceite in ('ok', 'bajo', 'alto'));
+
+select public.dropar_checks_de_columna('informes_grupo_electrogeno', 'ge_funcionamiento_frecuencia');
+update informes_grupo_electrogeno set ge_funcionamiento_frecuencia = 'optimo'
+where ge_funcionamiento_frecuencia = 'ok';
+alter table informes_grupo_electrogeno add constraint informes_grupo_electrogeno_frecuencia_optimo_check
+  check (ge_funcionamiento_frecuencia in ('optimo', 'baja', 'alta'));
+
+select public.dropar_checks_de_columna('informes_grupo_electrogeno', 'ge_funcionamiento_tension_linea');
+update informes_grupo_electrogeno set ge_funcionamiento_tension_linea = 'optimo'
+where ge_funcionamiento_tension_linea = 'ok';
+alter table informes_grupo_electrogeno add constraint informes_grupo_electrogeno_tension_optimo_check
+  check (ge_funcionamiento_tension_linea in ('optimo', 'baja', 'alta'));
+
+alter table informes_grupo_electrogeno
+  add column if not exists ge_funcionamiento_temp_refrigerante numeric(10, 2);
+
+-- Fotos: categoría exclusiva para el horómetro.
+select public.dropar_checks_de_columna('informe_archivos', 'categoria');
+alter table informe_archivos add constraint informe_archivos_categoria_horometro_check
+  check (categoria in ('inicial', 'desarrollo', 'repuestos', 'final', 'falla', 'horometro'));
 
 -- NUMERACIÓN: 100% servidor, por orden de llegada.
 -- Una secuencia real garantiza números únicos y consecutivos aunque varios

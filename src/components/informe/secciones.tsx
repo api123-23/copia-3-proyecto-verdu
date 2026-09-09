@@ -89,8 +89,27 @@ export function SeccionCliente({
   onChange: (p: PatchInforme) => void;
 }) {
   return (
-    <Seccion titulo="Datos del Cliente" badge="Obligatorio">
+    <Seccion titulo="Datos del Cliente" badge={informe.modo_informe === "observacion" ? undefined : "Obligatorio"}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-sm">
+        <div className="md:col-span-2">
+          <Label>Tipo de informe</Label>
+          <div className="dual-option w-full max-w-sm">
+            <button
+              type="button"
+              className={informe.modo_informe === "comun" ? "selected-ok" : ""}
+              onClick={() => onChange({ modo_informe: "comun" })}
+            >
+              Informe común
+            </button>
+            <button
+              type="button"
+              className={informe.modo_informe === "observacion" ? "selected-ok" : ""}
+              onClick={() => onChange({ modo_informe: "observacion" })}
+            >
+              Observación
+            </button>
+          </div>
+        </div>
         <SelectorCliente informe={informe} onChange={onChange} />
         <div>
           <Label>Cliente / Empresa</Label>
@@ -163,6 +182,26 @@ export function SeccionCliente({
             ))}
           </select>
         </div>
+        <div>
+          <Label>Modelo</Label>
+          <input
+            className="input-technical"
+            placeholder="Modelo del equipo"
+            type="text"
+            value={informe.modelo ?? ""}
+            onChange={(e) => onChange({ modelo: e.target.value || null })}
+          />
+        </div>
+        <div>
+          <Label>Número de serie</Label>
+          <input
+            className="input-technical"
+            placeholder="Serie del equipo"
+            type="text"
+            value={informe.numero_serie ?? ""}
+            onChange={(e) => onChange({ numero_serie: e.target.value || null })}
+          />
+        </div>
       </div>
     </Seccion>
   );
@@ -229,12 +268,14 @@ export function SeccionTrabajos({
 export function SeccionHoras({
   informe,
   onChange,
+  obligatoria = true,
 }: {
   informe: InformeGeneral;
   onChange: (p: PatchInforme) => void;
+  obligatoria?: boolean;
 }) {
   return (
-    <Seccion titulo="Horas Trabajadas" badge="Obligatorio">
+    <Seccion titulo="Horas Trabajadas" badge={obligatoria ? "Obligatorio" : "Opcional"}>
       <div>
         <Label>
           Total Horas Trabajadas <span className="text-error">*</span>

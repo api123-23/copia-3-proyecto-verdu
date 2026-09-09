@@ -3,14 +3,16 @@
 import type { InformeGrupoElectrogeno, TipoEquipo, ValoresBase } from "@/lib/types";
 import { aplica, valoresVaciosGE } from "@/lib/informes";
 import {
+  OPCIONES_BAJA_ALTA,
   CampoNumero,
   GrupoTitulo,
   ItemSelect,
   ItemSelectFull,
-  OPCIONES_BAJA_ALTA,
   OPCIONES_NIVEL,
   OPCIONES_OK_BAJO,
+  OPCIONES_OK_BAJO_ALTO,
   OPCIONES_OK_MAL,
+  OPCIONES_OK_MAL_NO_TIENE,
   OPCIONES_OK_NO,
   OPCIONES_OPTIMO_BAJO_ALTO,
   OPCIONES_SI_NO,
@@ -53,7 +55,7 @@ function SeccionValoresGE({
         <div className="flex flex-col gap-1">
           <ItemSelectFull etiqueta="1. Sistema de arranque" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_funcionamiento_sistema_arranque} onChange={setGE("ge_funcionamiento_sistema_arranque")} />
           <ItemSelectFull etiqueta="2. Mangueras y conexiones" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_funcionamiento_mangueras} onChange={setGE("ge_funcionamiento_mangueras")} />
-          <ItemSelectFull etiqueta="3. Presión de aceite" opciones={OPCIONES_OK_BAJO} valor={valoresGE.ge_funcionamiento_presion_aceite} onChange={setGE("ge_funcionamiento_presion_aceite")} />
+           <ItemSelectFull etiqueta="3. Presión de aceite" opciones={OPCIONES_OK_BAJO_ALTO} valor={valoresGE.ge_funcionamiento_presion_aceite} onChange={setGE("ge_funcionamiento_presion_aceite")} />
           <ItemSelectFull etiqueta="4. Temp. Agua motor" opciones={OPCIONES_OPTIMO_BAJO_ALTO} valor={valoresGE.ge_funcionamiento_temp_agua} onChange={setGE("ge_funcionamiento_temp_agua")} />
           <ItemSelectFull etiqueta="5. Diferencial de Temperatura de Radiador" opciones={OPCIONES_OPTIMO_BAJO_ALTO} valor={valoresGE.ge_funcionamiento_diferencial_temp} onChange={setGE("ge_funcionamiento_diferencial_temp")} />
           <ItemSelectFull etiqueta="6. Vibraciones inusuales" opciones={OPCIONES_SI_NO} valor={valoresGE.ge_funcionamiento_vibraciones} onChange={setGE("ge_funcionamiento_vibraciones")} />
@@ -68,8 +70,8 @@ function SeccionValoresGE({
           <ItemSelectFull etiqueta="15. Pérdidas circuito combustible" opciones={OPCIONES_SI_NO} valor={valoresGE.ge_funcionamiento_perdidas_combustible} onChange={setGE("ge_funcionamiento_perdidas_combustible")} />
           <ItemSelectFull etiqueta="16. Restricc. en el escape" opciones={OPCIONES_SI_NO} valor={valoresGE.ge_funcionamiento_restriccion_escape} onChange={setGE("ge_funcionamiento_restriccion_escape")} />
           <ItemSelectFull etiqueta="17. Restricción en entrada y salida de aire" opciones={OPCIONES_SI_NO} valor={valoresGE.ge_funcionamiento_restriccion_aire} onChange={setGE("ge_funcionamiento_restriccion_aire")} />
-          <ItemSelectFull etiqueta="18. Frecuencia (medición)" opciones={OPCIONES_BAJA_ALTA} valor={valoresGE.ge_funcionamiento_frecuencia} onChange={setGE("ge_funcionamiento_frecuencia")} />
-          <ItemSelectFull etiqueta="19. Tensión de línea" opciones={OPCIONES_BAJA_ALTA} valor={valoresGE.ge_funcionamiento_tension_linea} onChange={setGE("ge_funcionamiento_tension_linea")} />
+           <ItemSelectFull etiqueta="18. Frecuencia (medición)" opciones={OPCIONES_OPTIMO_BAJO_ALTO} valor={valoresGE.ge_funcionamiento_frecuencia} onChange={setGE("ge_funcionamiento_frecuencia")} />
+           <ItemSelectFull etiqueta="19. Tensión de línea" opciones={OPCIONES_OPTIMO_BAJO_ALTO} valor={valoresGE.ge_funcionamiento_tension_linea} onChange={setGE("ge_funcionamiento_tension_linea")} />
           <div className="flex flex-col gap-1 bg-surface-container-low p-1.5 rounded">
             <span className="text-body-md font-body-md text-[12px]">20. Amperaje Fases</span>
             <div className="flex gap-2">
@@ -98,8 +100,18 @@ function SeccionValoresGE({
               onChange={(e) => onChangeGE({ ge_funcionamiento_temp_ambiente: e.target.value === "" ? null : Number(e.target.value) })}
             />
           </div>
-          <ItemSelectFull etiqueta="23. Inspección de batería" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_funcionamiento_inspeccion_bateria} onChange={setGE("ge_funcionamiento_inspeccion_bateria")} />
-          <ItemSelectFull etiqueta="24. Accionamiento de circ. eléctrico" opciones={OPCIONES_SI_NO} valor={valoresGE.ge_funcionamiento_accion_electrico} onChange={setGE("ge_funcionamiento_accion_electrico")} />
+           <div className="flex justify-between items-center bg-surface-container-low p-1.5 rounded">
+             <span className="text-body-md font-body-md text-[12px]">23. Temperatura líquido refrigerante</span>
+             <input
+               className="input-technical w-16 h-[22px] py-0 px-1 text-[11px] text-center text-data-mono font-data-mono"
+               type="number"
+               placeholder="°C"
+               value={valoresGE.ge_funcionamiento_temp_refrigerante ?? ""}
+               onChange={(e) => onChangeGE({ ge_funcionamiento_temp_refrigerante: e.target.value === "" ? null : Number(e.target.value) })}
+             />
+           </div>
+           <ItemSelectFull etiqueta="24. Inspección de batería" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_funcionamiento_inspeccion_bateria} onChange={setGE("ge_funcionamiento_inspeccion_bateria")} />
+           <ItemSelectFull etiqueta="25. Accionamiento de circ. eléctrico" opciones={OPCIONES_SI_NO} valor={valoresGE.ge_funcionamiento_accion_electrico} onChange={setGE("ge_funcionamiento_accion_electrico")} />
         </div>
       </div>
     </>
@@ -112,19 +124,22 @@ export default function SeccionValores({
   onChange,
   valoresGE,
   onChangeGE,
+  obligatoria,
 }: {
   tipo: TipoEquipo;
   valores: ValoresBase;
   onChange: (p: Patch) => void;
   valoresGE?: InformeGrupoElectrogeno;
   onChangeGE?: (p: PatchGE) => void;
+  obligatoria?: boolean;
 }) {
+  const badge = obligatoria === false ? "Opcional" : "Obligatorio";
   if (tipo === "extraordinarios") return null;
 
   if (tipo === "grupo_electrogeno") {
     if (!onChangeGE) return null;
     return (
-      <Seccion titulo="Valores">
+        <Seccion titulo="Valores" badge={badge}>
         <SeccionValoresGE valoresGE={valoresGE ?? valoresVaciosGE()} onChangeGE={onChangeGE} />
       </Seccion>
     );
@@ -164,7 +179,7 @@ export default function SeccionValores({
     aplica(tipo, "perdida_combustible");
 
   return (
-    <Seccion titulo="Valores" badge="Obligatorio">
+    <Seccion titulo="Valores" badge={badge}>
       <div className="space-y-md">
         {bloqueDetenido ? (
           <div>
@@ -172,6 +187,11 @@ export default function SeccionValores({
             {aplica(tipo, "horometro") ? (
               <div className="mb-sm">
                 <CampoNumero etiqueta="Horómetro" sufijo="HRS" valor={valores.horometro} onChange={set("horometro")} />
+              </div>
+            ) : null}
+            {aplica(tipo, "kilometros") ? (
+              <div className="mb-sm">
+                <CampoNumero etiqueta="Kilómetros" sufijo="KM" valor={valores.kilometros} onChange={set("kilometros")} />
               </div>
             ) : null}
             <div className="grid grid-cols-2 gap-sm mb-sm border-b border-outline-variant pb-sm">
@@ -186,7 +206,7 @@ export default function SeccionValores({
                 <ItemSelect etiqueta="Refrig. Rad." opciones={OPCIONES_NIVEL} valor={valores.refrig_radiador} onChange={set("refrig_radiador")} />
               ) : null}
               {aplica(tipo, "estado_bateria") ? (
-                <ItemSelect etiqueta="Est. Batería" opciones={OPCIONES_OK_MAL} valor={valores.estado_bateria} onChange={set("estado_bateria")} />
+                 <ItemSelect etiqueta="Est. Batería" opciones={tipo === "motocompresor" ? OPCIONES_OK_MAL_NO_TIENE : OPCIONES_OK_MAL} valor={valores.estado_bateria} onChange={set("estado_bateria")} />
               ) : null}
               {aplica(tipo, "conec_purga") ? (
                 <ItemSelect etiqueta="Conec. Purga" opciones={OPCIONES_SI_NO} valor={valores.conec_purga} onChange={set("conec_purga")} />
@@ -257,14 +277,16 @@ export default function SeccionValores({
             ) : null}
             {aplica(tipo, "temp_ambiente") ? (
               <div className="mb-sm border-b border-outline-variant pb-sm">
-                <h4 className="text-[10px] font-bold text-on-surface-variant mb-xs">TEMPERATURA (°C)</h4>
-                <div className="grid grid-cols-2 gap-sm">
-                  <CampoNumero etiqueta="Ambiente" valor={valores.temp_ambiente} onChange={set("temp_ambiente")} />
-                  <CampoNumero
-                    etiqueta={esCompresor ? "Aceite" : "Refrigerante"}
-                    valor={valores.temp_refrigerante}
-                    onChange={set("temp_refrigerante")}
-                  />
+                 <h4 className="text-[10px] font-bold text-on-surface-variant mb-xs">TEMPERATURA (°C)</h4>
+                 <div className="grid grid-cols-2 gap-sm">
+                   <CampoNumero etiqueta="Ambiente" valor={valores.temp_ambiente} onChange={set("temp_ambiente")} />
+                   {aplica(tipo, "temp_refrigerante") ? (
+                     <CampoNumero
+                       etiqueta="Refrigerante"
+                       valor={valores.temp_refrigerante}
+                       onChange={set("temp_refrigerante")}
+                     />
+                   ) : null}
                 </div>
               </div>
             ) : null}
@@ -299,7 +321,7 @@ export default function SeccionValores({
             <h4 className="text-[10px] font-bold text-on-surface-variant mb-xs">PÉRDIDAS</h4>
             <div className="grid grid-cols-2 gap-sm">
               {aplica(tipo, "perdida_aceite_motor") ? (
-                <ItemSelect etiqueta="Aceite Motor" opciones={OPCIONES_SI_NO} valor={valores.perdida_aceite_motor} onChange={set("perdida_aceite_motor")} />
+                 <ItemSelect etiqueta={esCompresor ? "Aceite Unidad" : "Aceite Motor"} opciones={OPCIONES_SI_NO} valor={valores.perdida_aceite_motor} onChange={set("perdida_aceite_motor")} />
               ) : null}
               {aplica(tipo, "perdida_refrigerante") ? (
                 <ItemSelect etiqueta="Refrigerante" opciones={OPCIONES_SI_NO} valor={valores.perdida_refrigerante} onChange={set("perdida_refrigerante")} />

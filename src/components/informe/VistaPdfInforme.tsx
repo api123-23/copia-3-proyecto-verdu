@@ -25,6 +25,7 @@ const CATEGORIAS: Record<string, string> = {
   repuestos: "Repuestos",
   final: "Estado Final",
   falla: "Falla",
+  horometro: "Horómetro",
 };
 
 function texto(valor: unknown): string {
@@ -148,6 +149,8 @@ function DatosGenerales({ informe }: { informe: InformeGeneral }) {
         <Fila etiqueta="Teléfono" valor={informe.cliente_telefono} />
         <Fila etiqueta="Dirección / Ubicación" valor={informe.cliente_direccion} />
         <Fila etiqueta="Equipo" valor={nombreEquipo(informe.tipo_equipo)} />
+        <Fila etiqueta="Modelo" valor={informe.modelo} />
+        <Fila etiqueta="Número de serie" valor={informe.numero_serie} />
       </div>
     </Bloque>
   );

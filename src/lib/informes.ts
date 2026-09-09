@@ -23,8 +23,11 @@ export function crearInforme(tecnico_id: string | null): InformeGeneral {
     cliente_nombre: "",
     cliente_telefono: null,
     cliente_direccion: null,
+    modelo: null,
+    numero_serie: null,
     tecnico_id,
     fecha_hora: ahora,
+    modo_informe: "comun",
     tipo_equipo: "motocompresor",
     observaciones: null,
     observaciones_ia: null,
@@ -56,6 +59,7 @@ export function formatNumero(n: number | null): string {
 export function valoresVacios(): ValoresBase {
   return {
     horometro: null,
+    kilometros: null,
     aceite_motor: null,
     aceite_unidad: null,
     refrig_radiador: null,
@@ -133,6 +137,7 @@ export function valoresVaciosGE(): InformeGrupoElectrogeno {
     ge_funcionamiento_amperaje_f3: null,
     ge_funcionamiento_tension_linea_carga: null,
     ge_funcionamiento_temp_ambiente: null,
+    ge_funcionamiento_temp_refrigerante: null,
     ge_funcionamiento_inspeccion_bateria: null,
     ge_funcionamiento_accion_electrico: null,
   };
@@ -167,7 +172,6 @@ export const CAMPOS_POR_TIPO: Record<TipoEquipo, (keyof ValoresBase)[]> = {
     "aislacion_suelo",
     "tension_linea",
     "temp_ambiente",
-    "temp_refrigerante",
     "circuito_refr_m",
     "circuito_despresuriz",
     "circuito_arranque",
@@ -179,6 +183,7 @@ export const CAMPOS_POR_TIPO: Record<TipoEquipo, (keyof ValoresBase)[]> = {
   ],
   vehiculos: [
     "horometro",
+    "kilometros",
     "aceite_motor",
     "refrig_radiador",
     "estado_bateria",
@@ -197,6 +202,7 @@ export const CAMPOS_POR_TIPO: Record<TipoEquipo, (keyof ValoresBase)[]> = {
 
 export const CAMPO_LABELS: Record<keyof ValoresBase, string> = {
   horometro: "Horómetro",
+  kilometros: "Kilómetros",
   aceite_motor: "Aceite Motor",
   aceite_unidad: "Aceite Unidad",
   refrig_radiador: "Refrig. Rad.",
@@ -312,6 +318,7 @@ export const CAMPO_LABELS_GE: Record<keyof InformeGrupoElectrogeno, string> = {
   ge_funcionamiento_amperaje_f3: "Amperaje F3",
   ge_funcionamiento_tension_linea_carga: "Tensión Línea Carga",
   ge_funcionamiento_temp_ambiente: "Temp. Ambiente",
+  ge_funcionamiento_temp_refrigerante: "Temp. Líquido Refrigerante",
   ge_funcionamiento_inspeccion_bateria: "Inspección Batería",
   ge_funcionamiento_accion_electrico: "Acción Eléctrico",
 };
@@ -344,6 +351,8 @@ export function normalizarValores(
     ]) {
       if (ge[campo] === "mal") ge[campo] = "bajo";
     }
+    if (ge.ge_funcionamiento_frecuencia === "ok") ge.ge_funcionamiento_frecuencia = "optimo";
+    if (ge.ge_funcionamiento_tension_linea === "ok") ge.ge_funcionamiento_tension_linea = "optimo";
   } else if (tipo === "compresor" || tipo === "motocompresor") {
     if (valores.aceite_unidad === "si") valores.aceite_unidad = "ok";
     else if (valores.aceite_unidad === "no") valores.aceite_unidad = "bajo";
@@ -364,6 +373,10 @@ export function construirAnexa(
   if (tipo === "grupo_electrogeno") return null;
   const out: Record<string, unknown> = { informe_id };
   for (const campo of CAMPOS_POR_TIPO[tipo]) out[campo] = v[campo];
+  if (tipo === "compresor") {
+    out.perdida_aceite_unidad = out.perdida_aceite_motor;
+    delete out.perdida_aceite_motor;
+  }
   normalizarValores(tipo, out);
   return out;
 }
@@ -424,6 +437,10 @@ export async function cargarAnexa(
   if (!fila) return {};
   const resto = { ...fila } as unknown as Record<string, unknown>;
   delete resto.informe_id;
+  if (tipo === "compresor") {
+    resto.perdida_aceite_motor = resto.perdida_aceite_unidad;
+    delete resto.perdida_aceite_unidad;
+  }
   normalizarValores(tipo, resto);
   return resto as Partial<ValoresBase>;
 }
