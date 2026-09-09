@@ -323,7 +323,7 @@ export function VistaPdfInforme({ id }: { id: string }) {
       {!cargandoArchivos && erroresArchivos.length > 0 ? (
         <p className="pdf-aviso-imagenes no-print">No se pudieron cargar todas las fotos. Revisá la conexión y reintentá.</p>
       ) : null}
-      <main className="pdf-hoja">
+      <main className={`pdf-hoja ${grupo ? "pdf-hoja-ge" : "pdf-hoja-general"}`}>
         <div className="pdf-contenido-principal">
           <Cabecera informe={informe} grupo={grupo} />
           <DatosGenerales informe={informe} />
