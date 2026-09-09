@@ -260,13 +260,11 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       sincronizado_en: new Date().toISOString(),
     };
     const data = await conReintentos(3, async () => {
-      const { data: fila, error } = await supabase()
+      const { error } = await supabase()
         .from("informes_generales")
-        .upsert(payload)
-        .select()
-        .single();
+        .upsert(payload);
       if (error) throw error;
-      return fila;
+      return { numero_registro: numeroRegistro };
     }).catch((e) => {
       throw new Error(`Guardado del informe en servidor (${mensajeDe(e)})`);
     });

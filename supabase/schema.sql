@@ -573,6 +573,25 @@ create trigger trg_touch_clientes
   before update on clientes
   for each row execute function public.tocar_actualizado_en();
 
+-- Visibilidad: los técnicos solo pueden consultar sus informes sin firma de
+-- cliente; los administradores pueden consultar todos.
+create or replace function public.puede_ver_informe(informe uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select public.es_admin()
+    or exists (
+      select 1
+      from public.informes_generales g
+      where g.id = informe
+        and g.tecnico_id = auth.uid()
+        and g.estado_firma <> 'firmado'
+    );
+$$;
+
 alter table perfiles enable row level security;
 alter table clientes enable row level security;
 alter table informes_generales enable row level security;
@@ -612,21 +631,21 @@ create policy clientes_delete_admin on clientes for delete to authenticated
 
 drop policy if exists informes_select on informes_generales;
 create policy informes_select on informes_generales for select to authenticated
-  using (true);
+  using (public.es_admin() or (tecnico_id = auth.uid() and estado_firma <> 'firmado'));
 drop policy if exists informes_insert on informes_generales;
 create policy informes_insert on informes_generales for insert to authenticated
   with check (true);
 drop policy if exists informes_update on informes_generales;
 create policy informes_update on informes_generales for update to authenticated
-  using (true)
-  with check (true);
+  using (public.es_admin() or tecnico_id = auth.uid())
+  with check (public.es_admin() or tecnico_id = auth.uid());
 drop policy if exists informes_delete_admin on informes_generales;
 create policy informes_delete_admin on informes_generales for delete to authenticated
   using (true);
 
 drop policy if exists moto_select on informes_motocompresor;
 create policy moto_select on informes_motocompresor for select to authenticated
-  using (true);
+  using (public.puede_ver_informe(informe_id));
 drop policy if exists moto_write on informes_motocompresor;
 create policy moto_write on informes_motocompresor for insert to authenticated
   with check (true);
@@ -639,7 +658,7 @@ create policy moto_delete on informes_motocompresor for delete to authenticated
 
 drop policy if exists comp_select on informes_compresor;
 create policy comp_select on informes_compresor for select to authenticated
-  using (true);
+  using (public.puede_ver_informe(informe_id));
 drop policy if exists comp_write on informes_compresor;
 create policy comp_write on informes_compresor for insert to authenticated
   with check (true);
@@ -652,7 +671,7 @@ create policy comp_delete on informes_compresor for delete to authenticated
 
 drop policy if exists veh_select on informes_vehiculos;
 create policy veh_select on informes_vehiculos for select to authenticated
-  using (true);
+  using (public.puede_ver_informe(informe_id));
 drop policy if exists veh_write on informes_vehiculos;
 create policy veh_write on informes_vehiculos for insert to authenticated
   with check (true);
@@ -665,7 +684,7 @@ create policy veh_delete on informes_vehiculos for delete to authenticated
 
 drop policy if exists ge_select on informes_grupo_electrogeno;
 create policy ge_select on informes_grupo_electrogeno for select to authenticated
-  using (true);
+  using (public.puede_ver_informe(informe_id));
 drop policy if exists ge_write on informes_grupo_electrogeno;
 create policy ge_write on informes_grupo_electrogeno for insert to authenticated
   with check (true);
@@ -678,7 +697,7 @@ create policy ge_delete on informes_grupo_electrogeno for delete to authenticate
 
 drop policy if exists archivos_select on informe_archivos;
 create policy archivos_select on informe_archivos for select to authenticated
-  using (true);
+  using (public.puede_ver_informe(informe_id));
 drop policy if exists archivos_insert on informe_archivos;
 create policy archivos_insert on informe_archivos for insert to authenticated
   with check (true);
