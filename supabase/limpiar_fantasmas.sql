@@ -9,7 +9,8 @@ where a.informe_id = g.id
     select 1 from (
       select informe_id from informes_motocompresor
       union all select informe_id from informes_compresor
-      union all select informe_id from informes_vehiculos
+       union all select informe_id from informes_vehiculos
+       union all select informe_id from informes_secadores
       union all select informe_id from informes_grupo_electrogeno
     ) v where v.informe_id = g.id
   )
@@ -21,10 +22,11 @@ where a.informe_id = g.id
 delete from informes_generales g
 where not exists (
     select 1 from (
-      select informe_id from informes_motocompresor
-      union all select informe_id from informes_compresor
-      union all select informe_id from informes_vehiculos
-      union all select informe_id from informes_grupo_electrogeno
+       select informe_id from informes_motocompresor
+       union all select informe_id from informes_compresor
+       union all select informe_id from informes_vehiculos
+       union all select informe_id from informes_secadores
+       union all select informe_id from informes_grupo_electrogeno
     ) v where v.informe_id = g.id
   )
   and not exists (select 1 from informe_archivos a where a.informe_id = g.id)

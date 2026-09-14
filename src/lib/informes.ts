@@ -12,6 +12,7 @@ export const TIPOS_EQUIPO: { value: TipoEquipo; label: string }[] = [
   { value: "grupo_electrogeno", label: "Grupo Electrógeno" },
   { value: "extraordinarios", label: "Extraordinarios" },
   { value: "vehiculos", label: "Vehículos Móviles y Máquinas Viales" },
+  { value: "secadores", label: "Secadores" },
 ];
 
 export function crearInforme(tecnico_id: string | null): InformeGeneral {
@@ -82,6 +83,7 @@ export function valoresVacios(): ValoresBase {
     cons_descarga_f3: null,
     temp_ambiente: null,
     temp_refrigerante: null,
+    pto_rocio: null,
     presion_unidad_comp: null,
     presion_aceite_motor: null,
     circuito_refr_m: null,
@@ -195,6 +197,21 @@ export const CAMPOS_POR_TIPO: Record<TipoEquipo, (keyof ValoresBase)[]> = {
     "perdida_aire",
     "perdida_combustible",
   ],
+  secadores: [
+    "horometro",
+    "inst_electrica",
+    "carroceria",
+    "jabalina",
+    "aislacion_suelo",
+    "conec_purga",
+    "tension_linea",
+    "perdida_refrigerante",
+    "perdida_aire",
+    "temp_ambiente",
+    "pto_rocio",
+    "circuito_seguridad",
+    "circuito_electr",
+  ],
   extraordinarios: [],
   grupo_electrogeno: [],
 };
@@ -225,6 +242,7 @@ export const CAMPO_LABELS: Record<keyof ValoresBase, string> = {
   cons_descarga_f3: "Cons. Descarga F3",
   temp_ambiente: "Temp. Ambiente",
   temp_refrigerante: "Temp. Refrigerante/Aceite",
+  pto_rocio: "Pto. Rocío",
   presion_unidad_comp: "Presión Unid. Comp.",
   presion_aceite_motor: "Presión Aceite Motor",
   circuito_refr_m: "Refr. M.",
@@ -393,6 +411,7 @@ export async function guardarBorrador(
       db.valores_motocompresor,
       db.valores_compresor,
       db.valores_vehiculos,
+      db.valores_secadores,
       db.valores_grupo_electrogeno,
     ],
     async () => {
@@ -401,6 +420,7 @@ export async function guardarBorrador(
       await db.valores_motocompresor.where("informe_id").equals(actualizado.id).delete();
       await db.valores_compresor.where("informe_id").equals(actualizado.id).delete();
       await db.valores_vehiculos.where("informe_id").equals(actualizado.id).delete();
+      await db.valores_secadores.where("informe_id").equals(actualizado.id).delete();
       await db.valores_grupo_electrogeno.where("informe_id").equals(actualizado.id).delete();
       if (anexa) {
         const tabla =
@@ -408,7 +428,9 @@ export async function guardarBorrador(
             ? db.valores_motocompresor
             : actualizado.tipo_equipo === "compresor"
               ? db.valores_compresor
-              : db.valores_vehiculos;
+              : actualizado.tipo_equipo === "vehiculos"
+                ? db.valores_vehiculos
+                : db.valores_secadores;
         await tabla.put(anexa as never);
       }
       if (actualizado.tipo_equipo === "grupo_electrogeno" && valoresGE) {
@@ -431,7 +453,9 @@ export async function cargarAnexa(
       ? db.valores_motocompresor
       : tipo === "compresor"
         ? db.valores_compresor
-        : db.valores_vehiculos;
+        : tipo === "vehiculos"
+          ? db.valores_vehiculos
+          : db.valores_secadores;
   const fila = await tabla.get(informe_id);
   if (!fila) return {};
   const resto = { ...fila } as unknown as Record<string, unknown>;

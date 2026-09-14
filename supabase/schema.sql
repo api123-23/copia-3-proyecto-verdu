@@ -40,7 +40,7 @@ create table if not exists informes_generales (
   tecnico_id uuid not null default auth.uid() references auth.users (id),
   fecha_hora timestamptz not null,
   tipo_equipo text not null check (tipo_equipo in (
-    'motocompresor', 'compresor', 'grupo_electrogeno', 'extraordinarios', 'vehiculos'
+    'motocompresor', 'compresor', 'grupo_electrogeno', 'extraordinarios', 'vehiculos', 'secadores'
   )),
   observaciones text,
   observaciones_ia text,
@@ -125,6 +125,23 @@ create table if not exists informes_vehiculos (
   perdida_refrigerante text check (perdida_refrigerante in ('si', 'no')),
   perdida_aire text check (perdida_aire in ('si', 'no')),
   perdida_combustible text check (perdida_combustible in ('si', 'no'))
+);
+
+create table if not exists informes_secadores (
+  informe_id uuid primary key references informes_generales (id) on delete cascade,
+  horometro numeric(10, 2),
+  inst_electrica text check (inst_electrica in ('ok', 'mal')),
+  carroceria text check (carroceria in ('ok', 'mal')),
+  jabalina text check (jabalina in ('si', 'no')),
+  aislacion_suelo text check (aislacion_suelo in ('si', 'no')),
+  conec_purga text check (conec_purga in ('si', 'no')),
+  tension_linea numeric(10, 2),
+  perdida_refrigerante text check (perdida_refrigerante in ('si', 'no')),
+  perdida_aire text check (perdida_aire in ('si', 'no')),
+  temp_ambiente numeric(10, 2),
+  pto_rocio text check (pto_rocio in ('optimo', 'alto', 'bajo')),
+  circuito_seguridad text check (circuito_seguridad in ('ok', 'mal')),
+  circuito_electr text check (circuito_electr in ('ok', 'mal'))
 );
 
 create table if not exists informes_grupo_electrogeno (
@@ -217,9 +234,15 @@ begin
 end;
 $$;
 
+-- Nuevo tipo de equipo: Secadores.
+alter table informes_generales drop constraint if exists informes_generales_tipo_equipo_check;
+alter table informes_generales add constraint informes_generales_tipo_equipo_check
+  check (tipo_equipo in ('motocompresor', 'compresor', 'grupo_electrogeno', 'extraordinarios', 'vehiculos', 'secadores'));
+
 select public.garantizar_cascade('informes_motocompresor');
 select public.garantizar_cascade('informes_compresor');
 select public.garantizar_cascade('informes_vehiculos');
+select public.garantizar_cascade('informes_secadores');
 select public.garantizar_cascade('informes_grupo_electrogeno');
 select public.garantizar_cascade('informe_archivos');
 
@@ -718,6 +741,7 @@ alter table informes_generales enable row level security;
 alter table informes_motocompresor enable row level security;
 alter table informes_compresor enable row level security;
 alter table informes_vehiculos enable row level security;
+alter table informes_secadores enable row level security;
 alter table informes_grupo_electrogeno enable row level security;
 alter table informe_archivos enable row level security;
 
@@ -800,6 +824,19 @@ create policy veh_update on informes_vehiculos for update to authenticated
   using (public.puede_editar_informe(informe_id));
 drop policy if exists veh_delete on informes_vehiculos;
 create policy veh_delete on informes_vehiculos for delete to authenticated
+  using (true);
+
+drop policy if exists sec_select on informes_secadores;
+create policy sec_select on informes_secadores for select to authenticated
+  using (public.puede_ver_informe(informe_id));
+drop policy if exists sec_write on informes_secadores;
+create policy sec_write on informes_secadores for insert to authenticated
+  with check (public.puede_editar_informe(informe_id));
+drop policy if exists sec_update on informes_secadores;
+create policy sec_update on informes_secadores for update to authenticated
+  using (public.puede_editar_informe(informe_id));
+drop policy if exists sec_delete on informes_secadores;
+create policy sec_delete on informes_secadores for delete to authenticated
   using (true);
 
 drop policy if exists ge_select on informes_grupo_electrogeno;

@@ -6,6 +6,7 @@ import type {
   InformeGeneral,
   InformeGrupoElectrogeno,
   InformeMotocompresor,
+  InformeSecadores,
   InformeVehiculos,
 } from "./types";
 
@@ -14,6 +15,7 @@ class AppDB extends Dexie {
   valores_motocompresor!: Table<InformeMotocompresor, string>;
   valores_compresor!: Table<InformeCompresor, string>;
   valores_vehiculos!: Table<InformeVehiculos, string>;
+  valores_secadores!: Table<InformeSecadores, string>;
   valores_grupo_electrogeno!: Table<InformeGrupoElectrogeno, string>;
   archivos!: Table<ArchivoLocal, string>;
   blobs!: Table<BlobArchivo, string>;
@@ -26,6 +28,7 @@ class AppDB extends Dexie {
       valores_motocompresor: "informe_id",
       valores_compresor: "informe_id",
       valores_vehiculos: "informe_id",
+      valores_secadores: "informe_id",
       valores_grupo_electrogeno: "informe_id",
       archivos: "id, informe_id, tipo, categoria, estado_sync",
     });
@@ -36,6 +39,7 @@ class AppDB extends Dexie {
         valores_motocompresor: "informe_id",
         valores_compresor: "informe_id",
         valores_vehiculos: "informe_id",
+        valores_secadores: "informe_id",
         valores_grupo_electrogeno: "informe_id",
         archivos: "id, informe_id, tipo, categoria, estado_sync",
         blobs: "id",
@@ -57,7 +61,19 @@ class AppDB extends Dexie {
       valores_motocompresor: "informe_id",
       valores_compresor: "informe_id",
       valores_vehiculos: "informe_id",
+      valores_secadores: "informe_id",
       valores_grupo_electrogeno: "informe_id",
+      archivos: "id, informe_id, tipo, categoria, estado_sync",
+      blobs: "id",
+    });
+    this.version(4).stores({
+      informes:
+        "id, numero_registro, cliente_id, tecnico_id, tipo_equipo, estado_firma, estado_sync, fecha_hora",
+      valores_motocompresor: "informe_id",
+      valores_compresor: "informe_id",
+      valores_vehiculos: "informe_id",
+      valores_grupo_electrogeno: "informe_id",
+      valores_secadores: "informe_id",
       archivos: "id, informe_id, tipo, categoria, estado_sync",
       blobs: "id",
     });

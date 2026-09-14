@@ -3,7 +3,8 @@ export type TipoEquipo =
   | "compresor"
   | "grupo_electrogeno"
   | "extraordinarios"
-  | "vehiculos";
+  | "vehiculos"
+  | "secadores";
 
 export type EstadoFirma = "pendiente" | "firmado";
 
@@ -103,6 +104,7 @@ export interface ValoresBase {
   cons_descarga_f3: number | null;
   temp_ambiente: number | null;
   temp_refrigerante: number | null;
+  pto_rocio: OptimoBajoAlto;
   presion_unidad_comp: number | null;
   presion_aceite_motor: Nivel;
   circuito_refr_m: OkMal;
@@ -197,6 +199,36 @@ export type InformeVehiculos = { informe_id: string } & Omit<
   | "circuito_electr"
   | "tiempo_y_delta"
   | "diferencial"
+>;
+
+export type InformeSecadores = { informe_id: string } & Omit<
+  ValoresBase,
+  | "kilometros"
+  | "aceite_motor"
+  | "aceite_unidad"
+  | "refrig_radiador"
+  | "estado_bateria"
+  | "rpm_min"
+  | "rpm_max"
+  | "tension_gen_f1"
+  | "tension_gen_f2"
+  | "tension_gen_f3"
+  | "cons_carga_f1"
+  | "cons_carga_f2"
+  | "cons_carga_f3"
+  | "cons_descarga_f1"
+  | "cons_descarga_f2"
+  | "cons_descarga_f3"
+  | "temp_refrigerante"
+  | "presion_unidad_comp"
+  | "presion_aceite_motor"
+  | "circuito_refr_m"
+  | "circuito_despresuriz"
+  | "circuito_arranque"
+  | "tiempo_y_delta"
+  | "diferencial"
+  | "perdida_aceite_motor"
+  | "perdida_combustible"
 >;
 
 export interface InformeGrupoElectrogeno {

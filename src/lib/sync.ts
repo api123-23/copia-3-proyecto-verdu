@@ -28,6 +28,8 @@ export function tablaAnexa(tipo: TipoEquipo): string | null {
       return "informes_compresor";
     case "vehiculos":
       return "informes_vehiculos";
+    case "secadores":
+      return "informes_secadores";
     case "grupo_electrogeno":
       return "informes_grupo_electrogeno";
     default:
@@ -335,11 +337,12 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
 
     await db.transaction(
       "rw",
-      [db.informes, db.valores_motocompresor, db.valores_compresor, db.valores_vehiculos, db.valores_grupo_electrogeno, db.archivos, db.blobs],
+      [db.informes, db.valores_motocompresor, db.valores_compresor, db.valores_vehiculos, db.valores_secadores, db.valores_grupo_electrogeno, db.archivos, db.blobs],
       async () => {
         await db.valores_motocompresor.delete(informe.id);
         await db.valores_compresor.delete(informe.id);
         await db.valores_vehiculos.delete(informe.id);
+        await db.valores_secadores.delete(informe.id);
         await db.valores_grupo_electrogeno.delete(informe.id);
         const archLocal = await db.archivos.where("informe_id").equals(informe.id).toArray();
         for (const a of archLocal) {

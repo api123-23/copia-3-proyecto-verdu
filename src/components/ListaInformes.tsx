@@ -154,18 +154,20 @@ export function ListaInformes() {
         [
           db.informes,
           db.valores_motocompresor,
-          db.valores_compresor,
-          db.valores_vehiculos,
-          db.valores_grupo_electrogeno,
+           db.valores_compresor,
+           db.valores_vehiculos,
+           db.valores_secadores,
+           db.valores_grupo_electrogeno,
           db.archivos,
           db.blobs,
         ],
         async () => {
           await db.informes.clear();
           await db.valores_motocompresor.clear();
-          await db.valores_compresor.clear();
-          await db.valores_vehiculos.clear();
-          await db.valores_grupo_electrogeno.clear();
+           await db.valores_compresor.clear();
+           await db.valores_vehiculos.clear();
+           await db.valores_secadores.clear();
+           await db.valores_grupo_electrogeno.clear();
           await db.archivos.clear();
           await db.blobs.clear();
         }

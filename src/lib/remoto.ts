@@ -94,7 +94,7 @@ export async function traerInformeRemoto(id: string): Promise<boolean> {
 
   await db.transaction(
     "rw",
-    [db.informes, db.valores_motocompresor, db.valores_compresor, db.valores_vehiculos, db.valores_grupo_electrogeno, db.archivos],
+    [db.informes, db.valores_motocompresor, db.valores_compresor, db.valores_vehiculos, db.valores_secadores, db.valores_grupo_electrogeno, db.archivos],
     async () => {
       await db.informes.put(informe);
       if (anexa) {
@@ -103,7 +103,9 @@ export async function traerInformeRemoto(id: string): Promise<boolean> {
             ? db.valores_motocompresor
             : informe.tipo_equipo === "compresor"
               ? db.valores_compresor
-              : db.valores_vehiculos;
+              : informe.tipo_equipo === "vehiculos"
+                ? db.valores_vehiculos
+                : db.valores_secadores;
         await destino.put({ informe_id: id, ...anexa } as never);
       }
       if (anexaGE) {

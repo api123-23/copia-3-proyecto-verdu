@@ -137,6 +137,12 @@ export const OPCIONES_OPTIMO_BAJO_ALTO = [
   { value: "alto", label: "Alto" },
 ];
 
+export const OPCIONES_OPTIMO_ALTO_BAJO = [
+  { value: "optimo", label: "Óptimo" },
+  { value: "alto", label: "Alto" },
+  { value: "bajo", label: "Bajo" },
+];
+
 export const OPCIONES_OK_BAJO = [
   { value: "ok", label: "Ok" },
   { value: "bajo", label: "Bajo" },
