@@ -682,6 +682,127 @@ $$;
 revoke all on function public.guardar_informe_general_sync(jsonb) from public;
 grant execute on function public.guardar_informe_general_sync(jsonb) to authenticated;
 
+-- Sincronización atómica: informe general, valores técnicos y metadatos de
+-- archivos se guardan en una sola transacción. Storage se gestiona desde el
+-- cliente y se revierte allí si esta función devuelve error.
+create or replace function public.sincronizar_informe_completo(
+  p_informe jsonb,
+  p_valores jsonb default null,
+  p_archivos jsonb default '[]'::jsonb
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  uid uuid := auth.uid();
+  informe_id uuid := (p_informe->>'id')::uuid;
+  existente public.informes_generales%rowtype;
+  tecnico uuid;
+  numero integer;
+  tabla text;
+  columnas_update text;
+begin
+  if uid is null then
+    raise exception 'Sesión no autenticada' using errcode = '42501';
+  end if;
+
+  select * into existente
+  from public.informes_generales
+  where id = informe_id;
+
+  if existente.id is not null then
+    if not public.puede_editar_informe(informe_id) then
+      raise exception 'El usuario no puede editar este informe' using errcode = '42501';
+    end if;
+    tecnico := existente.tecnico_id;
+    numero := coalesce(nullif(p_informe->>'numero_registro', '')::integer, existente.numero_registro);
+  else
+    tecnico := coalesce(nullif(p_informe->>'tecnico_id', '')::uuid, uid);
+    if not public.es_admin() and tecnico <> uid then
+      raise exception 'El técnico no puede crear un informe para otro usuario' using errcode = '42501';
+    end if;
+    numero := nullif(p_informe->>'numero_registro', '')::integer;
+    if numero is null then
+      numero := nextval('public.numero_informe_seq');
+    end if;
+  end if;
+
+  p_informe := jsonb_set(p_informe, '{numero_registro}', to_jsonb(numero), true);
+  p_informe := jsonb_set(p_informe, '{tecnico_id}', to_jsonb(tecnico), true);
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'informes_generales'
+      and column_name = 'modo_informe'
+  ) then
+    p_informe := jsonb_set(p_informe, '{modo_informe}', '"comun"'::jsonb, true);
+  end if;
+
+  select string_agg(format('%1$I = EXCLUDED.%1$I', column_name), ', ' order by ordinal_position)
+    into columnas_update
+  from information_schema.columns
+  where table_schema = 'public'
+    and table_name = 'informes_generales'
+    and column_name not in ('id', 'tecnico_id', 'creado_en');
+
+  execute format(
+    'insert into public.informes_generales
+       select * from jsonb_populate_record(null::public.%I, $1)
+     on conflict (id) do update set %s',
+    'informes_generales', columnas_update
+  ) using p_informe;
+
+  tabla := case p_informe->>'tipo_equipo'
+    when 'motocompresor' then 'informes_motocompresor'
+    when 'compresor' then 'informes_compresor'
+    when 'vehiculos' then 'informes_vehiculos'
+    when 'secadores' then 'informes_secadores'
+    when 'grupo_electrogeno' then 'informes_grupo_electrogeno'
+    else null
+  end;
+
+  if tabla is not null and p_valores is not null then
+    select string_agg(format('%1$I = EXCLUDED.%1$I', column_name), ', ' order by ordinal_position)
+      into columnas_update
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = tabla
+      and column_name <> 'informe_id';
+
+    execute format(
+      'insert into public.%I
+         select * from jsonb_populate_record(null::public.%I, $1)
+       on conflict (informe_id) do update set %s',
+      tabla, tabla, columnas_update
+    ) using p_valores;
+  end if;
+
+  if jsonb_array_length(coalesce(p_archivos, '[]'::jsonb)) > 0 then
+    insert into public.informe_archivos (id, informe_id, tipo, categoria, url)
+      select x.id, x.informe_id, x.tipo, x.categoria, x.url
+      from jsonb_to_recordset(p_archivos) as x(
+        id uuid,
+        informe_id uuid,
+        tipo text,
+        categoria text,
+        url text
+      )
+    on conflict (id) do update set
+      informe_id = excluded.informe_id,
+      tipo = excluded.tipo,
+      categoria = excluded.categoria,
+      url = excluded.url;
+  end if;
+
+  return jsonb_build_object('numero_registro', numero);
+end;
+$$;
+
+revoke all on function public.sincronizar_informe_completo(jsonb, jsonb, jsonb) from public;
+grant execute on function public.sincronizar_informe_completo(jsonb, jsonb, jsonb) to authenticated;
+
 create or replace function public.manejar_nuevo_usuario()
 returns trigger
 language plpgsql
