@@ -78,21 +78,15 @@ async function exigirConexion(): Promise<void> {
   }
 }
 
-async function actualizarOInsertar(
+async function upsertIdempotente(
   tabla: string,
-  columna: string,
-  valor: string,
-  fila: Record<string, unknown>
+  conflicto: string,
+  fila: Record<string, unknown>,
 ): Promise<void> {
-  const actualizado = await supabase()
+  const { error } = await supabase()
     .from(tabla)
-    .update(fila, { count: "exact" })
-    .eq(columna, valor);
-  if (actualizado.error) throw actualizado.error;
-  if ((actualizado.count ?? 0) === 0) {
-    const insertado = await supabase().from(tabla).insert(fila);
-    if (insertado.error) throw insertado.error;
-  }
+    .upsert(fila, { onConflict: conflicto });
+  if (error) throw error;
 }
 
 function mensajeDe(e: unknown): string {
@@ -274,7 +268,7 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       const out = construirAnexa(informe.tipo_equipo, informe.id, anexa as ValoresBase);
       if (out) {
 
-        await conReintentos(3, async () => actualizarOInsertar(tabla, "informe_id", informe.id, out)).catch((e) => {
+        await conReintentos(3, async () => upsertIdempotente(tabla, "informe_id", out)).catch((e) => {
           throw new Error(`Guardado de valores técnicos (${mensajeDe(e)})`);
         });
       }
@@ -285,7 +279,7 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       if (ge) {
         const out: Record<string, unknown> = { informe_id: informe.id };
         for (const campo of CAMPOS_GE) out[campo] = ge[campo];
-        await conReintentos(3, async () => actualizarOInsertar(tabla, "informe_id", informe.id, out)).catch((e) => {
+        await conReintentos(3, async () => upsertIdempotente(tabla, "informe_id", out)).catch((e) => {
           throw new Error(`Guardado de valores grupo electrógeno (${mensajeDe(e)})`);
         });
       }
@@ -304,7 +298,7 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
     if (filasArchivos.length > 0) {
       await conReintentos(3, async () => {
         for (const fila of filasArchivos) {
-          await actualizarOInsertar("informe_archivos", "id", fila.id, fila);
+          await upsertIdempotente("informe_archivos", "id", fila);
         }
       }).catch((e) => {
         throw new Error(`Guardado de archivos en servidor (${mensajeDe(e)})`);
