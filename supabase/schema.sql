@@ -824,33 +824,41 @@ begin
 
   select jsonb_build_object(
     'mensuales', coalesce((
-      select jsonb_agg(jsonb_build_object('mes', to_char(m.mes, 'YYYY-MM'), 'cantidad', coalesce(c.cantidad, 0)) order by m.mes)
-      from generate_series(date_trunc('month', p_desde::timestamp), date_trunc('month', p_hasta::timestamp), interval '1 month') as m(mes)
-      left join lateral (
-        select count(*)::integer as cantidad
-        from public.informes_generales g
-        where g.fecha_hora >= m.mes
-          and g.fecha_hora < m.mes + interval '1 month'
-      ) c on true
+      select jsonb_agg(jsonb_build_object('mes', to_char(q.mes, 'YYYY-MM'), 'cantidad', q.cantidad) order by q.mes)
+      from (
+        select m.mes, coalesce(c.cantidad, 0)::integer as cantidad
+        from generate_series(date_trunc('month', p_desde::timestamp), date_trunc('month', p_hasta::timestamp), interval '1 month') as m(mes)
+        left join lateral (
+          select count(*)::integer as cantidad
+          from public.informes_generales g
+          where g.fecha_hora >= m.mes
+            and g.fecha_hora < m.mes + interval '1 month'
+        ) c on true
+      ) q
     ), '[]'::jsonb),
     'tecnicos', coalesce((
-      select jsonb_agg(jsonb_build_object(
-        'id', coalesce(g.tecnico_id::text, 'sin-asignar'),
-        'nombre', coalesce(nullif(trim(concat_ws(' ', p.nombre, p.apellido)), ''), p.email, 'Sin técnico'),
-        'cantidad', count(*)::integer
-      ) order by count(*) desc, g.tecnico_id)
-      from public.informes_generales g
-      left join public.perfiles p on p.id = g.tecnico_id
-      where g.fecha_hora >= date_trunc('month', p_mes::timestamp)
-        and g.fecha_hora < date_trunc('month', p_mes::timestamp) + interval '1 month'
-      group by g.tecnico_id, p.nombre, p.apellido, p.email
+      select jsonb_agg(jsonb_build_object('id', q.id, 'nombre', q.nombre, 'cantidad', q.cantidad) order by q.cantidad desc, q.id)
+      from (
+        select
+          coalesce(g.tecnico_id::text, 'sin-asignar') as id,
+          coalesce(nullif(trim(concat_ws(' ', p.nombre, p.apellido)), ''), p.email, 'Sin técnico') as nombre,
+          count(*)::integer as cantidad
+        from public.informes_generales g
+        left join public.perfiles p on p.id = g.tecnico_id
+        where g.fecha_hora >= date_trunc('month', p_mes::timestamp)
+          and g.fecha_hora < date_trunc('month', p_mes::timestamp) + interval '1 month'
+        group by g.tecnico_id, p.nombre, p.apellido, p.email
+      ) q
     ), '[]'::jsonb),
     'equipos', coalesce((
-      select jsonb_agg(jsonb_build_object('tipo', g.tipo_equipo, 'cantidad', count(*)::integer) order by count(*) desc, g.tipo_equipo)
-      from public.informes_generales g
-      where g.fecha_hora >= date_trunc('month', p_mes::timestamp)
-        and g.fecha_hora < date_trunc('month', p_mes::timestamp) + interval '1 month'
-      group by g.tipo_equipo
+      select jsonb_agg(jsonb_build_object('tipo', q.tipo, 'cantidad', q.cantidad) order by q.cantidad desc, q.tipo)
+      from (
+        select g.tipo_equipo as tipo, count(*)::integer as cantidad
+        from public.informes_generales g
+        where g.fecha_hora >= date_trunc('month', p_mes::timestamp)
+          and g.fecha_hora < date_trunc('month', p_mes::timestamp) + interval '1 month'
+        group by g.tipo_equipo
+      ) q
     ), '[]'::jsonb)
   ) into resultado;
 
