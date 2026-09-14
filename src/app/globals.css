@@ -372,6 +372,11 @@
   font-size: 8pt;
 }
 
+.pdf-aclaracion span {
+  padding-top: 0.35rem;
+  border-top: 0;
+}
+
 .pdf-firma-vacia,
 .pdf-archivo-vacio {
   height: 3rem;
