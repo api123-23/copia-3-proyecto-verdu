@@ -803,6 +803,64 @@ $$;
 revoke all on function public.sincronizar_informe_completo(jsonb, jsonb, jsonb) from public;
 grant execute on function public.sincronizar_informe_completo(jsonb, jsonb, jsonb) to authenticated;
 
+-- Estadísticas agregadas: solo administradores, sin transferir todos los
+-- informes al navegador.
+create or replace function public.estadisticas_informes(
+  p_desde date,
+  p_hasta date,
+  p_mes date
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  resultado jsonb;
+begin
+  if not public.es_admin() then
+    raise exception 'Solo los administradores pueden consultar estadísticas' using errcode = '42501';
+  end if;
+
+  select jsonb_build_object(
+    'mensuales', coalesce((
+      select jsonb_agg(jsonb_build_object('mes', to_char(m.mes, 'YYYY-MM'), 'cantidad', coalesce(c.cantidad, 0)) order by m.mes)
+      from generate_series(date_trunc('month', p_desde::timestamp), date_trunc('month', p_hasta::timestamp), interval '1 month') as m(mes)
+      left join lateral (
+        select count(*)::integer as cantidad
+        from public.informes_generales g
+        where g.fecha_hora >= m.mes
+          and g.fecha_hora < m.mes + interval '1 month'
+      ) c on true
+    ), '[]'::jsonb),
+    'tecnicos', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'id', coalesce(g.tecnico_id::text, 'sin-asignar'),
+        'nombre', coalesce(nullif(trim(concat_ws(' ', p.nombre, p.apellido)), ''), p.email, 'Sin técnico'),
+        'cantidad', count(*)::integer
+      ) order by count(*) desc, g.tecnico_id)
+      from public.informes_generales g
+      left join public.perfiles p on p.id = g.tecnico_id
+      where g.fecha_hora >= date_trunc('month', p_mes::timestamp)
+        and g.fecha_hora < date_trunc('month', p_mes::timestamp) + interval '1 month'
+      group by g.tecnico_id, p.nombre, p.apellido, p.email
+    ), '[]'::jsonb),
+    'equipos', coalesce((
+      select jsonb_agg(jsonb_build_object('tipo', g.tipo_equipo, 'cantidad', count(*)::integer) order by count(*) desc, g.tipo_equipo)
+      from public.informes_generales g
+      where g.fecha_hora >= date_trunc('month', p_mes::timestamp)
+        and g.fecha_hora < date_trunc('month', p_mes::timestamp) + interval '1 month'
+      group by g.tipo_equipo
+    ), '[]'::jsonb)
+  ) into resultado;
+
+  return resultado;
+end;
+$$;
+
+revoke all on function public.estadisticas_informes(date, date, date) from public;
+grant execute on function public.estadisticas_informes(date, date, date) to authenticated;
+
 create or replace function public.manejar_nuevo_usuario()
 returns trigger
 language plpgsql

@@ -13,9 +13,12 @@ import { AvisoSyncActivo } from "@/components/AvisoSyncActivo";
 import { MenuPerfil } from "@/components/MenuPerfil";
 import { PanelAdmin } from "@/components/PanelAdmin";
 import { GestionClientes } from "@/components/GestionClientes";
+import { Estadisticas } from "@/components/Estadisticas";
+import { usePerfil } from "@/lib/usePerfil";
 
 export default function Home() {
   const { cargando, sesion } = useSesion(true);
+  const { esAdmin } = usePerfil();
   const hash = useHash();
   const ruta = parsearRuta(hash);
 
@@ -36,6 +39,8 @@ export default function Home() {
         <EditorInforme id={ruta.id} />
       ) : ruta.tipo === "pdf" ? (
         <VistaPdfInforme id={ruta.id} />
+      ) : ruta.tipo === "estadisticas" ? (
+        <Estadisticas />
       ) : (
         <div
           className="pb-xl"
@@ -58,6 +63,14 @@ export default function Home() {
           </h1>
         </div>
         <div className="flex items-center gap-1">
+          {esAdmin ? (
+            <a
+              href="#/estadisticas"
+              className="flex items-center text-label-caps font-label-caps font-bold tracking-wider bg-white/10 text-on-primary px-3 py-2 rounded-lg hover:bg-white/20 active:scale-95 transition-all"
+            >
+              ESTADÍSTICAS
+            </a>
+          ) : null}
           <a
             href="#/informe/nuevo"
             className="flex items-center gap-1.5 text-label-caps font-label-caps font-bold tracking-wider bg-gradient-to-br from-white to-sky-100 text-primary px-4 py-2 rounded-lg shadow-lg shadow-black/30 ring-1 ring-white/50 hover:brightness-105 hover:scale-[1.03] active:scale-95 transition-all"
