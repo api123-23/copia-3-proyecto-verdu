@@ -76,6 +76,23 @@ async function exigirConexion(): Promise<void> {
   }
 }
 
+async function actualizarOInsertar(
+  tabla: string,
+  columna: string,
+  valor: string,
+  fila: Record<string, unknown>
+): Promise<void> {
+  const actualizado = await supabase()
+    .from(tabla)
+    .update(fila, { count: "exact" })
+    .eq(columna, valor);
+  if (actualizado.error) throw actualizado.error;
+  if ((actualizado.count ?? 0) === 0) {
+    const insertado = await supabase().from(tabla).insert(fila);
+    if (insertado.error) throw insertado.error;
+  }
+}
+
 function mensajeDe(e: unknown): string {
   if (e instanceof Error) return e.message;
   if (typeof e === "object" && e !== null && "message" in e) return String((e as { message: unknown }).message);
@@ -207,26 +224,7 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
     // existente y NO se consume una posición de la secuencia. Nunca se depende de
     // un trigger en el UPSERT (un BEFORE INSERT revolvería nextval también en las
     // actualizaciones, incrementando el contador de forma incorrecta).
-    let numeroRegistro = informe.numero_registro;
-    if (numeroRegistro === null || numeroRegistro === undefined) {
-      const existente = await supabase()
-        .from("informes_generales")
-        .select("id, numero_registro")
-        .eq("id", informe.id)
-        .maybeSingle();
-      if (existente.error) {
-        throw new Error(`No se pudo verificar el informe en el servidor (${existente.error.message})`);
-      }
-      if (existente.data) {
-        numeroRegistro = (existente.data.numero_registro as number | null) ?? null;
-      } else {
-        const { data: sig, error: sigErr } = await supabase().rpc("siguiente_numero_informe");
-        if (sigErr) {
-          throw new Error(`No se pudo asignar el número de informe (${sigErr.message})`);
-        }
-        numeroRegistro = typeof sig === "number" ? sig : null;
-      }
-    }
+    const numeroRegistro = informe.numero_registro;
 
     const payload = {
       id: informe.id,
@@ -260,16 +258,9 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       sincronizado_en: new Date().toISOString(),
     };
     const data = await conReintentos(3, async () => {
-      const actualizado = await supabase()
-        .from("informes_generales")
-        .update(payload, { count: "exact" })
-        .eq("id", informe.id);
-      if (actualizado.error) throw actualizado.error;
-      if ((actualizado.count ?? 0) === 0) {
-        const insertado = await supabase().from("informes_generales").insert(payload);
-        if (insertado.error) throw insertado.error;
-      }
-      return { numero_registro: numeroRegistro };
+      const respuesta = await supabase().rpc("guardar_informe_general_sync", { p_payload: payload });
+      if (respuesta.error) throw respuesta.error;
+      return (respuesta.data ?? { numero_registro: numeroRegistro }) as { numero_registro: number | null };
     }).catch((e) => {
       throw new Error(`Guardado del informe en servidor (${mensajeDe(e)})`);
     });
@@ -281,10 +272,7 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       const out = construirAnexa(informe.tipo_equipo, informe.id, anexa as ValoresBase);
       if (out) {
 
-        await conReintentos(3, async () => {
-          const { error: e2 } = await supabase().from(tabla).upsert(out);
-          if (e2) throw e2;
-        }).catch((e) => {
+        await conReintentos(3, async () => actualizarOInsertar(tabla, "informe_id", informe.id, out)).catch((e) => {
           throw new Error(`Guardado de valores técnicos (${mensajeDe(e)})`);
         });
       }
@@ -295,10 +283,7 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       if (ge) {
         const out: Record<string, unknown> = { informe_id: informe.id };
         for (const campo of CAMPOS_GE) out[campo] = ge[campo];
-        await conReintentos(3, async () => {
-          const { error: e2 } = await supabase().from(tabla).upsert(out);
-          if (e2) throw e2;
-        }).catch((e) => {
+        await conReintentos(3, async () => actualizarOInsertar(tabla, "informe_id", informe.id, out)).catch((e) => {
           throw new Error(`Guardado de valores grupo electrógeno (${mensajeDe(e)})`);
         });
       }
@@ -316,8 +301,9 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       }));
     if (filasArchivos.length > 0) {
       await conReintentos(3, async () => {
-        const { error: e3 } = await supabase().from("informe_archivos").upsert(filasArchivos);
-        if (e3) throw e3;
+        for (const fila of filasArchivos) {
+          await actualizarOInsertar("informe_archivos", "id", fila.id, fila);
+        }
       }).catch((e) => {
         throw new Error(`Guardado de archivos en servidor (${mensajeDe(e)})`);
       });

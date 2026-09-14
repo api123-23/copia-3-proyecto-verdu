@@ -539,6 +539,126 @@ as $$
   select public.rol_actual() = 'admin';
 $$;
 
+create or replace function public.puede_editar_informe(informe uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select public.es_admin()
+    or exists (
+      select 1
+      from public.informes_generales g
+      where g.id = informe
+        and g.tecnico_id = auth.uid()
+    );
+$$;
+
+-- Guarda el informe general sin depender de que el técnico pueda leer una fila
+-- que acaba de pasar a firmado. Valida propietario/rol y conserva el técnico
+-- original al editar un informe existente.
+create or replace function public.guardar_informe_general_sync(p_payload jsonb)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  uid uuid := auth.uid();
+  informe_id uuid := (p_payload->>'id')::uuid;
+  existente public.informes_generales%rowtype;
+  tecnico uuid;
+  numero integer;
+begin
+  if uid is null then
+    raise exception 'Sesión no autenticada' using errcode = '42501';
+  end if;
+
+  select * into existente
+  from public.informes_generales
+  where id = informe_id;
+
+  if existente.id is not null then
+    if not public.puede_editar_informe(informe_id) then
+      raise exception 'El técnico no puede editar este informe' using errcode = '42501';
+    end if;
+    tecnico := existente.tecnico_id;
+    numero := coalesce(nullif(p_payload->>'numero_registro', '')::integer, existente.numero_registro);
+
+    update public.informes_generales set
+      numero_registro = numero,
+      cliente_id = nullif(p_payload->>'cliente_id', '')::uuid,
+      cliente_nombre = p_payload->>'cliente_nombre',
+      cliente_telefono = p_payload->>'cliente_telefono',
+      cliente_direccion = p_payload->>'cliente_direccion',
+      modelo = p_payload->>'modelo',
+      numero_serie = p_payload->>'numero_serie',
+      tecnico_id = tecnico,
+      fecha_hora = (p_payload->>'fecha_hora')::timestamptz,
+      tipo_equipo = p_payload->>'tipo_equipo',
+      observaciones = p_payload->>'observaciones',
+      observaciones_ia = p_payload->>'observaciones_ia',
+      maquina_operativa = (p_payload->>'maquina_operativa')::boolean,
+      horas_trabajadas = (p_payload->>'horas_trabajadas')::numeric,
+      repuestos_air_power = p_payload->>'repuestos_air_power',
+      repuestos_cliente = p_payload->>'repuestos_cliente',
+      requiere_cotizacion = coalesce((p_payload->>'requiere_cotizacion')::boolean, false),
+      cotizacion_notas = p_payload->>'cotizacion_notas',
+      cotizacion_notas_ia = p_payload->>'cotizacion_notas_ia',
+      estado_firma = p_payload->>'estado_firma',
+      cerrado = coalesce((p_payload->>'cerrado')::boolean, false),
+      firma_tecnico_url = p_payload->>'firma_tecnico_url',
+      firma_cliente_url = p_payload->>'firma_cliente_url',
+      aclaracion_firma = p_payload->>'aclaracion_firma',
+      firmado_en = (p_payload->>'firmado_en')::timestamptz,
+      actualizado_en = coalesce((p_payload->>'actualizado_en')::timestamptz, now()),
+      sincronizado_en = (p_payload->>'sincronizado_en')::timestamptz
+    where id = informe_id;
+  else
+    tecnico := coalesce(nullif(p_payload->>'tecnico_id', '')::uuid, uid);
+    if not public.es_admin() and tecnico <> uid then
+      raise exception 'El técnico no puede crear un informe para otro usuario' using errcode = '42501';
+    end if;
+    numero := nullif(p_payload->>'numero_registro', '')::integer;
+    if numero is null then
+      numero := nextval('public.numero_informe_seq');
+    end if;
+
+    insert into public.informes_generales (
+      id, numero_registro, cliente_id, cliente_nombre, cliente_telefono,
+      cliente_direccion, modelo, numero_serie, tecnico_id, fecha_hora,
+      tipo_equipo, observaciones, observaciones_ia, maquina_operativa,
+      horas_trabajadas, repuestos_air_power, repuestos_cliente,
+      requiere_cotizacion, cotizacion_notas, cotizacion_notas_ia,
+      estado_firma, cerrado, firma_tecnico_url, firma_cliente_url,
+      aclaracion_firma, firmado_en, creado_en, actualizado_en, sincronizado_en
+    ) values (
+      informe_id, numero, nullif(p_payload->>'cliente_id', '')::uuid,
+      p_payload->>'cliente_nombre', p_payload->>'cliente_telefono',
+      p_payload->>'cliente_direccion', p_payload->>'modelo',
+      p_payload->>'numero_serie', tecnico, (p_payload->>'fecha_hora')::timestamptz,
+      p_payload->>'tipo_equipo', p_payload->>'observaciones',
+      p_payload->>'observaciones_ia', (p_payload->>'maquina_operativa')::boolean,
+      (p_payload->>'horas_trabajadas')::numeric, p_payload->>'repuestos_air_power',
+      p_payload->>'repuestos_cliente', coalesce((p_payload->>'requiere_cotizacion')::boolean, false),
+      p_payload->>'cotizacion_notas', p_payload->>'cotizacion_notas_ia',
+      coalesce(p_payload->>'estado_firma', 'pendiente'),
+      coalesce((p_payload->>'cerrado')::boolean, false), p_payload->>'firma_tecnico_url',
+      p_payload->>'firma_cliente_url', p_payload->>'aclaracion_firma',
+      (p_payload->>'firmado_en')::timestamptz, (p_payload->>'creado_en')::timestamptz,
+      coalesce((p_payload->>'actualizado_en')::timestamptz, now()),
+      (p_payload->>'sincronizado_en')::timestamptz
+    );
+  end if;
+
+  return jsonb_build_object('numero_registro', numero);
+end;
+$$;
+
+revoke all on function public.guardar_informe_general_sync(jsonb) from public;
+grant execute on function public.guardar_informe_general_sync(jsonb) to authenticated;
+
 create or replace function public.manejar_nuevo_usuario()
 returns trigger
 language plpgsql
@@ -634,11 +754,11 @@ create policy informes_select on informes_generales for select to authenticated
   using (public.es_admin() or (tecnico_id = auth.uid() and estado_firma <> 'firmado'));
 drop policy if exists informes_insert on informes_generales;
 create policy informes_insert on informes_generales for insert to authenticated
-  with check (true);
+  with check (public.es_admin() or tecnico_id = auth.uid());
 drop policy if exists informes_update on informes_generales;
 create policy informes_update on informes_generales for update to authenticated
-  using (true)
-  with check (true);
+  using (public.puede_editar_informe(id))
+  with check (public.puede_editar_informe(id));
 drop policy if exists informes_delete_admin on informes_generales;
 create policy informes_delete_admin on informes_generales for delete to authenticated
   using (true);
@@ -648,10 +768,10 @@ create policy moto_select on informes_motocompresor for select to authenticated
   using (public.puede_ver_informe(informe_id));
 drop policy if exists moto_write on informes_motocompresor;
 create policy moto_write on informes_motocompresor for insert to authenticated
-  with check (true);
+  with check (public.puede_editar_informe(informe_id));
 drop policy if exists moto_update on informes_motocompresor;
 create policy moto_update on informes_motocompresor for update to authenticated
-  using (true);
+  using (public.puede_editar_informe(informe_id));
 drop policy if exists moto_delete on informes_motocompresor;
 create policy moto_delete on informes_motocompresor for delete to authenticated
   using (true);
@@ -661,10 +781,10 @@ create policy comp_select on informes_compresor for select to authenticated
   using (public.puede_ver_informe(informe_id));
 drop policy if exists comp_write on informes_compresor;
 create policy comp_write on informes_compresor for insert to authenticated
-  with check (true);
+  with check (public.puede_editar_informe(informe_id));
 drop policy if exists comp_update on informes_compresor;
 create policy comp_update on informes_compresor for update to authenticated
-  using (true);
+  using (public.puede_editar_informe(informe_id));
 drop policy if exists comp_delete on informes_compresor;
 create policy comp_delete on informes_compresor for delete to authenticated
   using (true);
@@ -674,10 +794,10 @@ create policy veh_select on informes_vehiculos for select to authenticated
   using (public.puede_ver_informe(informe_id));
 drop policy if exists veh_write on informes_vehiculos;
 create policy veh_write on informes_vehiculos for insert to authenticated
-  with check (true);
+  with check (public.puede_editar_informe(informe_id));
 drop policy if exists veh_update on informes_vehiculos;
 create policy veh_update on informes_vehiculos for update to authenticated
-  using (true);
+  using (public.puede_editar_informe(informe_id));
 drop policy if exists veh_delete on informes_vehiculos;
 create policy veh_delete on informes_vehiculos for delete to authenticated
   using (true);
@@ -687,10 +807,10 @@ create policy ge_select on informes_grupo_electrogeno for select to authenticate
   using (public.puede_ver_informe(informe_id));
 drop policy if exists ge_write on informes_grupo_electrogeno;
 create policy ge_write on informes_grupo_electrogeno for insert to authenticated
-  with check (true);
+  with check (public.puede_editar_informe(informe_id));
 drop policy if exists ge_update on informes_grupo_electrogeno;
 create policy ge_update on informes_grupo_electrogeno for update to authenticated
-  using (true);
+  using (public.puede_editar_informe(informe_id));
 drop policy if exists ge_delete on informes_grupo_electrogeno;
 create policy ge_delete on informes_grupo_electrogeno for delete to authenticated
   using (true);
@@ -700,10 +820,10 @@ create policy archivos_select on informe_archivos for select to authenticated
   using (public.puede_ver_informe(informe_id));
 drop policy if exists archivos_insert on informe_archivos;
 create policy archivos_insert on informe_archivos for insert to authenticated
-  with check (true);
+  with check (public.puede_editar_informe(informe_id));
 drop policy if exists archivos_update on informe_archivos;
 create policy archivos_update on informe_archivos for update to authenticated
-  using (true);
+  using (public.puede_editar_informe(informe_id));
 drop policy if exists archivos_delete on informe_archivos;
 create policy archivos_delete on informe_archivos for delete to authenticated
   using (true);
