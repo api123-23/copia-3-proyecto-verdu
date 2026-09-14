@@ -221,7 +221,12 @@ export function ListaInformes() {
     for (const r of remotos) informesMap.set(r.id, r);
   }
   for (const l of pendientesLocales) informesMap.set(l.id, l);
-  let informes = [...informesMap.values()].sort((a, b) => b.fecha_hora.localeCompare(a.fecha_hora));
+  let informes = [...informesMap.values()].sort((a, b) => {
+    const numeroA = a.numero_registro ?? -1;
+    const numeroB = b.numero_registro ?? -1;
+    if (numeroA !== numeroB) return numeroB - numeroA;
+    return b.fecha_hora.localeCompare(a.fecha_hora);
+  });
 
   const tecnicoNombre = new Map<string, string>();
   for (const t of tecnicos) {

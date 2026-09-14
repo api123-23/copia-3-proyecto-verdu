@@ -24,6 +24,7 @@ function etiquetaMes(mes: string, corto = false): string {
 
 function LineaMensual({ datos }: { datos: Mensual[] }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [seleccionado, setSeleccionado] = useState<number | null>(null);
   const ancho = Math.max(720, datos.length * 64);
   const alto = 250;
   const max = Math.max(1, ...datos.map((x) => x.cantidad));
@@ -52,13 +53,34 @@ function LineaMensual({ datos }: { datos: Mensual[] }) {
           );
         })}
         <polyline points={linea} fill="none" stroke="#003e7a" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
-        {puntos.map((p) => (
-          <g key={p.mes}>
-            <circle cx={p.x} cy={p.y} r="4" fill="#003e7a" />
+        {puntos.map((p, index) => (
+          <g
+            key={p.mes}
+            role="button"
+            tabIndex={0}
+            aria-label={`${etiquetaMes(p.mes)}: ${p.cantidad} informes`}
+            onClick={() => setSeleccionado(index)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setSeleccionado(index);
+              }
+            }}
+            className="cursor-pointer"
+          >
+            {seleccionado === index ? <circle cx={p.x} cy={p.y} r="9" fill="#dbeafe" stroke="#003e7a" strokeWidth="2" /> : null}
+            <circle cx={p.x} cy={p.y} r={seleccionado === index ? "5" : "4"} fill="#003e7a" />
             <text x={p.x} y={alto - 22} textAnchor="middle" fontSize="11" fill="#334155">{etiquetaMes(p.mes, true)}</text>
           </g>
         ))}
       </svg>
+      {seleccionado !== null && datos[seleccionado] ? (
+        <p className="border-t border-outline-variant bg-white px-md py-2 text-center text-[13px]" aria-live="polite">
+          <strong>{etiquetaMes(datos[seleccionado].mes)}:</strong> {datos[seleccionado].cantidad} informe{datos[seleccionado].cantidad === 1 ? "" : "s"}
+        </p>
+      ) : (
+        <p className="border-t border-outline-variant bg-white px-md py-2 text-center text-[12px] text-on-surface-variant">Seleccioná un mes para ver la cantidad.</p>
+      )}
     </div>
   );
 }
