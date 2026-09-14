@@ -359,14 +359,15 @@
 
 .pdf-aclaracion strong {
   display: block;
-  padding-top: 0.35rem;
-  border-top: 1px dotted #34495e;
   color: #34495e;
   font-size: 7pt;
 }
 
 .pdf-aclaracion p {
+  min-height: 1.2rem;
   margin: 0.25rem 0 0;
+  padding: 0.1rem 0.2rem;
+  border-bottom: 1px dotted #34495e;
   overflow-wrap: anywhere;
   font-size: 8pt;
 }
@@ -503,7 +504,7 @@
   .pdf-ge-grid h3 { padding: 0.2rem; font-size: 7.5pt; }
   .pdf-firmas-grid { padding-top: 0.75rem; }
   .pdf-firmas-grid > div { min-height: 4rem; }
-  .pdf-firmas-grid > div > span, .pdf-aclaracion span, .pdf-conformidad { font-size: 7pt; }
+  .pdf-firmas-grid > div > span, .pdf-conformidad { font-size: 7pt; }
   .pdf-aclaracion strong { font-size: 7pt; }
   .pdf-aclaracion p { font-size: 8pt; }
   .pdf-firmas figure img { height: 3.5rem; }
@@ -567,7 +568,6 @@
     height: 4.2rem;
   }
   .pdf-hoja-ge .pdf-firmas-grid > div > span,
-  .pdf-hoja-ge .pdf-aclaracion span,
   .pdf-hoja-ge .pdf-conformidad {
     font-size: 8pt;
   }

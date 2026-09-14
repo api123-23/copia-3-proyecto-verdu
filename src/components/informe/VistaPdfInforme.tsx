@@ -184,14 +184,8 @@ function Firmas({ informe, archivos, urls }: { informe: InformeGeneral; archivos
         <div><ArchivoVisual url={tecnico ? urls[tecnico.id] ?? null : null} titulo="Firma Técnico de Air Power S.A." /><span>Firma Técnico de AIR POWER S.A.</span></div>
         <div><ArchivoVisual url={cliente ? urls[cliente.id] ?? null : null} titulo="Firma del cliente" /><span>Firma del Cliente o su representante</span></div>
         <div className="pdf-aclaracion">
-          {aclaracion ? (
-            <>
-              <strong>Aclaración de firma</strong>
-              <p>{aclaracion}</p>
-            </>
-          ) : (
-            <span>Aclaración de firma</span>
-          )}
+          <strong>Aclaración de firma</strong>
+          <p>{aclaracion ?? ""}</p>
         </div>
       </div>
       <p className="pdf-conformidad">Doy conformidad y certifico que el trabajo ha sido efectuado de acuerdo a lo detallado en este informe.</p>
