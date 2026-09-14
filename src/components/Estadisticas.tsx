@@ -28,8 +28,9 @@ function LineaMensual({ datos }: { datos: Mensual[] }) {
   const ancho = Math.max(720, datos.length * 64);
   const alto = 250;
   const max = Math.max(1, ...datos.map((x) => x.cantidad));
+  const referencias = [1, 0.75, 0.5, 0.25, 0].map((fraccion) => Math.round(max * fraccion));
   const puntos = datos.map((dato, i) => {
-    const x = 42 + i * ((ancho - 62) / Math.max(1, datos.length - 1));
+    const x = 10 + i * ((ancho - 30) / Math.max(1, datos.length - 1));
     const y = 25 + (alto - 70) * (1 - dato.cantidad / max);
     return { ...dato, x, y };
   });
@@ -40,46 +41,47 @@ function LineaMensual({ datos }: { datos: Mensual[] }) {
   }, [datos]);
 
   return (
-    <div ref={scrollRef} className="overflow-x-auto rounded-lg border border-outline-variant bg-surface-container-low/30">
-      <svg width={ancho} height={alto} role="img" aria-label="Informes realizados por mes" className="block min-w-full">
-        {[0, 0.25, 0.5, 0.75, 1].map((fraccion) => {
-          const y = 25 + (alto - 70) * fraccion;
-          const valor = Math.round(max * (1 - fraccion));
-          return (
-            <g key={fraccion}>
-              <line x1="38" x2={ancho - 20} y1={y} y2={y} stroke="#cbd5e1" strokeDasharray="3 4" />
-              <text x="30" y={y + 4} textAnchor="end" fontSize="11" fill="#64748b">{valor}</text>
-            </g>
-          );
-        })}
-        <polyline points={linea} fill="none" stroke="#003e7a" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
-        {puntos.map((p, index) => (
-          <g
-            key={p.mes}
-            role="button"
-            tabIndex={0}
-            aria-label={`${etiquetaMes(p.mes)}: ${p.cantidad} informes`}
-            onClick={() => setSeleccionado(index)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                setSeleccionado(index);
-              }
-            }}
-            className="cursor-pointer"
-          >
-            {seleccionado === index ? <circle cx={p.x} cy={p.y} r="9" fill="#dbeafe" stroke="#003e7a" strokeWidth="2" /> : null}
-            <circle cx={p.x} cy={p.y} r={seleccionado === index ? "5" : "4"} fill="#003e7a" />
-            <text x={p.x} y={alto - 22} textAnchor="middle" fontSize="11" fill="#334155">{etiquetaMes(p.mes, true)}</text>
-          </g>
-        ))}
-      </svg>
+    <div className="rounded-lg border border-outline-variant bg-surface-container-low/30">
+      <div className="flex h-[250px] min-w-0">
+        <div className="flex w-10 shrink-0 flex-col justify-between pb-[48px] pl-1 pt-[17px] text-right text-[11px] text-on-surface-variant" aria-hidden="true">
+          {referencias.map((valor, index) => <span key={`${valor}-${index}`}>{valor}</span>)}
+        </div>
+        <div ref={scrollRef} className="min-w-0 flex-1 overflow-x-auto">
+          <svg width={ancho} height={alto} role="img" aria-label="Informes realizados por mes" className="block min-w-full">
+            {[0, 0.25, 0.5, 0.75, 1].map((fraccion) => {
+              const y = 25 + (alto - 70) * fraccion;
+              return <line key={fraccion} x1="0" x2={ancho - 10} y1={y} y2={y} stroke="#cbd5e1" strokeDasharray="3 4" />;
+            })}
+            <polyline points={linea} fill="none" stroke="#003e7a" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+            {puntos.map((p, index) => (
+              <g
+                key={p.mes}
+                role="button"
+                tabIndex={0}
+                aria-label={`${etiquetaMes(p.mes)}: ${p.cantidad} informes`}
+                onClick={() => setSeleccionado(index)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setSeleccionado(index);
+                  }
+                }}
+                className="cursor-pointer"
+              >
+                {seleccionado === index ? <circle cx={p.x} cy={p.y} r="9" fill="#dbeafe" stroke="#003e7a" strokeWidth="2" /> : null}
+                <circle cx={p.x} cy={p.y} r={seleccionado === index ? "5" : "4"} fill="#003e7a" />
+                <text x={p.x} y={alto - 22} textAnchor="middle" fontSize="11" fill="#334155">{etiquetaMes(p.mes, true)}</text>
+              </g>
+            ))}
+          </svg>
+        </div>
+      </div>
       {seleccionado !== null && datos[seleccionado] ? (
-        <p className="border-t border-outline-variant bg-white px-md py-2 text-center text-[13px]" aria-live="polite">
+        <p className="border-t border-outline-variant bg-white px-md py-2 text-right text-[13px]" aria-live="polite">
           <strong>{etiquetaMes(datos[seleccionado].mes)}:</strong> {datos[seleccionado].cantidad} informe{datos[seleccionado].cantidad === 1 ? "" : "s"}
         </p>
       ) : (
-        <p className="border-t border-outline-variant bg-white px-md py-2 text-center text-[12px] text-on-surface-variant">Seleccioná un mes para ver la cantidad.</p>
+        <p className="border-t border-outline-variant bg-white px-md py-2 text-right text-[12px] text-on-surface-variant">Seleccioná un mes para ver la cantidad.</p>
       )}
     </div>
   );
@@ -116,8 +118,10 @@ export function Estadisticas() {
   const meses = useMemo(() => {
     const ahora = new Date();
     const salida: string[] = [];
-    for (let i = 35; i >= 0; i--) {
-      const fecha = new Date(ahora.getFullYear(), ahora.getMonth() - i, 1);
+    const inicio = new Date(2026, 0, 1);
+    const cantidadMeses = Math.max(1, (ahora.getFullYear() - inicio.getFullYear()) * 12 + ahora.getMonth() + 1);
+    for (let i = 0; i < cantidadMeses; i++) {
+      const fecha = new Date(2026, i, 1);
       salida.push(`${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, "0")}`);
     }
     return salida;
@@ -131,7 +135,7 @@ export function Estadisticas() {
     }
     let activo = true;
     const ahora = new Date();
-    const desde = new Date(ahora.getFullYear(), ahora.getMonth() - 35, 1);
+    const desde = new Date(2026, 0, 1);
     const hasta = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
     (async () => {
       setCargando(true);
