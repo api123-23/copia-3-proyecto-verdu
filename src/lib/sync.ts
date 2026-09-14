@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { supabase } from "./supabase";
-import { CAMPOS_GE, cargarAnexa, cargarAnexaGE, construirAnexa } from "./informes";
+import { CAMPOS_GE, cargarAnexa, cargarAnexaGE, construirAnexa, normalizarValores } from "./informes";
 import type { ArchivoLocal, InformeGeneral, TipoEquipo, ValoresBase } from "./types";
 
 const BUCKET = "informe-archivos";
@@ -277,6 +277,7 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
     if (tabla && informe.tipo_equipo === "grupo_electrogeno") {
       const ge = await cargarAnexaGE(informe.id);
       if (ge) {
+        normalizarValores("grupo_electrogeno", ge as unknown as Record<string, unknown>);
         const out: Record<string, unknown> = { informe_id: informe.id };
         for (const campo of CAMPOS_GE) out[campo] = ge[campo];
         await conReintentos(3, async () => upsertIdempotente(tabla, "informe_id", out)).catch((e) => {

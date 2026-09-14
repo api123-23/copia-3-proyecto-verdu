@@ -368,8 +368,16 @@ export function normalizarValores(
     ]) {
       if (ge[campo] === "mal") ge[campo] = "bajo";
     }
-    if (ge.ge_funcionamiento_frecuencia === "ok") ge.ge_funcionamiento_frecuencia = "optimo";
-    if (ge.ge_funcionamiento_tension_linea === "ok") ge.ge_funcionamiento_tension_linea = "optimo";
+    for (const campo of ["ge_funcionamiento_frecuencia", "ge_funcionamiento_tension_linea"]) {
+      const valor = ge[campo];
+      if (typeof valor === "string") {
+        const limpio = valor.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        if (limpio === "ok" || limpio === "optimo") ge[campo] = "optimo";
+        else if (limpio === "baja") ge[campo] = "baja";
+        else if (limpio === "alta") ge[campo] = "alta";
+        else if (valor !== "") ge[campo] = null;
+      }
+    }
   } else if (tipo === "compresor" || tipo === "motocompresor") {
     if (valores.aceite_unidad === "si") valores.aceite_unidad = "ok";
     else if (valores.aceite_unidad === "no") valores.aceite_unidad = "bajo";
