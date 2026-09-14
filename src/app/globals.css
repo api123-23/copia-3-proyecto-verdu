@@ -357,6 +357,20 @@
   font-size: 7pt;
 }
 
+.pdf-aclaracion strong {
+  display: block;
+  padding-top: 0.35rem;
+  border-top: 1px dotted #34495e;
+  color: #34495e;
+  font-size: 7pt;
+}
+
+.pdf-aclaracion p {
+  margin: 0.25rem 0 0;
+  overflow-wrap: anywhere;
+  font-size: 8pt;
+}
+
 .pdf-firma-vacia,
 .pdf-archivo-vacio {
   height: 3rem;
@@ -429,7 +443,13 @@
 }
 
 @media (max-width: 700px) {
-  .pdf-shell { padding: 0; }
+  .pdf-shell {
+    min-height: 100dvh;
+    padding: calc(env(safe-area-inset-top, 0px) + 0.75rem)
+      max(1rem, env(safe-area-inset-right, 0px))
+      calc(env(safe-area-inset-bottom, 0px) + 1rem)
+      max(1rem, env(safe-area-inset-left, 0px));
+  }
   .pdf-acciones { padding: 0.75rem; margin: 0; }
   .pdf-hoja { min-height: 0; padding: 1rem; box-shadow: none; }
   .pdf-cabecera { grid-template-columns: 1fr 1fr; }
@@ -484,6 +504,8 @@
   .pdf-firmas-grid { padding-top: 0.75rem; }
   .pdf-firmas-grid > div { min-height: 4rem; }
   .pdf-firmas-grid > div > span, .pdf-aclaracion span, .pdf-conformidad { font-size: 7pt; }
+  .pdf-aclaracion strong { font-size: 7pt; }
+  .pdf-aclaracion p { font-size: 8pt; }
   .pdf-firmas figure img { height: 3.5rem; }
   .pdf-fotos { padding-top: 4mm; }
   .pdf-fotos-primera { break-before: auto; page-break-before: auto; }
@@ -549,5 +571,7 @@
   .pdf-hoja-ge .pdf-conformidad {
     font-size: 8pt;
   }
+  .pdf-hoja-ge .pdf-aclaracion strong { font-size: 8pt; }
+  .pdf-hoja-ge .pdf-aclaracion p { font-size: 9pt; }
   .pdf-foto figcaption { font-size: 7pt; }
 }

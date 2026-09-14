@@ -174,15 +174,25 @@ function Cierre({ informe }: { informe: InformeGeneral }) {
   );
 }
 
-function Firmas({ archivos, urls }: { archivos: ArchivoLocal[]; urls: Record<string, string | null> }) {
+function Firmas({ informe, archivos, urls }: { informe: InformeGeneral; archivos: ArchivoLocal[]; urls: Record<string, string | null> }) {
   const tecnico = archivos.find((x) => x.tipo === "firma_tecnico");
   const cliente = archivos.find((x) => x.tipo === "firma_cliente");
+  const aclaracion = informe.aclaracion_firma?.trim() || null;
   return (
     <Bloque titulo="Firmas" clase="pdf-firmas">
       <div className="pdf-firmas-grid">
         <div><ArchivoVisual url={tecnico ? urls[tecnico.id] ?? null : null} titulo="Firma Técnico de Air Power S.A." /><span>Firma Técnico de AIR POWER S.A.</span></div>
         <div><ArchivoVisual url={cliente ? urls[cliente.id] ?? null : null} titulo="Firma del cliente" /><span>Firma del Cliente o su representante</span></div>
-        <div className="pdf-aclaracion"><span>Aclaración de firma</span></div>
+        <div className="pdf-aclaracion">
+          {aclaracion ? (
+            <>
+              <strong>Aclaración de firma</strong>
+              <p>{aclaracion}</p>
+            </>
+          ) : (
+            <span>Aclaración de firma</span>
+          )}
+        </div>
       </div>
       <p className="pdf-conformidad">Doy conformidad y certifico que el trabajo ha sido efectuado de acuerdo a lo detallado en este informe.</p>
     </Bloque>
@@ -339,7 +349,7 @@ export function VistaPdfInforme({ id }: { id: string }) {
             </Bloque>
           ) : null}
           <Cierre informe={informe} />
-          <Firmas archivos={archivos} urls={archivosPdf} />
+          <Firmas informe={informe} archivos={archivos} urls={archivosPdf} />
         </div>
         <Fotos archivos={archivos} urls={archivosPdf} />
       </main>
