@@ -290,7 +290,7 @@ export function ListaInformes() {
             <p className="text-[12px] text-yellow-700 truncate">Mostrando informes locales. Sin conexión a internet.</p>
           </div>
         ) : null}
-        <div className="mx-4 md:mx-0 p-xl bg-white border border-outline-variant rounded-lg text-center">
+         <div className="mx-4 md:mx-0 my-sm p-xl bg-white border border-outline-variant rounded-lg text-center">
         <div className="flex items-center justify-center mb-md">
           <LogoTipo className="w-14 h-14 rounded-2xl opacity-90" />
         </div>
@@ -321,7 +321,7 @@ export function ListaInformes() {
   const panelFiltros =
     esPc ? (
       <div className="rounded-lg border border-outline-variant bg-white p-3 shadow-sm space-y-2">
-        <div className="flex items-center justify-between">
+       <div className="my-sm flex items-center justify-between">
           <p className="text-label-caps font-label-caps font-bold uppercase tracking-wider text-primary">
             Filtros
           </p>

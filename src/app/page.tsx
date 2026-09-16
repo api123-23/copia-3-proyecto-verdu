@@ -50,30 +50,30 @@ export default function Home() {
           }}
         >
       <header
-        className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin bg-primary text-on-primary border-b border-primary-container shadow-sm"
+        className="fixed top-0 left-0 w-full z-50 flex justify-between items-center gap-2 px-3 sm:px-margin bg-primary text-on-primary border-b border-primary-container shadow-sm"
         style={{
           minHeight: "calc(env(safe-area-inset-top, 0px) + 3rem)",
           paddingTop: "env(safe-area-inset-top, 0px)",
         }}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2">
           <LogoTipo className="w-7 h-7 rounded-lg" />
-          <h1 className="text-title-md font-title-md font-bold tracking-tight">
+          <h1 className="truncate text-[13px] sm:text-title-md font-title-md font-bold tracking-tight">
             Air Power S.A.
           </h1>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           {esAdmin ? (
             <a
               href="#/estadisticas"
-              className="flex h-10 items-center text-label-caps font-label-caps font-bold tracking-wider bg-white/10 text-on-primary px-4 rounded-lg hover:bg-white/20 active:scale-95 transition-all"
+              className="flex h-10 items-center text-[10px] sm:text-label-caps font-label-caps font-bold tracking-wider bg-white/10 text-on-primary px-2 sm:px-4 rounded-lg hover:bg-white/20 active:scale-95 transition-all"
             >
               ESTADÍSTICAS
             </a>
           ) : null}
           <a
             href="#/informe/nuevo"
-             className="flex h-10 items-center gap-1.5 text-label-caps font-label-caps font-bold tracking-wider bg-gradient-to-br from-white to-sky-100 text-primary px-4 rounded-lg shadow-lg shadow-black/30 ring-1 ring-white/50 hover:brightness-105 hover:scale-[1.03] active:scale-95 transition-all"
+             className="flex h-10 items-center gap-1.5 text-[10px] sm:text-label-caps font-label-caps font-bold tracking-wider bg-gradient-to-br from-white to-sky-100 text-primary px-2 sm:px-4 rounded-lg shadow-lg shadow-black/30 ring-1 ring-white/50 hover:brightness-105 hover:scale-[1.03] active:scale-95 transition-all"
           >
             <Icono nombre="add" className="w-[17px] h-[17px]" />
             NUEVO
