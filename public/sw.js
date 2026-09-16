@@ -1,4 +1,4 @@
-const CACHE = "verdu-shell-Omz2T_fmSmToUTQxzUsCJ";
+const CACHE = "verdu-shell-sbsDT_LoDPSJk9FRt3vZQ";
 const PRECACHE = [
   "/",
   "/login",
@@ -6,24 +6,21 @@ const PRECACHE = [
   "/icons/icon-180.png",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
-  "/_next/static/Omz2T_fmSmToUTQxzUsCJ/_buildManifest.js",
-  "/_next/static/Omz2T_fmSmToUTQxzUsCJ/_clientMiddlewareManifest.js",
-  "/_next/static/Omz2T_fmSmToUTQxzUsCJ/_ssgManifest.js",
   "/_next/static/chunks/02fh7_m5mrih8.js",
-  "/_next/static/chunks/06hyp9yvvi3q0.js",
   "/_next/static/chunks/07nldpx3i6mc_.js",
   "/_next/static/chunks/0cz1d0mv5g_q7.js",
-  "/_next/static/chunks/0jmb-hn97why4.js",
   "/_next/static/chunks/0k16m1c57o-qb.js",
+  "/_next/static/chunks/11pklmkafmodw.js",
+  "/_next/static/chunks/16ihqb68jjg31.js",
   "/_next/static/chunks/1cwczo7gh-yho.js",
   "/_next/static/chunks/1kden681vlcis.js",
-  "/_next/static/chunks/1lai30pkktgf2.css",
   "/_next/static/chunks/1vmuvg71dkxre.js",
+  "/_next/static/chunks/1z8rpvkvo65uu.js",
   "/_next/static/chunks/2-cytfxc_rgaj.js",
+  "/_next/static/chunks/2goh2gu43mi8t.css",
   "/_next/static/chunks/2i51e627rllld.js",
   "/_next/static/chunks/3fntmmi971322.js",
-  "/_next/static/chunks/3sssffk2i2_8j.js",
-  "/_next/static/chunks/42hx2qmhpd_zy.js",
+  "/_next/static/chunks/41jslkv1xhf_i.js",
   "/_next/static/chunks/turbopack-0uq7hdybijnu_.js",
   "/_next/static/media/1317291d1835f011-s.1ocfy-u58n01e.woff2",
   "/_next/static/media/1bffadaabf893a1e-s.3-6t-g6q0vh0a.woff2",
@@ -38,7 +35,10 @@ const PRECACHE = [
   "/_next/static/media/9c72aa0f40e4eef8-s.1y4-pdgsjb-pw.woff2",
   "/_next/static/media/ad66f9afd8947f86-s.3lvt2whj97whp.woff2",
   "/_next/static/media/e1750518007a189a-s.p.29e6ydd6osd72.woff2",
-  "/_next/static/media/favicon.2vob68tjqpejf.ico"
+  "/_next/static/media/favicon.2vob68tjqpejf.ico",
+  "/_next/static/sbsDT_LoDPSJk9FRt3vZQ/_buildManifest.js",
+  "/_next/static/sbsDT_LoDPSJk9FRt3vZQ/_clientMiddlewareManifest.js",
+  "/_next/static/sbsDT_LoDPSJk9FRt3vZQ/_ssgManifest.js"
 ];
 
 self.addEventListener("install", (event) => {

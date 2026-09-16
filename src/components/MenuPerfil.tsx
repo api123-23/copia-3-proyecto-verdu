@@ -45,7 +45,7 @@ export function MenuPerfil({ sesion }: { sesion: Session | null }) {
           setAbierto((v) => !v);
           setModo(null);
         }}
-        className="flex items-center gap-1.5 hover:bg-primary-container active:scale-95 transition-all px-2 py-1.5 rounded-lg text-on-primary min-h-[44px]"
+         className="flex h-10 items-center gap-1.5 hover:bg-primary-container active:scale-95 transition-all px-4 rounded-lg text-on-primary"
         aria-label="Menú de cuenta"
       >
         <Icono nombre="person" className="w-[18px] h-[18px]" />
@@ -177,9 +177,6 @@ function FormDatos({ onListo }: { onListo: () => void }) {
               onChange={(e) => setNombre(e.target.value)}
               autoComplete="given-name"
             />
-            {perfil?.nombre ? (
-              <p className="text-[10px] text-on-surface-variant">Actual: {perfil.nombre}</p>
-            ) : null}
           </div>
           <div className="space-y-0.5">
             <label className="text-[10px] font-bold text-on-surface-variant">Apellido</label>
@@ -191,9 +188,6 @@ function FormDatos({ onListo }: { onListo: () => void }) {
               onChange={(e) => setApellido(e.target.value)}
               autoComplete="family-name"
             />
-            {perfil?.apellido ? (
-              <p className="text-[10px] text-on-surface-variant">Actual: {perfil.apellido}</p>
-            ) : null}
           </div>
           <p className="text-[10px] text-on-surface-variant">
             Se guardará en tu perfil y se usará para filtrar informes por técnico.

@@ -175,7 +175,7 @@ export function CampoNumero({
 }) {
   return (
     <div>
-      <Label>{etiqueta}</Label>
+       {etiqueta ? <Label>{etiqueta}</Label> : null}
       <div className="relative">
         <input
           className={`input-technical text-data-mono font-data-mono h-[28px] ${centrado ? "text-center px-1" : ""} ${sufijo ? "pr-12" : ""}`}

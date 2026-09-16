@@ -10,7 +10,7 @@ export const TIPOS_EQUIPO: { value: TipoEquipo; label: string }[] = [
   { value: "motocompresor", label: "Motocompresor" },
   { value: "compresor", label: "Compresor" },
   { value: "grupo_electrogeno", label: "Grupo Electrógeno" },
-  { value: "extraordinarios", label: "Extraordinarios" },
+  { value: "extraordinarios", label: "Extraordinarios / Relevamientos" },
   { value: "vehiculos", label: "Vehículos Móviles y Máquinas Viales" },
   { value: "secadores", label: "Secadores" },
 ];

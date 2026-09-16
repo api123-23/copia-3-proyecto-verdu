@@ -143,10 +143,6 @@ export function ListaInformes() {
 
   async function actualizar() {
     if (actualizando) return;
-    const confirmado = window.confirm(
-      "Esto limpiará la caché local y mostrará solo los informes cargados en la base de datos. ¿Continuar?"
-    );
-    if (!confirmado) return;
     setActualizando(true);
     try {
       await db.transaction(
@@ -298,11 +294,6 @@ export function ListaInformes() {
         <div className="flex items-center justify-center mb-md">
           <LogoTipo className="w-14 h-14 rounded-2xl opacity-90" />
         </div>
-        <p className="text-body-lg text-on-surface-variant mb-md">
-          {online
-            ? "No hay informes cargados todavía. Creá el primero."
-            : "Sin conexión. No hay informes locales pendientes."}
-        </p>
         <div className="flex items-center justify-center gap-sm">
           <a
             href="#/informe/nuevo"
@@ -318,7 +309,7 @@ export function ListaInformes() {
               disabled={actualizando}
               className="inline-block border border-outline-variant rounded px-md py-1.5 text-title-md font-bold uppercase tracking-wider text-primary active:scale-95 transition-all"
             >
-              {actualizando ? "Actualizando..." : "Actualizar"}
+               Actualizar
             </button>
           ) : null}
         </div>
@@ -442,7 +433,7 @@ export function ListaInformes() {
                 : "opacity-50 cursor-not-allowed"
           }`}
         >
-          {actualizando ? "Actualizando..." : "Actualizar"}
+           Actualizar
         </button>
       </div>
 
