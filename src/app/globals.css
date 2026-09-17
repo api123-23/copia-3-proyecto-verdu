@@ -13,6 +13,30 @@
   }
 }
 
+@keyframes profileMenuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+    transform-origin: top right;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    transform-origin: top right;
+  }
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes reportHighlight {
   0%, 100% {
     background-color: white;
@@ -36,6 +60,17 @@
   a {
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }
 

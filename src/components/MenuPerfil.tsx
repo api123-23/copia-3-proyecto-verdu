@@ -45,18 +45,23 @@ export function MenuPerfil({ sesion }: { sesion: Session | null }) {
           setAbierto((v) => !v);
           setModo(null);
         }}
-         className="flex h-10 items-center gap-1.5 hover:bg-primary-container active:scale-95 transition-all px-2 sm:px-4 rounded-lg text-on-primary shadow-sm hover:shadow-md"
+          className={`flex h-10 items-center gap-1.5 hover:bg-primary-container active:scale-95 transition-all px-2 sm:px-4 rounded-lg text-on-primary shadow-sm hover:shadow-md ${
+            abierto ? "bg-primary-container/80" : ""
+          }`}
         aria-label="Menú de cuenta"
       >
         <Icono nombre="person" className="w-[18px] h-[18px]" />
         <span className="hidden sm:inline text-[12px] font-bold max-w-[120px] truncate">
           {nombreCompleto || email || "Cuenta"}
         </span>
-        <Icono nombre="arrow_drop_down" className="w-[16px] h-[16px]" />
+        <Icono
+          nombre="arrow_drop_down"
+          className={`w-[16px] h-[16px] transition-transform duration-200 ${abierto ? "rotate-180" : ""}`}
+        />
       </button>
 
       {abierto ? (
-        <div className="absolute right-0 top-full mt-1 w-72 bg-white border border-outline-variant rounded-xl shadow-xl p-md z-[60] text-on-surface">
+        <div className="absolute right-0 top-full mt-1 w-72 bg-white border border-outline-variant rounded-xl shadow-xl p-md z-[60] text-on-surface animate-[profileMenuIn_180ms_cubic-bezier(0.22,1,0.36,1)]">
           <div className="border-b border-outline-variant pb-sm mb-sm">
             <p className="text-body-md font-bold text-on-surface break-all">
               {nombreCompleto || email || "Sin nombre"}

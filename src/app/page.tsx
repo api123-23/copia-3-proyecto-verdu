@@ -81,7 +81,7 @@ export default function Home() {
           <MenuPerfil sesion={sesion} />
         </div>
       </header>
-      <main className="max-w-7xl mx-auto md:px-margin">
+      <main className="max-w-7xl mx-auto md:px-margin animate-[pageEnter_280ms_ease-out]">
          <ListaInformes />
       </main>
         </div>

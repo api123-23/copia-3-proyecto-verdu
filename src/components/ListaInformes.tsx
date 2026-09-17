@@ -431,7 +431,7 @@ export function ListaInformes() {
           type="button"
           onClick={actualizar}
           disabled={actualizando || !online}
-           className={`inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wider border border-outline-variant rounded px-3 py-2 active:scale-95 transition-all ${
+           className={`my-2 inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wider border border-outline-variant rounded px-3 py-2 active:scale-95 transition-all ${
             actualizando
               ? "opacity-50 cursor-not-allowed"
               : online
