@@ -217,7 +217,7 @@ export default function SeccionFotos({
           <div className="grid grid-cols-2 gap-sm">
             <button
               type="button"
-              className="flex flex-col items-center justify-center p-lg bg-surface-container-low border-2 border-dashed border-outline-variant rounded-xl hover:bg-surface-container-high transition-colors cursor-pointer group"
+              className="flex min-h-[120px] flex-col items-center justify-center p-lg bg-surface-container-low border-2 border-dashed border-outline-variant rounded-xl hover:bg-surface-container-high hover:-translate-y-1 hover:shadow-md transition-all duration-300 cursor-pointer group"
               onClick={() => camaraRef.current?.click()}
               disabled={subiendo}
             >
@@ -228,7 +228,7 @@ export default function SeccionFotos({
             </button>
             <button
               type="button"
-              className="flex flex-col items-center justify-center p-lg bg-surface-container-low border-2 border-dashed border-outline-variant rounded-xl hover:bg-surface-container-high transition-colors cursor-pointer group"
+              className="flex min-h-[120px] flex-col items-center justify-center p-lg bg-surface-container-low border-2 border-dashed border-outline-variant rounded-xl hover:bg-surface-container-high hover:-translate-y-1 hover:shadow-md transition-all duration-300 cursor-pointer group"
               onClick={() => galeriaRef.current?.click()}
               disabled={subiendo}
             >

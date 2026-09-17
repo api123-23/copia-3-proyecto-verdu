@@ -330,7 +330,7 @@ export function EditorInforme({ id }: { id: string }) {
         <button
           type="button"
           disabled={enviando}
-          className="flex items-center gap-1.5 text-label-caps font-label-caps font-bold tracking-wider bg-gradient-to-br from-white to-sky-100 text-primary px-4 py-2 rounded-lg shadow-lg shadow-black/30 ring-1 ring-white/50 hover:brightness-105 hover:scale-[1.03] active:scale-95 transition-all disabled:opacity-60 disabled:scale-100"
+           className="flex min-h-[44px] items-center gap-1.5 text-label-caps font-label-caps font-bold tracking-wider bg-gradient-to-br from-white to-sky-100 text-primary px-4 py-2 rounded-lg shadow-lg shadow-black/30 ring-1 ring-white/50 hover:brightness-105 hover:-translate-y-0.5 hover:scale-[1.03] hover:shadow-xl active:scale-95 transition-all duration-300 disabled:opacity-60 disabled:scale-100"
           onClick={enviar}
         >
           {enviando ? (

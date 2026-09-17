@@ -21,6 +21,7 @@ export default function Home() {
   const { esAdmin } = usePerfil();
   const hash = useHash();
   const ruta = parsearRuta(hash);
+  const vistaKey = `${ruta.tipo}-${"id" in ruta ? ruta.id : ""}`;
 
   if (cargando || !sesion) {
     return <PantallaCarga mensaje="Cargando..." />;
@@ -29,6 +30,7 @@ export default function Home() {
   return (
     <>
       <AvisoSyncActivo />
+      <div key={vistaKey} className="view-transition">
       {ruta.tipo === "admin" ? (
         <PanelAdmin />
       ) : ruta.tipo === "clientes" ? (
@@ -81,11 +83,12 @@ export default function Home() {
           <MenuPerfil sesion={sesion} />
         </div>
       </header>
-      <main className="max-w-7xl mx-auto md:px-margin animate-[pageEnter_480ms_cubic-bezier(0.22,1,0.36,1)]">
+      <main className="max-w-7xl mx-auto md:px-margin">
          <ListaInformes />
       </main>
         </div>
       )}
+      </div>
     </>
   );
 }

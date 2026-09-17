@@ -29,25 +29,27 @@ export default function LoginPage() {
   return (
     <div
       style={{
-        background: "#003e7a",
         paddingTop: "env(safe-area-inset-top, 0px)",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}
+      className="relative min-h-dvh overflow-hidden bg-gradient-to-br from-[#002c59] via-[#003e7a] to-[#0055a4]"
     >
+      <div aria-hidden="true" className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-sky-300/10 blur-3xl" />
+      <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 -right-20 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
       <main
         className="flex items-center justify-center px-margin"
         style={{ minHeight: "calc(100dvh - env(safe-area-inset-top, 0px))" }}
       >
       <form
         onSubmit={entrar}
-        className="w-full max-w-sm bg-white border border-outline-variant rounded-xl shadow-lg p-xl"
+        className="relative z-10 w-full max-w-sm bg-white/95 border border-white/60 rounded-2xl shadow-2xl shadow-black/25 p-xl backdrop-blur-sm animate-[loginCardIn_700ms_cubic-bezier(0.22,1,0.36,1)]"
       >
         <div className="flex flex-col items-center mb-lg">
-          <LogoTipo className="w-20 h-20 rounded-2xl mb-md" />
-          <h1 className="text-headline-sm text-primary font-bold text-center">
+          <LogoTipo className="w-20 h-20 rounded-2xl mb-md animate-[loginBrandIn_550ms_ease-out]" />
+          <h1 className="text-headline-sm text-primary font-bold text-center animate-[loginBrandIn_550ms_120ms_both_ease-out]">
             Air Power S.A.
           </h1>
-          <p className="text-title-md font-bold text-on-surface mt-xs text-center">
+          <p className="text-title-md font-bold text-on-surface mt-xs text-center animate-[loginBrandIn_550ms_220ms_both_ease-out]">
             Acceso de técnicos
           </p>
         </div>
@@ -78,7 +80,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={cargando}
-            className="w-full bg-primary text-on-primary rounded px-md py-1.5 text-title-md font-bold uppercase tracking-wider hover:bg-primary-container active:scale-[0.98] transition-all disabled:opacity-50"
+            className="w-full min-h-[44px] bg-primary text-on-primary rounded-lg px-md py-1.5 text-title-md font-bold uppercase tracking-wider shadow-md shadow-primary/20 hover:bg-primary-container hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98] transition-all duration-300 disabled:opacity-50"
           >
             {cargando ? "Ingresando..." : "Ingresar"}
           </button>

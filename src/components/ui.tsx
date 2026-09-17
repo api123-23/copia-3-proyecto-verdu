@@ -9,9 +9,15 @@ export function Seccion({
   badge?: string;
   children: ReactNode;
 }) {
+  const tono = ["Valores", "Horas Trabajadas", "Repuestos"].includes(titulo)
+    ? "section-accent-data"
+    : ["Registro Fotográfico", "Firmas Digitales"].includes(titulo)
+      ? "section-accent-evidence"
+      : "section-accent-general";
+
   return (
-    <section className="mb-lg bg-white shadow-sm border border-outline-variant mx-4 md:mx-0 rounded-lg overflow-hidden">
-      <div className="section-header">
+    <section className={`mb-lg bg-white shadow-sm border border-outline-variant mx-4 md:mx-0 rounded-lg overflow-hidden section-card ${tono}`}>
+      <div className={`section-header ${tono}-header`}>
         <h2 className="section-title">{titulo}</h2>
         {badge ? <span className="required-badge">{badge}</span> : null}
       </div>
@@ -215,7 +221,7 @@ export function BotonPrimario({
       type="button"
       onClick={onClick}
       disabled={disabled || cargando}
-      className={`bg-primary text-on-primary rounded-lg px-md py-1.5 text-title-md font-title-md font-bold uppercase tracking-wider hover:bg-primary-container active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ${className}`}
+      className={`min-h-[40px] bg-primary text-on-primary rounded-lg px-md py-1.5 text-title-md font-title-md font-bold uppercase tracking-wider hover:bg-primary-container hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ${className}`}
     >
       {cargando ? (
         <span className="w-4 h-4 rounded-full border-2 border-on-primary border-t-transparent animate-spin" />
