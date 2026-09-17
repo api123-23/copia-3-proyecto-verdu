@@ -66,14 +66,14 @@ export default function Home() {
           {esAdmin ? (
             <a
               href="#/estadisticas"
-              className="flex h-10 items-center text-[10px] sm:text-label-caps font-label-caps font-bold tracking-wider bg-white/10 text-on-primary px-2 sm:px-4 rounded-lg shadow-sm hover:bg-white/20 hover:shadow-md active:scale-95 transition-all"
+              className="flex h-10 items-center text-[10px] sm:text-label-caps font-label-caps font-bold tracking-wider bg-white/10 text-on-primary px-2 sm:px-4 rounded-lg shadow-sm hover:bg-white/20 hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all duration-300"
             >
               ESTADÍSTICAS
             </a>
           ) : null}
           <a
             href="#/informe/nuevo"
-             className="flex h-10 items-center gap-1.5 text-[10px] sm:text-label-caps font-label-caps font-bold tracking-wider bg-gradient-to-br from-white to-sky-100 text-primary px-2 sm:px-4 rounded-lg shadow-lg shadow-black/30 ring-1 ring-white/50 hover:brightness-105 hover:shadow-xl hover:scale-[1.03] active:scale-95 transition-all"
+             className="flex h-10 items-center gap-1.5 text-[10px] sm:text-label-caps font-label-caps font-bold tracking-wider bg-gradient-to-br from-white to-sky-100 text-primary px-2 sm:px-4 rounded-lg shadow-lg shadow-black/30 ring-1 ring-white/50 hover:brightness-105 hover:shadow-xl hover:-translate-y-0.5 hover:scale-[1.03] active:scale-95 transition-all duration-300"
           >
             <Icono nombre="add" className="w-[17px] h-[17px]" />
             NUEVO
@@ -81,7 +81,7 @@ export default function Home() {
           <MenuPerfil sesion={sesion} />
         </div>
       </header>
-      <main className="max-w-7xl mx-auto md:px-margin animate-[pageEnter_280ms_ease-out]">
+      <main className="max-w-7xl mx-auto md:px-margin animate-[pageEnter_480ms_cubic-bezier(0.22,1,0.36,1)]">
          <ListaInformes />
       </main>
         </div>

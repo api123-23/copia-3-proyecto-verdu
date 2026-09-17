@@ -431,11 +431,11 @@ export function ListaInformes() {
           type="button"
           onClick={actualizar}
           disabled={actualizando || !online}
-           className={`my-2 inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wider border border-outline-variant rounded px-3 py-2 active:scale-95 transition-all ${
+           className={`my-2 inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wider border border-outline-variant rounded px-3 py-2 active:scale-95 transition-all duration-300 ${
             actualizando
               ? "opacity-50 cursor-not-allowed"
               : online
-                ? "text-primary hover:bg-surface-container-low"
+                 ? "text-primary hover:bg-surface-container-low hover:-translate-y-0.5 hover:shadow-sm"
                 : "opacity-50 cursor-not-allowed"
           }`}
         >
@@ -486,7 +486,7 @@ export function ListaInformes() {
               return (
                 <tr
                   key={inf.id}
-                   className={`${resaltadoId === inf.id ? "animate-[reportHighlight_2.8s_ease-out]" : "hover:bg-surface-container-low active:bg-surface-container-high"} transition-colors cursor-pointer`}
+                    className={`${resaltadoId === inf.id ? "animate-[reportHighlight_2.8s_ease-out]" : "hover:bg-surface-container-low active:bg-surface-container-high"} transition-all duration-300 cursor-pointer`}
                   onClick={() => { window.location.hash = `#/informe/${encodeURIComponent(inf.id)}`; }}
                 >
                   <td className="px-3 py-2 text-primary font-bold whitespace-nowrap">
@@ -547,7 +547,7 @@ export function ListaInformes() {
                    window.location.hash = `#/informe/${encodeURIComponent(inf.id)}`;
                  }
                }}
-                className={`block bg-white border border-outline-variant rounded-lg p-md shadow-sm hover:-translate-y-0.5 hover:bg-surface-container-low hover:shadow-md active:scale-[0.99] transition-all ${resaltadoId === inf.id ? "animate-[reportHighlight_2.8s_ease-out]" : ""}`}
+                 className={`block bg-white border border-outline-variant rounded-lg p-md shadow-sm hover:-translate-y-1 hover:bg-surface-container-low hover:shadow-md active:scale-[0.99] transition-all duration-300 ${resaltadoId === inf.id ? "animate-[reportHighlight_2.8s_ease-out]" : ""}`}
             >
               <div className="flex justify-between items-center mb-xs">
                 <span className="text-title-md font-bold text-primary">

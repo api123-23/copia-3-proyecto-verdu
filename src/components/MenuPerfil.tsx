@@ -45,7 +45,7 @@ export function MenuPerfil({ sesion }: { sesion: Session | null }) {
           setAbierto((v) => !v);
           setModo(null);
         }}
-          className={`flex h-10 items-center gap-1.5 hover:bg-primary-container active:scale-95 transition-all px-2 sm:px-4 rounded-lg text-on-primary shadow-sm hover:shadow-md ${
+          className={`flex h-10 items-center gap-1.5 hover:bg-primary-container active:scale-95 transition-all duration-300 px-2 sm:px-4 rounded-lg text-on-primary shadow-sm hover:shadow-md ${
             abierto ? "bg-primary-container/80" : ""
           }`}
         aria-label="Menú de cuenta"
@@ -56,12 +56,12 @@ export function MenuPerfil({ sesion }: { sesion: Session | null }) {
         </span>
         <Icono
           nombre="arrow_drop_down"
-          className={`w-[16px] h-[16px] transition-transform duration-200 ${abierto ? "rotate-180" : ""}`}
+          className={`w-[16px] h-[16px] transition-transform duration-300 ${abierto ? "rotate-180" : ""}`}
         />
       </button>
 
       {abierto ? (
-        <div className="absolute right-0 top-full mt-1 w-72 bg-white border border-outline-variant rounded-xl shadow-xl p-md z-[60] text-on-surface animate-[profileMenuIn_180ms_cubic-bezier(0.22,1,0.36,1)]">
+        <div className="absolute right-0 top-full mt-1 w-72 bg-white border border-outline-variant rounded-xl shadow-xl p-md z-[60] text-on-surface animate-[profileMenuIn_320ms_cubic-bezier(0.22,1,0.36,1)]">
           <div className="border-b border-outline-variant pb-sm mb-sm">
             <p className="text-body-md font-bold text-on-surface break-all">
               {nombreCompleto || email || "Sin nombre"}
@@ -81,14 +81,14 @@ export function MenuPerfil({ sesion }: { sesion: Session | null }) {
               <div className="flex flex-col gap-1">
                 <button
                   type="button"
-                  className="text-left px-2 py-2 rounded-lg hover:bg-surface-container-low text-body-md active:scale-[0.98] transition-all"
+                  className="text-left px-2 py-2 rounded-lg hover:bg-surface-container-low hover:translate-x-1 text-body-md active:scale-[0.98] transition-all duration-300"
                   onClick={() => setModo("datos")}
                 >
                   Mis datos (nombre y apellido)
                 </button>
                 <button
                   type="button"
-                  className="text-left px-2 py-2 rounded-lg hover:bg-surface-container-low text-body-md active:scale-[0.98] transition-all"
+                  className="text-left px-2 py-2 rounded-lg hover:bg-surface-container-low hover:translate-x-1 text-body-md active:scale-[0.98] transition-all duration-300"
                   onClick={() => setModo("clave")}
                 >
                   Cambiar contraseña
@@ -97,14 +97,14 @@ export function MenuPerfil({ sesion }: { sesion: Session | null }) {
                   <>
                     <a
                       href="#/clientes"
-                      className="hidden md:block text-left px-2 py-2 rounded-lg hover:bg-surface-container-low text-body-md active:scale-[0.98] transition-all"
+                      className="hidden md:block text-left px-2 py-2 rounded-lg hover:bg-surface-container-low hover:translate-x-1 text-body-md active:scale-[0.98] transition-all duration-300"
                       onClick={() => setAbierto(false)}
                     >
                       Gestionar clientes
                     </a>
                     <a
                       href="#/admin"
-                      className="text-left px-2 py-2 rounded-lg hover:bg-surface-container-low text-body-md active:scale-[0.98] transition-all"
+                      className="text-left px-2 py-2 rounded-lg hover:bg-surface-container-low hover:translate-x-1 text-body-md active:scale-[0.98] transition-all duration-300"
                       onClick={() => setAbierto(false)}
                     >
                       Panel de administración
@@ -116,7 +116,7 @@ export function MenuPerfil({ sesion }: { sesion: Session | null }) {
                 <button
                   type="button"
                   onClick={cerrarSesion}
-                  className="w-full px-2 py-2 rounded-lg text-left text-error font-bold text-body-md hover:bg-error-container/40 active:scale-[0.98] transition-all"
+                  className="w-full px-2 py-2 rounded-lg text-left text-error font-bold text-body-md hover:bg-error-container/40 hover:translate-x-1 active:scale-[0.98] transition-all duration-300"
                 >
                   Cerrar sesión
                 </button>
