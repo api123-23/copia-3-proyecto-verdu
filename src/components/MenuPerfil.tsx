@@ -45,7 +45,7 @@ export function MenuPerfil({ sesion }: { sesion: Session | null }) {
           setAbierto((v) => !v);
           setModo(null);
         }}
-         className="flex h-10 items-center gap-1.5 hover:bg-primary-container active:scale-95 transition-all px-2 sm:px-4 rounded-lg text-on-primary"
+         className="flex h-10 items-center gap-1.5 hover:bg-primary-container active:scale-95 transition-all px-2 sm:px-4 rounded-lg text-on-primary shadow-sm hover:shadow-md"
         aria-label="Menú de cuenta"
       >
         <Icono nombre="person" className="w-[18px] h-[18px]" />

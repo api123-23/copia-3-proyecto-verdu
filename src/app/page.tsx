@@ -66,14 +66,14 @@ export default function Home() {
           {esAdmin ? (
             <a
               href="#/estadisticas"
-              className="flex h-10 items-center text-[10px] sm:text-label-caps font-label-caps font-bold tracking-wider bg-white/10 text-on-primary px-2 sm:px-4 rounded-lg hover:bg-white/20 active:scale-95 transition-all"
+              className="flex h-10 items-center text-[10px] sm:text-label-caps font-label-caps font-bold tracking-wider bg-white/10 text-on-primary px-2 sm:px-4 rounded-lg shadow-sm hover:bg-white/20 hover:shadow-md active:scale-95 transition-all"
             >
               ESTADÍSTICAS
             </a>
           ) : null}
           <a
             href="#/informe/nuevo"
-             className="flex h-10 items-center gap-1.5 text-[10px] sm:text-label-caps font-label-caps font-bold tracking-wider bg-gradient-to-br from-white to-sky-100 text-primary px-2 sm:px-4 rounded-lg shadow-lg shadow-black/30 ring-1 ring-white/50 hover:brightness-105 hover:scale-[1.03] active:scale-95 transition-all"
+             className="flex h-10 items-center gap-1.5 text-[10px] sm:text-label-caps font-label-caps font-bold tracking-wider bg-gradient-to-br from-white to-sky-100 text-primary px-2 sm:px-4 rounded-lg shadow-lg shadow-black/30 ring-1 ring-white/50 hover:brightness-105 hover:shadow-xl hover:scale-[1.03] active:scale-95 transition-all"
           >
             <Icono nombre="add" className="w-[17px] h-[17px]" />
             NUEVO

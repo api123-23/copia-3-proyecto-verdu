@@ -14,18 +14,18 @@ import { Icono } from "@/components/Icono";
 import { PantallaCarga } from "@/components/PantallaCarga";
 
 const BADGE_SYNC: Record<string, { label: string; clase: string }> = {
-  pendiente: { label: "Subiendo...", clase: "bg-amber-100 text-amber-700 animate-pulse" },
-  subiendo_imagenes: { label: "Subiendo fotos...", clase: "bg-amber-100 text-amber-700 animate-pulse" },
-  imagenes_ok: { label: "Guardando...", clase: "bg-amber-100 text-amber-700 animate-pulse" },
+  pendiente: { label: "Subiendo...", clase: "bg-amber-100 text-amber-800 animate-pulse" },
+  subiendo_imagenes: { label: "Subiendo fotos...", clase: "bg-amber-100 text-amber-800 animate-pulse" },
+  imagenes_ok: { label: "Guardando...", clase: "bg-amber-100 text-amber-800 animate-pulse" },
   sincronizado: { label: "Sincronizado", clase: "bg-green-100 text-green-700" },
-  error: { label: "Error de sync", clase: "bg-error-container text-on-error-container" },
+  error: { label: "Error de sync", clase: "bg-red-100 text-red-700" },
 };
 
 type Tecnico = { id: string; nombre: string | null; apellido: string | null; rol: string };
 type ClienteL = { id: string; nombre: string };
 
 function estadoFirmaClase(inf: InformeGeneral): string {
-  return inf.estado_firma === "firmado" ? "bg-green-100 text-green-700" : "bg-error-container text-on-error-container";
+  return inf.estado_firma === "firmado" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-800";
 }
 
 function formatoFecha(iso: string): string {
@@ -41,6 +41,7 @@ export function ListaInformes() {
   const [remotos, setRemotos] = useState<InformeGeneral[]>([]);
   const [online, setOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
   const [actualizando, setActualizando] = useState(false);
+  const [resaltadoId, setResaltadoId] = useState<string | null>(null);
   const [cargandoTecnicos, setCargandoTecnicos] = useState(true);
 
   const [esPc, setEsPc] = useState(false);
@@ -170,6 +171,11 @@ export function ListaInformes() {
       );
       const lista = await listarRemotos();
       setRemotos(lista);
+      if (lista.length > 0) {
+        const id = lista[0].id;
+        setResaltadoId(id);
+        window.setTimeout(() => setResaltadoId(null), 2800);
+      }
     } finally {
       setActualizando(false);
     }
@@ -321,7 +327,7 @@ export function ListaInformes() {
   const panelFiltros =
     esPc ? (
       <div className="rounded-lg border border-outline-variant bg-white p-3 shadow-sm space-y-2">
-       <div className="my-sm flex items-center justify-between">
+       <div className="my-3 sm:my-sm flex items-center justify-between">
           <p className="text-label-caps font-label-caps font-bold uppercase tracking-wider text-primary">
             Filtros
           </p>
@@ -425,7 +431,7 @@ export function ListaInformes() {
           type="button"
           onClick={actualizar}
           disabled={actualizando || !online}
-          className={`text-[12px] font-bold uppercase tracking-wider border border-outline-variant rounded px-3 py-1 active:scale-95 transition-all ${
+           className={`inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wider border border-outline-variant rounded px-3 py-2 active:scale-95 transition-all ${
             actualizando
               ? "opacity-50 cursor-not-allowed"
               : online
@@ -433,6 +439,9 @@ export function ListaInformes() {
                 : "opacity-50 cursor-not-allowed"
           }`}
         >
+           {actualizando ? (
+             <span className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-label="Actualizando" />
+           ) : null}
            Actualizar
         </button>
       </div>
@@ -477,7 +486,7 @@ export function ListaInformes() {
               return (
                 <tr
                   key={inf.id}
-                  className="hover:bg-surface-container-low active:bg-surface-container-high transition-colors cursor-pointer"
+                   className={`${resaltadoId === inf.id ? "animate-[reportHighlight_2.8s_ease-out]" : "hover:bg-surface-container-low active:bg-surface-container-high"} transition-colors cursor-pointer`}
                   onClick={() => { window.location.hash = `#/informe/${encodeURIComponent(inf.id)}`; }}
                 >
                   <td className="px-3 py-2 text-primary font-bold whitespace-nowrap">
@@ -538,7 +547,7 @@ export function ListaInformes() {
                    window.location.hash = `#/informe/${encodeURIComponent(inf.id)}`;
                  }
                }}
-               className="block bg-white border border-outline-variant rounded-lg p-md shadow-sm hover:bg-surface-container-low hover:shadow-md active:scale-[0.99] transition-all"
+                className={`block bg-white border border-outline-variant rounded-lg p-md shadow-sm hover:-translate-y-0.5 hover:bg-surface-container-low hover:shadow-md active:scale-[0.99] transition-all ${resaltadoId === inf.id ? "animate-[reportHighlight_2.8s_ease-out]" : ""}`}
             >
               <div className="flex justify-between items-center mb-xs">
                 <span className="text-title-md font-bold text-primary">

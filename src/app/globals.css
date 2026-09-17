@@ -13,6 +13,16 @@
   }
 }
 
+@keyframes reportHighlight {
+  0%, 100% {
+    background-color: white;
+  }
+  18% {
+    background-color: #e0efff;
+    box-shadow: 0 0 0 2px rgb(0 62 122 / 18%), 0 8px 22px rgb(0 62 122 / 12%);
+  }
+}
+
 @layer base {
   html {
     overscroll-behavior-y: none;
