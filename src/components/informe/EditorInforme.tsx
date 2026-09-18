@@ -247,7 +247,7 @@ export function EditorInforme({ id }: { id: string }) {
     setRedactandoIA(true);
     try {
       const texto = await gemini(
-        `Sos un asistente de cotizaciones técnicas. A partir de este detalle, organizá los ítems a cotizar de manera clara y concisa, respetando exactamente lo indicado sin inventar nada. Usá bullets simples en español, sin precios:\n\n${fuente}`
+        `Identificá únicamente los repuestos, elementos, trabajos o servicios que deben cotizarse a partir del texto proporcionado. Respondé solo con una lista simple y objetiva, usando un elemento por línea con formato de viñeta. No agregues introducciones, explicaciones, conclusiones, recomendaciones, precios ni texto de relleno. No uses frases como "se recomienda", "sería necesario" o "a continuación". Conservá únicamente la información necesaria para identificar cada elemento. No inventes elementos ni incluyas nada que no esté indicado o que no pueda deducirse claramente del texto. Si no hay ningún elemento concreto para cotizar, respondé únicamente: - Sin elementos para cotizar.\n\nTexto proporcionado:\n${fuente}`
       );
       patchInforme({
         cotizacion_notas: texto.trim(),
