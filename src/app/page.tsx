@@ -75,7 +75,7 @@ export default function Home() {
           ) : null}
           <a
             href="#/informe/nuevo"
-             className="flex h-10 items-center gap-1.5 text-[10px] sm:text-label-caps font-label-caps font-bold tracking-wider bg-gradient-to-br from-white to-sky-100 text-primary px-2 sm:px-4 rounded-lg shadow-lg shadow-black/30 ring-1 ring-white/50 hover:brightness-105 hover:shadow-xl hover:-translate-y-0.5 hover:scale-[1.03] active:scale-95 transition-all duration-300"
+              className="action-light-button flex h-10 items-center gap-1.5 text-[10px] sm:text-label-caps font-label-caps font-bold tracking-wider bg-gradient-to-br from-white to-sky-100 text-primary px-2 sm:px-4 rounded-lg shadow-lg shadow-black/30 ring-1 ring-white/50 hover:brightness-105 hover:shadow-xl hover:-translate-y-0.5 hover:scale-[1.03] active:scale-95 transition-all duration-300"
           >
             <Icono nombre="add" className="w-[17px] h-[17px]" />
             NUEVO

@@ -16,7 +16,7 @@ export function MenuPerfil({ sesion }: { sesion: Session | null }) {
   const [modoOscuro, setModoOscuro] = useState(() => {
     if (typeof window === "undefined") return false;
     const guardado = window.localStorage.getItem("air-power-tema");
-    return guardado === "oscuro" || (guardado === null && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    return guardado === "oscuro";
   });
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();

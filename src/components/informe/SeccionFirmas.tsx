@@ -45,7 +45,7 @@ function ModalFirma({
     const pad = new SignaturePad(canvas, {
       minWidth: 1.2,
       maxWidth: 2.6,
-      penColor: "#191c1e",
+           penColor: document.documentElement.classList.contains("dark") ? "#ffffff" : "#191c1e",
     });
     pad.addEventListener("beginStroke", () => setPuedeConfirmar(true));
     pad.addEventListener("endStroke", () => setPuedeConfirmar(!pad.isEmpty()));
@@ -84,7 +84,7 @@ function ModalFirma({
         </h3>
         <canvas
           ref={canvasRef}
-          className="w-full h-64 bg-white rounded-lg border border-outline-variant"
+          className="signature-canvas w-full h-64 bg-white rounded-lg border border-outline-variant"
           style={{ touchAction: "none" }}
         />
         <div className="flex items-center justify-between gap-sm">
@@ -229,7 +229,7 @@ function BloqueFirma({
         <button
           type="button"
           onClick={() => setAbierto(true)}
-          className="w-full h-20 bg-white rounded-lg border-2 border-dashed border-outline-variant flex items-center justify-center text-on-surface-variant opacity-70 min-h-[44px] hover:border-primary hover:bg-primary-fixed hover:text-primary hover:opacity-100 transition-all duration-300"
+          className="signature-placeholder w-full h-20 bg-white rounded-lg border-2 border-dashed border-outline-variant flex items-center justify-center text-on-surface-variant opacity-70 min-h-[44px] hover:border-primary hover:bg-primary-fixed hover:text-primary hover:opacity-100 transition-all duration-300"
         >
           Tocar para firmar
         </button>

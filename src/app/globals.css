@@ -325,6 +325,10 @@ html.dark .report-card-error { border-color: #b95757 !important; }
 html.dark .report-card-pending { border-color: #b48b32 !important; }
 html.dark form[class*="bg-white"] { background-color: #17232e !important; border-color: #405466; }
 html.dark .modal-panel-in { background-color: #17232e; }
+html.dark .action-light-button { color: #071522 !important; }
+html.dark .signature-placeholder { background: #243747 !important; border-color: #71899d !important; color: #e3edf5 !important; opacity: 1 !important; }
+html.dark .signature-placeholder:hover { background: #31516a !important; color: #ffffff !important; }
+html.dark .signature-canvas { background: #162430 !important; border-color: #71899d !important; }
 
 .report-card-error { border-color: #e89999 !important; box-shadow: inset 4px 0 0 #c43d3d; }
 .report-card-pending { border-color: #e8c878 !important; box-shadow: inset 4px 0 0 #d19a21; }
