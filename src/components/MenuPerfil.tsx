@@ -13,6 +13,11 @@ export function MenuPerfil({ sesion }: { sesion: Session | null }) {
   const { perfil, esAdmin, refrescar } = usePerfil();
   const [abierto, setAbierto] = useState(false);
   const [modo, setModo] = useState<Modo>(null);
+  const [modoOscuro, setModoOscuro] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const guardado = window.localStorage.getItem("air-power-tema");
+    return guardado === "oscuro" || (guardado === null && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  });
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -27,14 +32,26 @@ export function MenuPerfil({ sesion }: { sesion: Session | null }) {
     return () => window.removeEventListener("mousedown", onClick);
   }, []);
 
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", modoOscuro);
+  }, [modoOscuro]);
+
   const email = perfil?.email ?? sesion?.user?.email ?? "";
   const nombreCompleto = perfil?.nombre || perfil?.apellido
     ? `${perfil?.nombre ?? ""} ${perfil?.apellido ?? ""}`.trim()
     : null;
 
   async function cerrarSesion() {
+    if (!window.confirm("¿Seguro que querés cerrar sesión?")) return;
     await supabase().auth.signOut();
     router.replace("/login");
+  }
+
+  function alternarTema() {
+    const nuevoValor = !modoOscuro;
+    setModoOscuro(nuevoValor);
+    document.documentElement.classList.toggle("dark", nuevoValor);
+    window.localStorage.setItem("air-power-tema", nuevoValor ? "oscuro" : "claro");
   }
 
   return (
@@ -113,13 +130,26 @@ export function MenuPerfil({ sesion }: { sesion: Session | null }) {
                 ) : null}
               </div>
               <div className="border-t border-outline-variant mt-sm pt-sm">
-                <button
-                  type="button"
-                  onClick={cerrarSesion}
-                  className="w-full px-2 py-2 rounded-lg text-left text-error font-bold text-body-md hover:bg-error-container/40 hover:translate-x-1 active:scale-[0.98] transition-all duration-300"
-                >
-                  Cerrar sesión
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={cerrarSesion}
+                    className="flex-1 px-2 py-2 rounded-lg text-left text-error font-bold text-body-md hover:bg-error-container/40 hover:translate-x-1 active:scale-[0.98] transition-all duration-300"
+                  >
+                    Cerrar sesión
+                  </button>
+                  <button
+                    type="button"
+                    onClick={alternarTema}
+                    className="theme-toggle"
+                    aria-label={modoOscuro ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+                    aria-pressed={modoOscuro}
+                    title={modoOscuro ? "Modo claro" : "Modo oscuro"}
+                  >
+                    <span className="theme-toggle-track"><span className="theme-toggle-thumb" /></span>
+                  </button>
+                </div>
+                <p className="mt-1 text-right text-[10px] text-on-surface-variant">{modoOscuro ? "Modo oscuro" : "Modo claro"}</p>
               </div>
             </>
           )}

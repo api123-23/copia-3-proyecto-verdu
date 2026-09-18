@@ -248,6 +248,84 @@
 .modal-panel-in { animation: modalPanelIn 420ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 .photo-thumb-in { animation: listItemIn 450ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.8rem;
+  height: 2.35rem;
+  border-radius: 0.7rem;
+  transition: background-color 300ms ease, transform 300ms ease;
+}
+.theme-toggle:hover { background: rgb(66 75 88 / 10%); transform: translateY(-1px); }
+.theme-toggle:active { transform: scale(0.95); }
+.theme-toggle-track {
+  position: relative;
+  display: block;
+  width: 2.25rem;
+  height: 1.2rem;
+  padding: 2px;
+  border-radius: 999px;
+  background: #c2c6d3;
+  transition: background-color 300ms ease;
+}
+.theme-toggle-thumb {
+  display: block;
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 999px;
+  background: white;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 25%);
+  transition: transform 350ms cubic-bezier(0.22, 1, 0.36, 1), background-color 300ms ease;
+}
+html.dark .theme-toggle-track { background: #0055a4; }
+html.dark .theme-toggle-thumb { transform: translateX(1.05rem); background: #d5e3ff; }
+
+html.dark {
+  color-scheme: dark;
+  background: #0e1720;
+}
+html.dark body { background: #0e1720; color: #e8eef5; }
+html.dark .bg-background,
+html.dark .bg-surface,
+html.dark .bg-surface-bright { background-color: #0e1720 !important; }
+html.dark .bg-white { background-color: #17232e !important; }
+html.dark .bg-surface-container-low { background-color: #1b2a37 !important; }
+html.dark .bg-surface-container-high { background-color: #243747 !important; }
+html.dark .bg-surface-container { background-color: #20313f !important; }
+html.dark .text-on-surface { color: #e8eef5 !important; }
+html.dark .text-on-surface-variant { color: #b8c5d1 !important; }
+html.dark .text-primary { color: #9ecbff !important; }
+html.dark .border-outline-variant { border-color: #405466 !important; }
+html.dark .input-technical,
+html.dark .select-small { color: #e8eef5; background-color: #162430; border-color: #52687b; }
+html.dark .input-technical::placeholder { color: #8ea1b2; }
+html.dark .section-card { background: #17232e !important; border-color: #405466; }
+html.dark .section-client .section-header,
+html.dark .section-work .section-header { background: linear-gradient(105deg, #173958, #1a2b39 78%); }
+html.dark .section-values .section-header,
+html.dark .section-hours .section-header,
+html.dark .section-parts .section-header,
+html.dark .section-operation .section-header { background: linear-gradient(105deg, #143e3b, #1a2d38 78%); }
+html.dark .section-quote .section-header { background: linear-gradient(105deg, #4b351c, #2b2b2a 78%); }
+html.dark .section-photos .section-header,
+html.dark .section-signatures .section-header { background: linear-gradient(105deg, #38264f, #292938 78%); }
+html.dark .section-values .section-body,
+html.dark .section-hours .section-body,
+html.dark .section-photos .section-body,
+html.dark .section-signatures .section-body { background: #17232e; }
+html.dark .dual-option button { background: #162430; color: #e8eef5; }
+html.dark .dual-option button:hover { background: #243747; }
+html.dark .bg-green-100 { background-color: #173d31 !important; color: #9be2bd !important; }
+html.dark .bg-amber-100 { background-color: #493715 !important; color: #ffda8a !important; }
+html.dark .bg-red-100 { background-color: #4a2428 !important; color: #ffb4ab !important; }
+html.dark .bg-yellow-100 { background-color: #4a3916 !important; }
+html.dark .bg-yellow-100 p { color: #ffda8a !important; }
+html.dark .report-card-error { border-color: #b95757 !important; }
+html.dark .report-card-pending { border-color: #b48b32 !important; }
+html.dark form[class*="bg-white"] { background-color: #17232e !important; border-color: #405466; }
+html.dark .modal-panel-in { background-color: #17232e; }
+
 .report-card-error { border-color: #e89999 !important; box-shadow: inset 4px 0 0 #c43d3d; }
 .report-card-pending { border-color: #e8c878 !important; box-shadow: inset 4px 0 0 #d19a21; }
 
