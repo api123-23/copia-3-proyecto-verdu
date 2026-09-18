@@ -85,7 +85,7 @@ export function ItemSelect({
 }) {
   return (
     <div className={`flex justify-between items-center bg-surface-container-low p-1 rounded field-status-${valor ?? "empty"}`}>
-      <span className="text-body-md font-body-md text-[12px]">{etiqueta}</span>
+      <span className="min-w-0 flex-1 pr-2 text-body-md font-body-md text-[12px] leading-tight">{etiqueta}</span>
       <select
         className={`select-small ${valor === "no" || valor === "mal" ? "text-error" : ""}`}
         value={valor ?? ""}
@@ -117,7 +117,7 @@ export function ItemSelectFull({
 }) {
   return (
     <div className={`flex justify-between items-center bg-surface-container-low p-1.5 rounded field-status-${valor ?? "empty"} ${className ?? ""}`}>
-      <span className="text-body-md font-body-md text-[12px]">{etiqueta}</span>
+       <span className="min-w-0 flex-1 pr-2 text-body-md font-body-md text-[12px] leading-tight">{etiqueta}</span>
       <select
         className={`select-small ${valor === "no" || valor === "mal" ? "text-error" : ""}`}
         value={valor ?? ""}

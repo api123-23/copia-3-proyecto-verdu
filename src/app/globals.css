@@ -374,6 +374,7 @@ html.dark .signature-canvas { background: #162430 !important; border-color: #718
 @media (max-width: 767px) {
   .section-card { margin-bottom: 1.25rem; }
   .section-body { padding: 1rem 0.8rem; }
+  .section-values .grid.grid-cols-2 { grid-template-columns: 1fr; }
 }
 
 .pdf-shell {

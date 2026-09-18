@@ -223,16 +223,16 @@ export default function SeccionValores({
             <div className="grid grid-cols-2 gap-sm">
               <GrupoTitulo>ESTADO GENERAL</GrupoTitulo>
               {aplica(tipo, "inst_electrica") ? (
-                 <ItemSelect etiqueta={esSecadores ? "Inst. el." : "Inst. Eléctrica"} opciones={OPCIONES_OK_MAL} valor={valores.inst_electrica} onChange={set("inst_electrica")} />
+                  <ItemSelect etiqueta="Instalación eléctrica" opciones={OPCIONES_OK_MAL} valor={valores.inst_electrica} onChange={set("inst_electrica")} />
               ) : null}
               {aplica(tipo, "carroceria") ? (
-                 <ItemSelect etiqueta={esSecadores ? "Carroc." : "Carrocería"} opciones={OPCIONES_OK_MAL} valor={valores.carroceria} onChange={set("carroceria")} />
+                  <ItemSelect etiqueta="Carrocería" opciones={OPCIONES_OK_MAL} valor={valores.carroceria} onChange={set("carroceria")} />
               ) : null}
               {aplica(tipo, "jabalina") ? (
-                 <ItemSelect etiqueta={esSecadores ? "Con. jab." : "Jabalina"} opciones={OPCIONES_SI_NO} valor={valores.jabalina} onChange={set("jabalina")} />
+                  <ItemSelect etiqueta={esSecadores ? "Conexión de jabalina" : "Jabalina"} opciones={OPCIONES_SI_NO} valor={valores.jabalina} onChange={set("jabalina")} />
               ) : null}
               {aplica(tipo, "aislacion_suelo") ? (
-                 <ItemSelect etiqueta={esSecadores ? "Aislac. suelo" : "Aislac. Suelo"} opciones={OPCIONES_SI_NO} valor={valores.aislacion_suelo} onChange={set("aislacion_suelo")} />
+                  <ItemSelect etiqueta={esSecadores ? "Aislación de suelo" : "Aislac. Suelo"} opciones={OPCIONES_SI_NO} valor={valores.aislacion_suelo} onChange={set("aislacion_suelo")} />
               ) : null}
             </div>
           </div>
@@ -287,7 +287,7 @@ export default function SeccionValores({
               <div className="mb-sm border-b border-outline-variant pb-sm">
                  <h4 className="text-[10px] font-bold text-on-surface-variant mb-xs">TEMPERATURA (°C)</h4>
                  <div className="grid grid-cols-2 gap-sm">
-                  <CampoNumero etiqueta={esSecadores ? "Ambient." : "Ambiente"} valor={valores.temp_ambiente} onChange={set("temp_ambiente")} />
+                  <CampoNumero etiqueta="Ambiente" valor={valores.temp_ambiente} onChange={set("temp_ambiente")} />
                    {aplica(tipo, "temp_refrigerante") ? (
                      <CampoNumero
                        etiqueta="Refrigerante"
@@ -296,7 +296,7 @@ export default function SeccionValores({
                      />
                    ) : null}
                    {aplica(tipo, "pto_rocio") ? (
-                     <ItemSelect etiqueta="Pto rocio" opciones={OPCIONES_OPTIMO_ALTO_BAJO} valor={valores.pto_rocio} onChange={set("pto_rocio")} />
+                      <ItemSelect etiqueta="Punto de rocío" opciones={OPCIONES_OPTIMO_ALTO_BAJO} valor={valores.pto_rocio} onChange={set("pto_rocio")} />
                    ) : null}
                 </div>
               </div>
@@ -317,8 +317,8 @@ export default function SeccionValores({
                    {aplica(tipo, "circuito_refr_m") ? <ItemSelect etiqueta="Refr. M." opciones={OPCIONES_OK_MAL} valor={valores.circuito_refr_m} onChange={set("circuito_refr_m")} /> : null}
                    {aplica(tipo, "circuito_despresuriz") ? <ItemSelect etiqueta="Despresuriz." opciones={OPCIONES_SI_NO} valor={valores.circuito_despresuriz} onChange={set("circuito_despresuriz")} /> : null}
                    {aplica(tipo, "circuito_arranque") ? <ItemSelect etiqueta="Arranque" opciones={OPCIONES_OK_MAL} valor={valores.circuito_arranque} onChange={set("circuito_arranque")} /> : null}
-                    {aplica(tipo, "circuito_seguridad") ? <ItemSelect etiqueta={esSecadores ? "Segur." : "Seguridad"} opciones={OPCIONES_OK_MAL} valor={valores.circuito_seguridad} onChange={set("circuito_seguridad")} /> : null}
-                   {aplica(tipo, "circuito_electr") ? <ItemSelect etiqueta={esSecadores ? "Electr" : "Electr."} opciones={OPCIONES_OK_MAL} valor={valores.circuito_electr} onChange={set("circuito_electr")} /> : null}
+                    {aplica(tipo, "circuito_seguridad") ? <ItemSelect etiqueta="Seguridad" opciones={OPCIONES_OK_MAL} valor={valores.circuito_seguridad} onChange={set("circuito_seguridad")} /> : null}
+                    {aplica(tipo, "circuito_electr") ? <ItemSelect etiqueta="Eléctrico" opciones={OPCIONES_OK_MAL} valor={valores.circuito_electr} onChange={set("circuito_electr")} /> : null}
                    {aplica(tipo, "tiempo_y_delta") ? <ItemSelect etiqueta="Tiempo Y-Δ" opciones={OPCIONES_NIVEL} valor={valores.tiempo_y_delta} onChange={set("tiempo_y_delta")} /> : null}
                    {aplica(tipo, "diferencial") ? <ItemSelect etiqueta="Diferencial" opciones={OPCIONES_OK_NO} valor={valores.diferencial} onChange={set("diferencial")} /> : null}
                 </div>
@@ -335,7 +335,7 @@ export default function SeccionValores({
                  <ItemSelect etiqueta={esCompresor ? "Aceite Unidad" : "Aceite Motor"} opciones={OPCIONES_SI_NO} valor={valores.perdida_aceite_motor} onChange={set("perdida_aceite_motor")} />
               ) : null}
               {aplica(tipo, "perdida_refrigerante") ? (
-                 <ItemSelect etiqueta={esSecadores ? "Refr" : "Refrigerante"} opciones={OPCIONES_SI_NO} valor={valores.perdida_refrigerante} onChange={set("perdida_refrigerante")} />
+                  <ItemSelect etiqueta="Refrigerante" opciones={OPCIONES_SI_NO} valor={valores.perdida_refrigerante} onChange={set("perdida_refrigerante")} />
               ) : null}
               {aplica(tipo, "perdida_aire") ? (
                 <ItemSelect etiqueta="Aire" opciones={OPCIONES_SI_NO} valor={valores.perdida_aire} onChange={set("perdida_aire")} />
