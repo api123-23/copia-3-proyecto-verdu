@@ -12,7 +12,6 @@ import { useSesion } from "@/lib/useSesion";
 import { LogoTipo } from "@/components/LogoTipo";
 import { Icono } from "@/components/Icono";
 import { PantallaCarga } from "@/components/PantallaCarga";
-import { ListaOpciones } from "@/components/ui";
 
 const BADGE_SYNC: Record<string, { label: string; clase: string }> = {
   pendiente: { label: "Subiendo...", clase: "bg-amber-100 text-amber-800 animate-pulse" },
@@ -382,21 +381,33 @@ export function ListaInformes() {
           </div>
           <div>
             <label className="text-[11px] font-bold text-on-surface-variant block mb-0.5">Técnico</label>
-            <ListaOpciones
-              opciones={[{ value: "", label: "Todos" }, ...tecnicos.map((t) => ({ value: t.id, label: tecnicoNombre.get(t.id) ?? t.id.slice(0, 8) }))]}
-              valor={filtroTecnico}
-              onChange={setFiltroTecnico}
-              className="option-list-wide"
-            />
+            <select
+              value={filtroTecnico}
+              onChange={(e) => setFiltroTecnico(e.target.value)}
+              className={filtroBarClass}
+            >
+              <option value="">Todos</option>
+              {tecnicos.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {tecnicoNombre.get(t.id) ?? t.id.slice(0, 8)}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="text-[11px] font-bold text-on-surface-variant block mb-0.5">Equipo</label>
-            <ListaOpciones
-              opciones={[{ value: "", label: "Todos" }, ...TIPOS_EQUIPO]}
-              valor={filtroEquipo}
-              onChange={setFiltroEquipo}
-              className="option-list-wide"
-            />
+            <select
+              value={filtroEquipo}
+              onChange={(e) => setFiltroEquipo(e.target.value)}
+              className={filtroBarClass}
+            >
+              <option value="">Todos</option>
+              {TIPOS_EQUIPO.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>

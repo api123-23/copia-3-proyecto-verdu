@@ -74,35 +74,6 @@ export function GrupoTitulo({ children }: { children: ReactNode }) {
   );
 }
 
-export function ListaOpciones({
-  opciones,
-  valor,
-  onChange,
-  className = "",
-}: {
-  opciones: { value: string; label: string }[];
-  valor: string;
-  onChange: (valor: string) => void;
-  className?: string;
-}) {
-  return (
-    <div className={`option-list ${className}`} role="radiogroup">
-      {opciones.map((opcion) => (
-        <button
-          key={opcion.value}
-          type="button"
-          role="radio"
-          aria-checked={valor === opcion.value}
-          className={valor === opcion.value ? "is-selected" : ""}
-          onClick={() => onChange(opcion.value)}
-        >
-          {opcion.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export function ItemSelect({
   etiqueta,
   valor,
@@ -119,12 +90,18 @@ export function ItemSelect({
   return (
     <div className={`flex justify-between items-center bg-surface-container-low p-1 rounded field-status-${valor ?? "empty"} ${className}`}>
       <span className="min-w-0 flex-1 pr-2 text-body-md font-body-md text-[12px] leading-tight">{etiqueta}</span>
-      <ListaOpciones
-        opciones={[{ value: "", label: "---" }, ...opciones]}
-        valor={valor ?? ""}
-        onChange={(nuevo) => onChange(nuevo === "" ? null : nuevo)}
-        className={valor === "no" || valor === "mal" ? "text-error" : ""}
-      />
+      <select
+        className={`select-small ${valor === "no" || valor === "mal" ? "text-error" : ""}`}
+        value={valor ?? ""}
+        onChange={(e) => onChange(e.target.value === "" ? null : e.target.value)}
+      >
+        <option value="">---</option>
+        {opciones.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }
@@ -145,12 +122,18 @@ export function ItemSelectFull({
   return (
     <div className={`flex justify-between items-center bg-surface-container-low p-1.5 rounded field-status-${valor ?? "empty"} ${className ?? ""}`}>
        <span className="min-w-0 flex-1 pr-2 text-body-md font-body-md text-[12px] leading-tight">{etiqueta}</span>
-      <ListaOpciones
-        opciones={[{ value: "", label: "---" }, ...opciones]}
-        valor={valor ?? ""}
-        onChange={(nuevo) => onChange(nuevo === "" ? null : nuevo)}
-        className={valor === "no" || valor === "mal" ? "text-error" : ""}
-      />
+      <select
+        className={`select-small ${valor === "no" || valor === "mal" ? "text-error" : ""}`}
+        value={valor ?? ""}
+        onChange={(e) => onChange(e.target.value === "" ? null : e.target.value)}
+      >
+        <option value="">---</option>
+        {opciones.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

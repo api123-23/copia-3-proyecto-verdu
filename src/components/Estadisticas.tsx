@@ -6,7 +6,6 @@ import { supabase } from "@/lib/supabase";
 import { navegar } from "@/lib/hashRuta";
 import { usePerfil } from "@/lib/usePerfil";
 import { PantallaCarga } from "@/components/PantallaCarga";
-import { ListaOpciones } from "@/components/ui";
 
 type Mensual = { mes: string; cantidad: number };
 type Barra = { id?: string; nombre?: string; tipo?: string; cantidad: number };
@@ -181,12 +180,9 @@ export function Estadisticas() {
               <div className="mb-md flex flex-wrap items-end justify-between gap-sm">
                 <h2 className="section-title">Informes por técnico</h2>
                 <label className="text-[12px] font-bold text-on-surface-variant">Mes
-                  <ListaOpciones
-                    opciones={meses.slice().reverse().map((item) => ({ value: item, label: etiquetaMes(item) }))}
-                    valor={mes}
-                    onChange={setMes}
-                    className="option-list-month ml-2"
-                  />
+                  <select className="ml-2 rounded border border-outline-variant bg-white px-2 py-1 text-[13px]" value={mes} onChange={(e) => setMes(e.target.value)}>
+                    {meses.slice().reverse().map((item) => <option key={item} value={item}>{etiquetaMes(item)}</option>)}
+                  </select>
                 </label>
               </div>
               <Barras datos={datos.tecnicos} etiqueta={(dato) => dato.nombre ?? "Sin técnico"} />
