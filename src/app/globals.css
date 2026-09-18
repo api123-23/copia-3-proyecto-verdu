@@ -300,6 +300,8 @@ html.dark .border-outline-variant { border-color: #405466 !important; }
 html.dark .input-technical,
 html.dark .select-small { color: #e8eef5; background-color: #162430; border-color: #52687b; }
 html.dark .input-technical::placeholder { color: #8ea1b2; }
+html.dark select { color-scheme: dark; color: #e8eef5 !important; background-color: #162430 !important; }
+html.dark select option { color: #e8eef5 !important; background-color: #17232e !important; }
 html.dark .section-card { background: #17232e !important; border-color: #405466; }
 html.dark .section-client .section-header,
 html.dark .section-work .section-header { background: linear-gradient(105deg, #173958, #1a2b39 78%); }
@@ -323,6 +325,11 @@ html.dark .bg-yellow-100 { background-color: #4a3916 !important; }
 html.dark .bg-yellow-100 p { color: #ffda8a !important; }
 html.dark .report-card-error { border-color: #b95757 !important; }
 html.dark .report-card-pending { border-color: #b48b32 !important; }
+html.dark table tbody tr:hover,
+html.dark table tbody tr:hover td { background-color: #243747 !important; color: #e8eef5 !important; }
+html.dark table tbody tr:hover td.text-on-surface-variant { color: #c8d5e0 !important; }
+html.dark .report-card-pending:hover,
+html.dark .report-card-error:hover { background-color: #243747 !important; color: #e8eef5 !important; }
 html.dark form[class*="bg-white"] { background-color: #17232e !important; border-color: #405466; }
 html.dark .modal-panel-in { background-color: #17232e; }
 html.dark .action-light-button { color: #071522 !important; }
