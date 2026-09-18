@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { supabase } from "@/lib/supabase";
 import { comprimirImagenWebp } from "@/lib/imagen";
 import type { ArchivoLocal, CategoriaFoto } from "@/lib/types";
-import { Label, Seccion } from "@/components/ui";
+import { Label, ListaOpciones, Seccion } from "@/components/ui";
 import { Icono } from "@/components/Icono";
 
 const CATEGORIAS: { value: CategoriaFoto; label: string }[] = [
@@ -202,17 +202,12 @@ export default function SeccionFotos({
         <div className="w-full max-w-xs space-y-md">
           <div className="space-y-sm">
             <Label>Seleccionar Categoría</Label>
-            <select
-              className="input-technical w-full h-[28px] py-0"
-              value={categoria}
-              onChange={(e) => setCategoria(e.target.value as CategoriaFoto)}
-            >
-              {CATEGORIAS.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
+            <ListaOpciones
+              opciones={CATEGORIAS}
+              valor={categoria}
+              onChange={(valor) => setCategoria(valor as CategoriaFoto)}
+              className="option-list-wide"
+            />
           </div>
           <div className="grid grid-cols-2 gap-sm">
             <button

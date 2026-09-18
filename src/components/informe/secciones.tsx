@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { InformeGeneral } from "@/lib/types";
 import { TIPOS_EQUIPO } from "@/lib/informes";
 import { supabase } from "@/lib/supabase";
-import { Label, Seccion } from "@/components/ui";
+import { Label, ListaOpciones, Seccion } from "@/components/ui";
 import { Icono } from "@/components/Icono";
 
 type PatchInforme = Partial<InformeGeneral>;
@@ -61,19 +61,15 @@ function SelectorCliente({
   return (
     <div className="md:col-span-2">
       <Label>Cliente guardado (opcional)</Label>
-      <select
-        className="input-technical w-full h-[28px] py-0"
-        value={seleccion}
-        onChange={(e) => alSeleccionar(e.target.value)}
-      >
-        <option value="">— Seleccionar o cargar manual —</option>
-        {clientes.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.nombre}
-            {c.telefono ? ` · ${c.telefono}` : ""}
-          </option>
-        ))}
-      </select>
+      <ListaOpciones
+        opciones={[
+          { value: "", label: "— Seleccionar o cargar manual —" },
+          ...clientes.map((c) => ({ value: c.id, label: `${c.nombre}${c.telefono ? ` · ${c.telefono}` : ""}` })),
+        ]}
+        valor={seleccion}
+        onChange={alSeleccionar}
+        className="option-list-wide"
+      />
       <p className="text-[10px] text-on-surface-variant">
         Al elegir un cliente se completan nombre y teléfono automáticamente. La ubicación se carga manual.
       </p>
@@ -151,17 +147,12 @@ export function SeccionCliente({
         </div>
         <div className="md:col-span-2">
           <Label>Categoría de Equipo</Label>
-          <select
-            className="input-technical w-full h-[28px] py-0"
-            value={informe.tipo_equipo}
-            onChange={(e) => onChange({ tipo_equipo: e.target.value as InformeGeneral["tipo_equipo"] })}
-          >
-            {TIPOS_EQUIPO.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
-              </option>
-            ))}
-          </select>
+          <ListaOpciones
+            opciones={TIPOS_EQUIPO}
+            valor={informe.tipo_equipo}
+            onChange={(tipo) => onChange({ tipo_equipo: tipo as InformeGeneral["tipo_equipo"] })}
+            className="option-list-wide"
+          />
         </div>
         <div>
           <Label>Modelo</Label>

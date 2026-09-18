@@ -213,6 +213,30 @@
   .dual-option button.selected-error {
     @apply bg-red-100 text-red-700;
   }
+  .option-list {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 3px;
+    max-width: 100%;
+  }
+  .option-list button {
+    min-height: 28px;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #c2c6d3;
+    border-radius: 0.4rem;
+    background: white;
+    color: #424751;
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1.1;
+    transition: background-color 250ms ease, border-color 250ms ease, color 250ms ease, transform 250ms ease;
+  }
+  .option-list button:hover { transform: translateY(-1px); border-color: #0055a4; color: #003e7a; }
+  .option-list button.is-selected { border-color: #0055a4; background: #d5e3ff; color: #003e7a; box-shadow: inset 0 0 0 1px #0055a4; }
+  .option-list-wide { width: 100%; justify-content: flex-start; max-height: 9rem; overflow-y: auto; }
+  .option-list-month { max-width: min(100%, 20rem); justify-content: flex-start; }
   .select-small {
     @apply w-16 h-[26px] py-0 pl-1 pr-6 text-[11px] bg-white border border-outline-variant rounded text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none appearance-none transition-all duration-300;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
@@ -315,6 +339,9 @@ html.dark .input-technical::placeholder { color: #8ea1b2; }
 html.dark select { color-scheme: dark; color: #e8eef5 !important; background-color: #162430 !important; }
 html.dark select option { color: #e8eef5 !important; background-color: #17232e !important; }
 html.dark .filter-control { color: #e8eef5 !important; background-color: #162430 !important; border-color: #52687b !important; color-scheme: dark; }
+html.dark .option-list button { color: #e8eef5; background-color: #162430; border-color: #52687b; }
+html.dark .option-list button:hover { color: #ffffff; background-color: #243747; border-color: #9ecbff; }
+html.dark .option-list button.is-selected { color: #071522; background-color: #9ecbff; border-color: #9ecbff; }
 html.dark .section-card { background: #17232e !important; border-color: #405466; }
 html.dark .section-client .section-header,
 html.dark .section-work .section-header { background: linear-gradient(105deg, #173958, #1a2b39 78%); }
@@ -375,7 +402,7 @@ html.dark .signature-canvas { background: #162430 !important; border-color: #718
   .section-card { margin-bottom: 1.25rem; }
   .section-body { padding: 1rem 0.8rem; }
   .section-values-standard .field-mobile-wide { flex-direction: column; align-items: stretch; gap: 0.35rem; }
-  .section-values-standard .field-mobile-wide .select-small { align-self: flex-end; }
+  .section-values-standard .field-mobile-wide .option-list { align-self: flex-end; }
   .section-values-standard .field-status-ok,
   .section-values-standard .field-status-si,
   .section-values-standard .field-status-mal,
