@@ -249,53 +249,30 @@
 .modal-panel-in { animation: modalPanelIn 420ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 .photo-thumb-in { animation: listItemIn 450ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 
-.editor-status-bar {
-  position: sticky;
-  top: 3rem;
-  z-index: 35;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 2.5rem;
-  margin: 0 1rem 1rem;
-  padding: 0.55rem 0.75rem;
-  border: 1px solid;
-  border-radius: 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  box-shadow: 0 5px 18px rgb(0 42 82 / 8%);
-  backdrop-filter: blur(12px);
-}
-.editor-status-bar.is-ok { color: #176b50; background: rgb(232 248 240 / 94%); border-color: #8fd4b3; }
-.editor-status-bar.is-pending { color: #8a5b08; background: rgb(255 247 221 / 94%); border-color: #e7c66b; }
-.editor-status-bar.is-offline { color: #8a3f16; background: rgb(255 238 225 / 94%); border-color: #edb184; }
-.editor-status-dot { width: 0.55rem; height: 0.55rem; border-radius: 999px; background: currentColor; flex: 0 0 auto; }
-.editor-status-bar.is-pending .editor-status-dot { animation: statusPulse 1.7s ease-in-out infinite; }
-
-.editor-progress-panel {
-  margin: 0 1rem 1.25rem;
-  padding: 1rem;
-  border: 1px solid #b9cfe4;
-  border-radius: 1rem;
-  background: linear-gradient(135deg, #eaf4fc 0%, #ffffff 58%, #f3f8fc 100%);
-  box-shadow: 0 8px 24px rgb(0 62 122 / 9%);
-}
-.editor-progress-track { height: 0.45rem; overflow: hidden; border-radius: 999px; background: #d6e3ef; }
-.editor-progress-track span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #0055a4, #19a77e); transition: width 700ms cubic-bezier(0.22, 1, 0.36, 1); }
-.editor-stage-list { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0.35rem; margin-top: 0.85rem; }
-.editor-stage { display: flex; min-width: 0; align-items: center; justify-content: center; gap: 0.35rem; padding: 0.35rem 0.2rem; border-radius: 0.55rem; color: #596b7d; font-size: 0.68rem; font-weight: 700; transition: all 300ms ease; }
-.editor-stage:hover { color: #003e7a; background: rgb(255 255 255 / 82%); transform: translateY(-2px); }
-.editor-stage-dot { display: inline-flex; width: 1.25rem; height: 1.25rem; align-items: center; justify-content: center; border: 2px solid #9eb5c9; border-radius: 999px; font-size: 0.65rem; flex: 0 0 auto; }
-.editor-stage.is-complete { color: #176b50; }
-.editor-stage.is-complete .editor-stage-dot { color: white; border-color: #19936e; background: #19936e; }
-
 .report-card-error { border-color: #e89999 !important; box-shadow: inset 4px 0 0 #c43d3d; }
 .report-card-pending { border-color: #e8c878 !important; box-shadow: inset 4px 0 0 #d19a21; }
 
+.section-title { display: flex; align-items: center; gap: 0.5rem; }
+.section-title::before { content: ""; display: inline-block; width: 0.55rem; height: 0.55rem; border-radius: 999px; background: currentColor; box-shadow: 0 0 0 4px rgb(255 255 255 / 68%); }
+.section-client { border-left-color: #1767a9; }
+.section-work { border-left-color: #2685b6; }
+.section-values { border-left-color: #16806a; }
+.section-hours { border-left-color: #2c9b72; }
+.section-parts { border-left-color: #4c9b55; }
+.section-operation { border-left-color: #6e9b3c; }
+.section-quote { border-left-color: #c2761c; }
+.section-photos { border-left-color: #7b55ad; }
+.section-signatures { border-left-color: #ad4d81; }
+.section-client .section-header, .section-work .section-header { background: linear-gradient(105deg, #e6f1fb, #fbfdff 78%); }
+.section-values .section-header, .section-hours .section-header, .section-parts .section-header, .section-operation .section-header { background: linear-gradient(105deg, #e6f7f0, #fbfefd 78%); }
+.section-quote .section-header { background: linear-gradient(105deg, #fff0d9, #fffdf9 78%); }
+.section-photos .section-header, .section-signatures .section-header { background: linear-gradient(105deg, #f2eafa, #fdfbff 78%); }
+.section-values .section-body, .section-hours .section-body { background: linear-gradient(180deg, #fbfefd, #f5fbf8); }
+.section-photos .section-body, .section-signatures .section-body { background: linear-gradient(180deg, #fefcff, #faf7fd); }
+
 @media (max-width: 767px) {
-  .editor-status-bar { margin-inline: 1rem; }
-  .editor-progress-panel { margin-inline: 1rem; padding: 0.85rem; }
-  .editor-stage-list { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 0.5rem; }
+  .section-card { margin-bottom: 1.25rem; }
+  .section-body { padding: 1rem 0.8rem; }
 }
 
 .pdf-shell {

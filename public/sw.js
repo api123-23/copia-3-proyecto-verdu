@@ -1,4 +1,4 @@
-const CACHE = "verdu-shell-sjfE6z6rHj7fSwn2s-Pz2";
+const CACHE = "verdu-shell-KysI6cQeWu840R1VZSXlQ";
 const PRECACHE = [
   "/",
   "/login",
@@ -6,21 +6,24 @@ const PRECACHE = [
   "/icons/icon-180.png",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
+  "/_next/static/KysI6cQeWu840R1VZSXlQ/_buildManifest.js",
+  "/_next/static/KysI6cQeWu840R1VZSXlQ/_clientMiddlewareManifest.js",
+  "/_next/static/KysI6cQeWu840R1VZSXlQ/_ssgManifest.js",
   "/_next/static/chunks/02fh7_m5mrih8.js",
   "/_next/static/chunks/07nldpx3i6mc_.js",
+  "/_next/static/chunks/0_xmaw59m1r6s.js",
   "/_next/static/chunks/0cz1d0mv5g_q7.js",
   "/_next/static/chunks/0k16m1c57o-qb.js",
   "/_next/static/chunks/16ihqb68jjg31.js",
   "/_next/static/chunks/1cwczo7gh-yho.js",
+  "/_next/static/chunks/1dx0icitvkeef.css",
   "/_next/static/chunks/1kden681vlcis.js",
   "/_next/static/chunks/1vmuvg71dkxre.js",
-  "/_next/static/chunks/1y7ipz9n_1-ql.js",
   "/_next/static/chunks/2-cytfxc_rgaj.js",
-  "/_next/static/chunks/21unpjyo1x50q.js",
+  "/_next/static/chunks/29ljv927rypc4.js",
   "/_next/static/chunks/2i51e627rllld.js",
   "/_next/static/chunks/3fntmmi971322.js",
-  "/_next/static/chunks/3hmy2z31_j3jd.js",
-  "/_next/static/chunks/3x002egzcw78o.css",
+  "/_next/static/chunks/3ufwn7-94iafr.js",
   "/_next/static/chunks/turbopack-0uq7hdybijnu_.js",
   "/_next/static/media/1317291d1835f011-s.1ocfy-u58n01e.woff2",
   "/_next/static/media/1bffadaabf893a1e-s.3-6t-g6q0vh0a.woff2",
@@ -35,10 +38,7 @@ const PRECACHE = [
   "/_next/static/media/9c72aa0f40e4eef8-s.1y4-pdgsjb-pw.woff2",
   "/_next/static/media/ad66f9afd8947f86-s.3lvt2whj97whp.woff2",
   "/_next/static/media/e1750518007a189a-s.p.29e6ydd6osd72.woff2",
-  "/_next/static/media/favicon.2vob68tjqpejf.ico",
-  "/_next/static/sjfE6z6rHj7fSwn2s-Pz2/_buildManifest.js",
-  "/_next/static/sjfE6z6rHj7fSwn2s-Pz2/_clientMiddlewareManifest.js",
-  "/_next/static/sjfE6z6rHj7fSwn2s-Pz2/_ssgManifest.js"
+  "/_next/static/media/favicon.2vob68tjqpejf.ico"
 ];
 
 self.addEventListener("install", (event) => {

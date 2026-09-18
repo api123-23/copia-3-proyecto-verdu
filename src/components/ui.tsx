@@ -16,14 +16,36 @@ export function Seccion({
       : titulo === "Cotización"
         ? "section-accent-commercial"
       : "section-accent-general";
+  const estilo = {
+    "Datos del Cliente": "section-client",
+    "Trabajos Realizados / Observaciones": "section-work",
+    Valores: "section-values",
+    "Horas Trabajadas": "section-hours",
+    Repuestos: "section-parts",
+    "¿La máquina queda operativa?": "section-operation",
+    Cotización: "section-quote",
+    "Registro Fotográfico": "section-photos",
+    "Firmas Digitales": "section-signatures",
+  }[titulo] ?? "section-generic";
+  const orden = [
+    "Datos del Cliente",
+    "Trabajos Realizados / Observaciones",
+    "Valores",
+    "Horas Trabajadas",
+    "Repuestos",
+    "¿La máquina queda operativa?",
+    "Cotización",
+    "Registro Fotográfico",
+    "Firmas Digitales",
+  ].indexOf(titulo);
 
   return (
-    <section data-seccion={titulo} className={`mb-lg bg-white shadow-sm border border-outline-variant mx-4 md:mx-0 rounded-lg overflow-hidden section-card ${tono}`}>
+    <section data-seccion={titulo} style={{ animationDelay: `${Math.max(0, orden) * 45}ms` }} className={`mb-lg bg-white shadow-sm border border-outline-variant mx-4 md:mx-0 rounded-lg overflow-hidden section-card ${tono} ${estilo}`}>
       <div className={`section-header ${tono}-header`}>
         <h2 className="section-title">{titulo}</h2>
         {badge ? <span className="required-badge">{badge}</span> : null}
       </div>
-      <div className="p-md">{children}</div>
+      <div className={`p-md section-body ${estilo}-body`}>{children}</div>
     </section>
   );
 }
