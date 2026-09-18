@@ -1,4 +1,4 @@
-const CACHE = "verdu-shell-_BWZh15Jf8gE8kyAEOvFj";
+const CACHE = "verdu-shell-TFrYI6eL4JcsMheyHatgH";
 const PRECACHE = [
   "/",
   "/login",
@@ -6,9 +6,9 @@ const PRECACHE = [
   "/icons/icon-180.png",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
-  "/_next/static/_BWZh15Jf8gE8kyAEOvFj/_buildManifest.js",
-  "/_next/static/_BWZh15Jf8gE8kyAEOvFj/_clientMiddlewareManifest.js",
-  "/_next/static/_BWZh15Jf8gE8kyAEOvFj/_ssgManifest.js",
+  "/_next/static/TFrYI6eL4JcsMheyHatgH/_buildManifest.js",
+  "/_next/static/TFrYI6eL4JcsMheyHatgH/_clientMiddlewareManifest.js",
+  "/_next/static/TFrYI6eL4JcsMheyHatgH/_ssgManifest.js",
   "/_next/static/chunks/02fh7_m5mrih8.js",
   "/_next/static/chunks/07dsvxi1j23r_.css",
   "/_next/static/chunks/07nldpx3i6mc_.js",
