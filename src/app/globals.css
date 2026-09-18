@@ -105,6 +105,12 @@
   }
 }
 
+@keyframes validationPulse {
+  0% { box-shadow: 0 0 0 0 rgb(186 26 26 / 0%); }
+  25% { box-shadow: 0 0 0 5px rgb(186 26 26 / 28%); }
+  100% { box-shadow: 0 0 0 2px rgb(186 26 26 / 72%); }
+}
+
 @layer base {
   html {
     overscroll-behavior-y: none;
@@ -161,6 +167,12 @@
   .input-technical:focus {
     transform: translateY(-1px);
     box-shadow: 0 5px 14px rgb(0 62 122 / 10%);
+  }
+  .field-validation-error {
+    position: relative;
+    z-index: 2;
+    border-color: #ba1a1a !important;
+    animation: validationPulse 1000ms ease-out both;
   }
   .field-status-ok, .field-status-si { background: #eaf8f0; box-shadow: inset 3px 0 0 #32a36f; }
   .field-status-mal, .field-status-no { background: #fff0ef; box-shadow: inset 3px 0 0 #c84b45; }

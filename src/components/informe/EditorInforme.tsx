@@ -36,6 +36,53 @@ import SeccionValores from "@/components/informe/SeccionValores";
 import SeccionFotos from "@/components/informe/SeccionFotos";
 import SeccionFirmas from "@/components/informe/SeccionFirmas";
 
+function textoComparable(texto: string): string {
+  return texto
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function encontrarControlFaltante(nombre: string): HTMLElement | null {
+  const buscado = textoComparable(nombre.replace(/\s*\([^)]*\)\s*$/, ""));
+  const candidatos = Array.from(document.querySelectorAll<HTMLElement>("label, span, h2, h3"));
+  const texto = candidatos.find((elemento) => {
+    const actual = textoComparable(elemento.textContent ?? "");
+    return actual === buscado || actual.startsWith(`${buscado} `);
+  });
+
+  if (texto) {
+    let actual: HTMLElement | null = texto;
+    for (let nivel = 0; actual && nivel < 5; nivel += 1, actual = actual.parentElement) {
+      const control = actual.querySelector<HTMLElement>("input, textarea, select, button");
+      if (control) return control;
+    }
+  }
+
+  const seccion = Array.from(document.querySelectorAll<HTMLElement>("[data-seccion]"))
+    .find((elemento) => textoComparable(elemento.dataset.seccion ?? "") === buscado);
+  return seccion?.querySelector<HTMLElement>("input, textarea, select, button") ?? null;
+}
+
+function enfocarPrimerFaltante(faltantes: string[]) {
+  const controles = faltantes
+    .map((faltante) => encontrarControlFaltante(faltante))
+    .filter((control): control is HTMLElement => Boolean(control));
+  if (controles.length === 0) return;
+
+  const elementos = Array.from(document.querySelectorAll<HTMLElement>("input, textarea, select, button"));
+  const objetivo = controles.reduce((primero, actual) =>
+    elementos.indexOf(actual) < elementos.indexOf(primero) ? actual : primero
+  );
+  objetivo.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+  objetivo.classList.remove("field-validation-error");
+  void objetivo.offsetWidth;
+  objetivo.classList.add("field-validation-error");
+  window.setTimeout(() => objetivo.classList.remove("field-validation-error"), 1000);
+}
+
 export function EditorInforme({ id }: { id: string }) {
   const { cargando } = useSesion(false);
   const [informe, setInforme] = useState<InformeGeneral | null>(null);
@@ -177,6 +224,7 @@ export function EditorInforme({ id }: { id: string }) {
       if (fotos < 3) faltantes.push("Registro Fotográfico (mínimo 3 fotos)");
     }
     if (faltantes.length > 0) {
+      enfocarPrimerFaltante(faltantes);
       mostrarToast({ mensaje: `Faltan: ${faltantes.slice(0, 3).join(", ")}...`, tipo: "error" });
       return;
     }
