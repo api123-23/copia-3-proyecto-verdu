@@ -137,7 +137,7 @@ export default function SeccionValores({
   if (tipo === "grupo_electrogeno") {
     if (!onChangeGE) return null;
     return (
-        <Seccion titulo="Valores" badge="Obligatorio">
+        <Seccion titulo="Valores" badge="Obligatorio" className="section-values-ge">
         <SeccionValoresGE valoresGE={valoresGE ?? valoresVaciosGE()} onChangeGE={onChangeGE} />
       </Seccion>
     );
@@ -187,7 +187,7 @@ export default function SeccionValores({
     aplica(tipo, "perdida_combustible");
 
   return (
-    <Seccion titulo="Valores" badge="Obligatorio">
+    <Seccion titulo="Valores" badge="Obligatorio" className="section-values-standard">
       <div className="space-y-md">
         {bloqueDetenido ? (
           <div>
@@ -217,22 +217,22 @@ export default function SeccionValores({
                  <ItemSelect etiqueta="Est. Batería" opciones={tipo === "motocompresor" ? OPCIONES_OK_MAL_NO_TIENE : OPCIONES_OK_MAL} valor={valores.estado_bateria} onChange={set("estado_bateria")} />
               ) : null}
               {aplica(tipo, "conec_purga") ? (
-                  <ItemSelect etiqueta={esSecadores ? "Conec. purga" : "Conec. Purga"} opciones={OPCIONES_SI_NO} valor={valores.conec_purga} onChange={set("conec_purga")} />
+                   <ItemSelect className={esSecadores ? "field-mobile-wide" : ""} etiqueta={esSecadores ? "Conexión de purga" : "Conec. Purga"} opciones={OPCIONES_SI_NO} valor={valores.conec_purga} onChange={set("conec_purga")} />
               ) : null}
             </div> : null}
             <div className="grid grid-cols-2 gap-sm">
               <GrupoTitulo>ESTADO GENERAL</GrupoTitulo>
               {aplica(tipo, "inst_electrica") ? (
-                  <ItemSelect etiqueta="Instalación eléctrica" opciones={OPCIONES_OK_MAL} valor={valores.inst_electrica} onChange={set("inst_electrica")} />
+                  <ItemSelect className={esSecadores ? "field-mobile-wide" : ""} etiqueta="Instalación eléctrica" opciones={OPCIONES_OK_MAL} valor={valores.inst_electrica} onChange={set("inst_electrica")} />
               ) : null}
               {aplica(tipo, "carroceria") ? (
                   <ItemSelect etiqueta="Carrocería" opciones={OPCIONES_OK_MAL} valor={valores.carroceria} onChange={set("carroceria")} />
               ) : null}
               {aplica(tipo, "jabalina") ? (
-                  <ItemSelect etiqueta={esSecadores ? "Conexión de jabalina" : "Jabalina"} opciones={OPCIONES_SI_NO} valor={valores.jabalina} onChange={set("jabalina")} />
+                  <ItemSelect className={esSecadores ? "field-mobile-wide" : ""} etiqueta={esSecadores ? "Conexión de jabalina" : "Jabalina"} opciones={OPCIONES_SI_NO} valor={valores.jabalina} onChange={set("jabalina")} />
               ) : null}
               {aplica(tipo, "aislacion_suelo") ? (
-                  <ItemSelect etiqueta={esSecadores ? "Aislación de suelo" : "Aislac. Suelo"} opciones={OPCIONES_SI_NO} valor={valores.aislacion_suelo} onChange={set("aislacion_suelo")} />
+                  <ItemSelect className={esSecadores ? "field-mobile-wide" : ""} etiqueta={esSecadores ? "Aislación de suelo" : "Aislac. Suelo"} opciones={OPCIONES_SI_NO} valor={valores.aislacion_suelo} onChange={set("aislacion_suelo")} />
               ) : null}
             </div>
           </div>
@@ -296,7 +296,7 @@ export default function SeccionValores({
                      />
                    ) : null}
                    {aplica(tipo, "pto_rocio") ? (
-                      <ItemSelect etiqueta="Punto de rocío" opciones={OPCIONES_OPTIMO_ALTO_BAJO} valor={valores.pto_rocio} onChange={set("pto_rocio")} />
+                  <ItemSelect className={esSecadores ? "field-mobile-wide" : ""} etiqueta="Punto de rocío" opciones={OPCIONES_OPTIMO_ALTO_BAJO} valor={valores.pto_rocio} onChange={set("pto_rocio")} />
                    ) : null}
                 </div>
               </div>

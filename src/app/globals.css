@@ -374,7 +374,33 @@ html.dark .signature-canvas { background: #162430 !important; border-color: #718
 @media (max-width: 767px) {
   .section-card { margin-bottom: 1.25rem; }
   .section-body { padding: 1rem 0.8rem; }
-  .section-values .grid.grid-cols-2 { grid-template-columns: 1fr; }
+  .section-values-standard .field-mobile-wide { flex-direction: column; align-items: stretch; gap: 0.35rem; }
+  .section-values-standard .field-mobile-wide .select-small { align-self: flex-end; }
+  .section-values-standard .field-status-ok,
+  .section-values-standard .field-status-si,
+  .section-values-standard .field-status-mal,
+  .section-values-standard .field-status-no,
+  .section-values-standard .field-status-bajo,
+  .section-values-standard .field-status-alto,
+  .section-values-standard .field-status-optimo,
+  .section-values-standard .field-status-empty {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    align-items: flex-start;
+  }
+  .section-values-standard .field-status-ok > span,
+  .section-values-standard .field-status-si > span,
+  .section-values-standard .field-status-mal > span,
+  .section-values-standard .field-status-no > span,
+  .section-values-standard .field-status-bajo > span,
+  .section-values-standard .field-status-alto > span,
+  .section-values-standard .field-status-optimo > span,
+  .section-values-standard .field-status-empty > span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .section-values-standard .select-small { flex: 0 0 auto; }
 }
 
 .pdf-shell {

@@ -4,10 +4,12 @@ export function Seccion({
   titulo,
   badge,
   children,
+  className = "",
 }: {
   titulo: string;
   badge?: string;
   children: ReactNode;
+  className?: string;
 }) {
   const tono = ["Valores", "Horas Trabajadas", "Repuestos", "¿La máquina queda operativa?"].includes(titulo)
     ? "section-accent-data"
@@ -40,7 +42,7 @@ export function Seccion({
   ].indexOf(titulo);
 
   return (
-    <section data-seccion={titulo} style={{ animationDelay: `${Math.max(0, orden) * 45}ms` }} className={`mb-lg bg-white shadow-sm border border-outline-variant mx-4 md:mx-0 rounded-lg overflow-hidden section-card ${tono} ${estilo}`}>
+    <section data-seccion={titulo} style={{ animationDelay: `${Math.max(0, orden) * 45}ms` }} className={`mb-lg bg-white shadow-sm border border-outline-variant mx-4 md:mx-0 rounded-lg overflow-hidden section-card ${tono} ${estilo} ${className}`}>
       <div className={`section-header ${tono}-header`}>
         <h2 className="section-title">{titulo}</h2>
         {badge ? <span className="required-badge">{badge}</span> : null}
@@ -77,14 +79,16 @@ export function ItemSelect({
   valor,
   onChange,
   opciones,
+  className = "",
 }: {
   etiqueta: string;
   valor: string | null;
   onChange: (v: string | null) => void;
   opciones: { value: string; label: string }[];
+  className?: string;
 }) {
   return (
-    <div className={`flex justify-between items-center bg-surface-container-low p-1 rounded field-status-${valor ?? "empty"}`}>
+    <div className={`flex justify-between items-center bg-surface-container-low p-1 rounded field-status-${valor ?? "empty"} ${className}`}>
       <span className="min-w-0 flex-1 pr-2 text-body-md font-body-md text-[12px] leading-tight">{etiqueta}</span>
       <select
         className={`select-small ${valor === "no" || valor === "mal" ? "text-error" : ""}`}
