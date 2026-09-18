@@ -302,6 +302,7 @@ html.dark .select-small { color: #e8eef5; background-color: #162430; border-colo
 html.dark .input-technical::placeholder { color: #8ea1b2; }
 html.dark select { color-scheme: dark; color: #e8eef5 !important; background-color: #162430 !important; }
 html.dark select option { color: #e8eef5 !important; background-color: #17232e !important; }
+html.dark .filter-control { color: #e8eef5 !important; background-color: #162430 !important; border-color: #52687b !important; color-scheme: dark; }
 html.dark .section-card { background: #17232e !important; border-color: #405466; }
 html.dark .section-client .section-header,
 html.dark .section-work .section-header { background: linear-gradient(105deg, #173958, #1a2b39 78%); }

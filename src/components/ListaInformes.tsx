@@ -284,7 +284,7 @@ export function ListaInformes() {
     setFiltroEquipo("");
   }
 
-  const filtroBarClass = "bg-surface-container-low/60 border border-outline-variant rounded-lg px-2 py-1.5 text-[13px] h-[32px] w-full focus:outline-none focus:ring-2 focus:ring-primary";
+  const filtroBarClass = "filter-control bg-surface-container-low/60 border border-outline-variant rounded-lg px-2 py-1.5 text-[13px] h-[32px] w-full focus:outline-none focus:ring-2 focus:ring-primary";
 
   if (informes.length === 0 && !tieneFiltros) {
     return (
