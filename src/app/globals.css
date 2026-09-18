@@ -70,6 +70,31 @@
   }
 }
 
+@keyframes sectionReveal {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes listItemIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes modalIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalPanelIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes statusPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(0 85 164 / 0%); }
+  50% { box-shadow: 0 0 0 5px rgb(0 85 164 / 12%); }
+}
+
 @keyframes reportHighlight {
   0%, 100% {
     background-color: white;
@@ -133,6 +158,13 @@
   .input-technical {
     @apply w-full bg-white border border-outline-variant rounded px-sm py-1 text-body-md font-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all duration-300 h-[32px];
   }
+  .input-technical:focus {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgb(0 62 122 / 10%);
+  }
+  .field-status-ok, .field-status-si { background: #eaf8f0; box-shadow: inset 3px 0 0 #32a36f; }
+  .field-status-mal, .field-status-no { background: #fff0ef; box-shadow: inset 3px 0 0 #c84b45; }
+  .field-status-bajo, .field-status-alto, .field-status-optimo { background: #fff8e5; box-shadow: inset 3px 0 0 #d19a21; }
   .section-header {
     @apply bg-surface-container-low border-y border-outline-variant py-1 px-md flex items-center justify-between mb-sm;
   }
@@ -178,18 +210,92 @@
   }
 
   .section-card {
-    transition: border-color 300ms ease, box-shadow 300ms ease;
+    position: relative;
+    transition: border-color 350ms ease, box-shadow 350ms ease, transform 350ms ease;
+    animation: sectionReveal 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
-  .section-accent-general { border-left: 3px solid rgb(0 62 122 / 22%); }
-  .section-accent-data { border-left: 3px solid rgb(0 85 164 / 28%); }
-  .section-accent-evidence { border-left: 3px solid rgb(80 95 118 / 28%); }
-  .section-accent-general-header { background: rgb(242 244 246 / 72%); }
-  .section-accent-data-header { background: rgb(234 241 250 / 78%); }
-  .section-accent-evidence-header { background: rgb(240 242 246 / 82%); }
+  .section-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgb(0 42 82 / 10%);
+  }
+  .section-accent-general { border-left: 5px solid #1767a9; }
+  .section-accent-data { border-left: 5px solid #16806a; }
+  .section-accent-evidence { border-left: 5px solid #7b55ad; }
+  .section-accent-commercial { border-left: 5px solid #c2761c; }
+  .section-accent-general-header { background: linear-gradient(100deg, #e8f2fb, #f7f9fb 75%); }
+  .section-accent-data-header { background: linear-gradient(100deg, #e8f7f2, #f7fbfa 75%); }
+  .section-accent-evidence-header { background: linear-gradient(100deg, #f2ebfb, #fbf9fd 75%); }
+  .section-accent-commercial-header { background: linear-gradient(100deg, #fff3df, #fffaf3 75%); }
+  .section-accent-general .section-title { color: #145b94; }
+  .section-accent-data .section-title { color: #146b59; }
+  .section-accent-evidence .section-title { color: #65438e; }
+  .section-accent-commercial .section-title { color: #9a5d13; }
 }
 
 .view-transition {
   animation: viewEnter 480ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.list-item-in {
+  animation: listItemIn 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--item-delay, 0ms);
+}
+
+.sync-status-live {
+  animation: statusPulse 1.8s ease-in-out infinite;
+}
+
+.modal-backdrop-in { animation: modalIn 300ms ease-out both; }
+.modal-panel-in { animation: modalPanelIn 420ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.photo-thumb-in { animation: listItemIn 450ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+.editor-status-bar {
+  position: sticky;
+  top: 3rem;
+  z-index: 35;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  margin: 0 1rem 1rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid;
+  border-radius: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 0 5px 18px rgb(0 42 82 / 8%);
+  backdrop-filter: blur(12px);
+}
+.editor-status-bar.is-ok { color: #176b50; background: rgb(232 248 240 / 94%); border-color: #8fd4b3; }
+.editor-status-bar.is-pending { color: #8a5b08; background: rgb(255 247 221 / 94%); border-color: #e7c66b; }
+.editor-status-bar.is-offline { color: #8a3f16; background: rgb(255 238 225 / 94%); border-color: #edb184; }
+.editor-status-dot { width: 0.55rem; height: 0.55rem; border-radius: 999px; background: currentColor; flex: 0 0 auto; }
+.editor-status-bar.is-pending .editor-status-dot { animation: statusPulse 1.7s ease-in-out infinite; }
+
+.editor-progress-panel {
+  margin: 0 1rem 1.25rem;
+  padding: 1rem;
+  border: 1px solid #b9cfe4;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #eaf4fc 0%, #ffffff 58%, #f3f8fc 100%);
+  box-shadow: 0 8px 24px rgb(0 62 122 / 9%);
+}
+.editor-progress-track { height: 0.45rem; overflow: hidden; border-radius: 999px; background: #d6e3ef; }
+.editor-progress-track span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #0055a4, #19a77e); transition: width 700ms cubic-bezier(0.22, 1, 0.36, 1); }
+.editor-stage-list { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0.35rem; margin-top: 0.85rem; }
+.editor-stage { display: flex; min-width: 0; align-items: center; justify-content: center; gap: 0.35rem; padding: 0.35rem 0.2rem; border-radius: 0.55rem; color: #596b7d; font-size: 0.68rem; font-weight: 700; transition: all 300ms ease; }
+.editor-stage:hover { color: #003e7a; background: rgb(255 255 255 / 82%); transform: translateY(-2px); }
+.editor-stage-dot { display: inline-flex; width: 1.25rem; height: 1.25rem; align-items: center; justify-content: center; border: 2px solid #9eb5c9; border-radius: 999px; font-size: 0.65rem; flex: 0 0 auto; }
+.editor-stage.is-complete { color: #176b50; }
+.editor-stage.is-complete .editor-stage-dot { color: white; border-color: #19936e; background: #19936e; }
+
+.report-card-error { border-color: #e89999 !important; box-shadow: inset 4px 0 0 #c43d3d; }
+.report-card-pending { border-color: #e8c878 !important; box-shadow: inset 4px 0 0 #d19a21; }
+
+@media (max-width: 767px) {
+  .editor-status-bar { margin-inline: 1rem; }
+  .editor-progress-panel { margin-inline: 1rem; padding: 0.85rem; }
+  .editor-stage-list { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 0.5rem; }
 }
 
 .pdf-shell {

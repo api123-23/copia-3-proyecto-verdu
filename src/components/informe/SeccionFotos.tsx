@@ -48,13 +48,13 @@ function Lightbox({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[70] bg-black/80 flex flex-col items-center justify-center p-margin"
+      className="fixed inset-0 z-[70] bg-black/80 flex flex-col items-center justify-center p-margin modal-backdrop-in"
       onClick={onCerrar}
     >
       <img
         src={url}
         alt={nombre}
-        className="max-h-[75vh] max-w-full object-contain rounded"
+        className="max-h-[75vh] max-w-full object-contain rounded modal-panel-in shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       />
       <div className="flex gap-sm mt-md" onClick={(e) => e.stopPropagation()}>
@@ -115,7 +115,7 @@ function FotoItem({ archivo, cerrado }: { archivo: ArchivoLocal; cerrado: boolea
         <img
           src={url}
           alt={categoria}
-          className="h-20 w-20 object-cover rounded border border-outline-variant cursor-pointer"
+          className="h-20 w-20 object-cover rounded border border-outline-variant cursor-pointer photo-thumb-in hover:scale-105 hover:shadow-lg transition-all duration-300"
           onClick={() => setAbierta(true)}
         />
       ) : null}

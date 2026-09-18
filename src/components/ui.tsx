@@ -9,14 +9,16 @@ export function Seccion({
   badge?: string;
   children: ReactNode;
 }) {
-  const tono = ["Valores", "Horas Trabajadas", "Repuestos"].includes(titulo)
+  const tono = ["Valores", "Horas Trabajadas", "Repuestos", "¿La máquina queda operativa?"].includes(titulo)
     ? "section-accent-data"
     : ["Registro Fotográfico", "Firmas Digitales"].includes(titulo)
       ? "section-accent-evidence"
+      : titulo === "Cotización"
+        ? "section-accent-commercial"
       : "section-accent-general";
 
   return (
-    <section className={`mb-lg bg-white shadow-sm border border-outline-variant mx-4 md:mx-0 rounded-lg overflow-hidden section-card ${tono}`}>
+    <section data-seccion={titulo} className={`mb-lg bg-white shadow-sm border border-outline-variant mx-4 md:mx-0 rounded-lg overflow-hidden section-card ${tono}`}>
       <div className={`section-header ${tono}-header`}>
         <h2 className="section-title">{titulo}</h2>
         {badge ? <span className="required-badge">{badge}</span> : null}
@@ -60,7 +62,7 @@ export function ItemSelect({
   opciones: { value: string; label: string }[];
 }) {
   return (
-    <div className="flex justify-between items-center bg-surface-container-low p-1 rounded">
+    <div className={`flex justify-between items-center bg-surface-container-low p-1 rounded field-status-${valor ?? "empty"}`}>
       <span className="text-body-md font-body-md text-[12px]">{etiqueta}</span>
       <select
         className={`select-small ${valor === "no" || valor === "mal" ? "text-error" : ""}`}
@@ -92,7 +94,7 @@ export function ItemSelectFull({
   className?: string;
 }) {
   return (
-    <div className={`flex justify-between items-center bg-surface-container-low p-1.5 rounded ${className ?? ""}`}>
+    <div className={`flex justify-between items-center bg-surface-container-low p-1.5 rounded field-status-${valor ?? "empty"} ${className ?? ""}`}>
       <span className="text-body-md font-body-md text-[12px]">{etiqueta}</span>
       <select
         className={`select-small ${valor === "no" || valor === "mal" ? "text-error" : ""}`}

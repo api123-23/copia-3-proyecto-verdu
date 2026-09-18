@@ -77,8 +77,8 @@ function ModalFirma({
   }
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-margin">
-      <div className="bg-white rounded-xl w-full max-w-lg p-md space-y-md">
+    <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-margin modal-backdrop-in">
+      <div className="bg-white rounded-2xl w-full max-w-lg p-md space-y-md shadow-2xl modal-panel-in">
         <h3 className="text-title-md font-title-md font-bold text-primary uppercase tracking-wider">
           {titulo}
         </h3>
@@ -229,7 +229,7 @@ function BloqueFirma({
         <button
           type="button"
           onClick={() => setAbierto(true)}
-          className="w-full h-20 bg-white rounded border border-dashed border-outline-variant flex items-center justify-center text-on-surface-variant opacity-70 min-h-[44px]"
+          className="w-full h-20 bg-white rounded-lg border-2 border-dashed border-outline-variant flex items-center justify-center text-on-surface-variant opacity-70 min-h-[44px] hover:border-primary hover:bg-primary-fixed hover:text-primary hover:opacity-100 transition-all duration-300"
         >
           Tocar para firmar
         </button>

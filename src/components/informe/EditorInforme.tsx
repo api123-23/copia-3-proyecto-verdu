@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 import { useSesion } from "@/lib/useSesion";
 import { db } from "@/lib/db";
 import {
@@ -36,6 +37,75 @@ import SeccionValores from "@/components/informe/SeccionValores";
 import SeccionFotos from "@/components/informe/SeccionFotos";
 import SeccionFirmas from "@/components/informe/SeccionFirmas";
 
+function EditorProgreso({
+  informe,
+  valores,
+  fotos,
+}: {
+  informe: InformeGeneral;
+  valores: ValoresBase;
+  fotos: number;
+}) {
+  const etapas = [
+    { nombre: "Cliente", seccion: "Datos del Cliente", listo: Boolean(informe.cliente_nombre.trim()) },
+    { nombre: "Trabajo", seccion: "Trabajos Realizados / Observaciones", listo: Boolean(informe.observaciones?.trim()) },
+    { nombre: "Controles", seccion: "Valores", listo: Object.values(valores).some((v) => v !== null) },
+    { nombre: "Cierre", seccion: "Horas Trabajadas", listo: informe.horas_trabajadas !== null && informe.maquina_operativa !== null },
+    { nombre: "Evidencia", seccion: "Registro Fotográfico", listo: fotos >= 3 },
+    { nombre: "Firmas", seccion: "Firmas Digitales", listo: informe.estado_firma === "firmado" },
+  ];
+  const completadas = etapas.filter((e) => e.listo).length;
+  const porcentaje = Math.round((completadas / etapas.length) * 100);
+
+  function irA(seccion: string) {
+    document.querySelector(`[data-seccion="${seccion}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  return (
+    <div className="editor-progress-panel" aria-label={`Progreso del informe: ${porcentaje}%`}>
+      <div className="flex items-center justify-between gap-3 mb-sm">
+        <div>
+          <p className="text-label-caps font-label-caps font-bold tracking-wider text-primary">Progreso del informe</p>
+          <p className="text-[12px] text-on-surface-variant">{completadas} de {etapas.length} etapas completas</p>
+        </div>
+        <strong className="text-headline-sm text-primary">{porcentaje}%</strong>
+      </div>
+      <div className="editor-progress-track" aria-hidden="true"><span style={{ width: `${porcentaje}%` }} /></div>
+      <div className="editor-stage-list">
+        {etapas.map((etapa, index) => (
+          <button
+            key={etapa.nombre}
+            type="button"
+            className={`editor-stage ${etapa.listo ? "is-complete" : ""}`}
+            onClick={() => irA(etapa.seccion)}
+          >
+            <span className="editor-stage-dot">{etapa.listo ? "✓" : index + 1}</span>
+            <span>{etapa.nombre}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function EstadoEditor({ informe, online, tieneCambios }: { informe: InformeGeneral; online: boolean; tieneCambios: boolean }) {
+  const estado = !online
+    ? { texto: "Guardado local · Sin conexión", clase: "is-offline" }
+    : tieneCambios
+      ? { texto: "Cambios pendientes de guardar", clase: "is-pending" }
+      : informe.estado_sync === "sincronizado"
+        ? { texto: "Sincronizado con Supabase", clase: "is-ok" }
+        : { texto: "Guardado local · Pendiente de sincronizar", clase: "is-pending" };
+
+  return (
+    <div className={`editor-status-bar ${estado.clase}`}>
+      <span className="editor-status-dot" />
+      <span>{estado.texto}</span>
+      <span className="ml-auto hidden sm:inline text-[11px] font-normal opacity-75">Los cambios se guardan automáticamente</span>
+    </div>
+  );
+}
+
 export function EditorInforme({ id }: { id: string }) {
   const { cargando } = useSesion(false);
   const [informe, setInforme] = useState<InformeGeneral | null>(null);
@@ -46,8 +116,25 @@ export function EditorInforme({ id }: { id: string }) {
   const [enviando, setEnviando] = useState(false);
   const [generandoInforme, setGenerandoInforme] = useState(false);
   const [redactandoIA, setRedactandoIA] = useState(false);
+  const [online, setOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
+  const [tieneCambios, setTieneCambios] = useState(false);
   const [toast, setToast] = useState<{ mensaje: string; tipo: "exito" | "error" | "info" } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fotos = useLiveQuery(
+    () => db.archivos.where({ informe_id: id, tipo: "foto" }).count(),
+    [id]
+  ) ?? 0;
+
+  useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", off);
+    };
+  }, []);
 
   useEffect(() => {
     bloquearInformeSync(id);
@@ -110,6 +197,7 @@ export function EditorInforme({ id }: { id: string }) {
       const val = { ...valoresVacios(), ...anexa };
       estadoRef.current = { informe: inf, valores: val, valoresGE: anexaGE };
       sucioRef.current = false;
+      setTieneCambios(false);
       setFallo(false);
       setInforme(inf);
       setValores(val);
@@ -122,6 +210,7 @@ export function EditorInforme({ id }: { id: string }) {
 
   function patchInforme(p: Partial<InformeGeneral>) {
     sucioRef.current = true;
+    setTieneCambios(true);
     setInforme((prev) => {
       if (!prev) return prev;
       const next = { ...prev, ...p };
@@ -132,6 +221,7 @@ export function EditorInforme({ id }: { id: string }) {
 
   function patchValores(p: Partial<ValoresBase>) {
     sucioRef.current = true;
+    setTieneCambios(true);
     setValores((prev) => {
       const next = { ...prev, ...p };
       estadoRef.current.valores = next;
@@ -141,6 +231,7 @@ export function EditorInforme({ id }: { id: string }) {
 
   function patchValoresGE(p: Partial<InformeGrupoElectrogeno>) {
     sucioRef.current = true;
+    setTieneCambios(true);
     setValoresGE((prev) => {
       const next = { ...prev, ...p };
       estadoRef.current.valoresGE = next;
@@ -199,6 +290,7 @@ export function EditorInforme({ id }: { id: string }) {
       estadoRef.current.informe = guardado;
       setInforme(guardado);
        await guardarBorrador(guardado, val, inf.tipo_equipo === "grupo_electrogeno" ? ge : undefined);
+       setTieneCambios(false);
        desbloquearInformeSync(inf.id);
        if (resincronizar) intentarSync();
       mostrarToast({ mensaje: "Informe guardado. Sincronizando...", tipo: "exito" });
@@ -352,6 +444,9 @@ export function EditorInforme({ id }: { id: string }) {
             <span className="text-body-md font-body-md text-[12px]">{fecha}</span>
           </div>
         </div>
+
+        <EstadoEditor informe={informe} online={online} tieneCambios={tieneCambios} />
+        <EditorProgreso informe={informe} valores={valores} fotos={fotos} />
 
         <fieldset disabled={informe.cerrado} className="m-0 min-w-0 border-0 p-0">
           <SeccionCliente informe={informe} onChange={patchInforme} />

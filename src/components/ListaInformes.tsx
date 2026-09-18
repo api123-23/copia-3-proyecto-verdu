@@ -479,14 +479,15 @@ export function ListaInformes() {
             </tr>
           </thead>
           <tbody className="divide-y divide-outline-variant">
-            {informes.map((inf) => {
+             {informes.map((inf, index) => {
               const tipo = TIPOS_EQUIPO.find((t) => t.value === inf.tipo_equipo)?.label ?? inf.tipo_equipo;
               const esLocal = pendientesLocales.some((l) => l.id === inf.id);
               const sync = esLocal ? BADGE_SYNC[inf.estado_sync] ?? BADGE_SYNC.pendiente : null;
               return (
                 <tr
                   key={inf.id}
-                    className={`${resaltadoId === inf.id ? "animate-[reportHighlight_2.8s_ease-out]" : "hover:bg-surface-container-low active:bg-surface-container-high"} transition-all duration-300 cursor-pointer`}
+                    className={`${resaltadoId === inf.id ? "animate-[reportHighlight_2.8s_ease-out]" : "hover:bg-surface-container-low active:bg-surface-container-high"} list-item-in transition-all duration-300 cursor-pointer`}
+                  style={{ "--item-delay": `${Math.min(index, 8) * 55}ms` } as React.CSSProperties}
                   onClick={() => { window.location.hash = `#/informe/${encodeURIComponent(inf.id)}`; }}
                 >
                   <td className="px-3 py-2 text-primary font-bold whitespace-nowrap">
@@ -530,7 +531,7 @@ export function ListaInformes() {
 
       {/* Vista móvil: tarjetas */}
       <div className="space-y-sm md:hidden">
-        {informes.map((inf) => {
+         {informes.map((inf, index) => {
           const tipo = TIPOS_EQUIPO.find((t) => t.value === inf.tipo_equipo)?.label ?? inf.tipo_equipo;
           const esLocal = pendientesLocales.some((l) => l.id === inf.id);
           const sync = esLocal ? BADGE_SYNC[inf.estado_sync] ?? BADGE_SYNC.pendiente : null;
@@ -547,7 +548,8 @@ export function ListaInformes() {
                    window.location.hash = `#/informe/${encodeURIComponent(inf.id)}`;
                  }
                }}
-                 className={`block bg-white border border-outline-variant rounded-lg p-md shadow-sm hover:-translate-y-1 hover:bg-surface-container-low hover:shadow-md active:scale-[0.99] transition-all duration-300 ${resaltadoId === inf.id ? "animate-[reportHighlight_2.8s_ease-out]" : ""}`}
+                  className={`block bg-white border border-outline-variant rounded-lg p-md shadow-sm hover:-translate-y-1 hover:bg-surface-container-low hover:shadow-md active:scale-[0.99] transition-all duration-300 list-item-in ${inf.estado_sync === "error" ? "report-card-error" : inf.estado_sync !== "sincronizado" ? "report-card-pending" : ""} ${resaltadoId === inf.id ? "animate-[reportHighlight_2.8s_ease-out]" : ""}`}
+                  style={{ "--item-delay": `${Math.min(index, 8) * 55}ms` } as React.CSSProperties}
             >
               <div className="flex justify-between items-center mb-xs">
                 <span className="text-title-md font-bold text-primary">
