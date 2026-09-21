@@ -76,6 +76,7 @@ export interface InformeGeneral {
   actualizado_en: string;
   sincronizado_en: string | null;
   estado_sync: EstadoSync;
+  listo_para_enviar: boolean;
   error_sync: string | null;
 }
 

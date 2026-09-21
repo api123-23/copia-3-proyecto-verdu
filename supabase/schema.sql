@@ -59,7 +59,8 @@ create table if not exists informes_generales (
   firmado_en timestamptz,
   creado_en timestamptz not null default now(),
   actualizado_en timestamptz not null default now(),
-  sincronizado_en timestamptz
+  sincronizado_en timestamptz,
+  listo_para_enviar boolean not null default false
 );
 
 -- MIGRACIÓN CRÍTICA: debe ejecutarse inmediatamente después de la tabla base.
@@ -68,6 +69,7 @@ create table if not exists informes_generales (
 -- columnas que todavía no existen en instalaciones antiguas.
 alter table public.informes_generales add column if not exists modelo text;
 alter table public.informes_generales add column if not exists numero_serie text;
+alter table public.informes_generales add column if not exists listo_para_enviar boolean not null default false;
 
 create table if not exists informes_motocompresor (
   informe_id uuid primary key references informes_generales (id) on delete cascade,

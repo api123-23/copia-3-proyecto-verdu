@@ -146,7 +146,6 @@ export function EditorInforme({ id }: { id: string }) {
   const [valores, setValores] = useState<ValoresBase>(valoresVacios);
   const [valoresGE, setValoresGE] = useState<InformeGrupoElectrogeno>(valoresVaciosGE());
   const [fallo, setFallo] = useState(false);
-  const [informeGuardado, setInformeGuardado] = useState(false);
   const [intento, setIntento] = useState(0);
   const [enviando, setEnviando] = useState(false);
   const [generandoInforme, setGenerandoInforme] = useState(false);
@@ -183,12 +182,10 @@ export function EditorInforme({ id }: { id: string }) {
     let activo = true;
     (async () => {
       let inf = await db.informes.get(id).catch(() => undefined);
-      let persistido = Boolean(inf);
       if (!inf) {
         const traido = await traerInformeRemoto(id).catch(() => false);
         if (traido) {
           inf = await db.informes.get(id).catch(() => undefined);
-          persistido = Boolean(inf);
         }
       }
       if (!inf) {
@@ -220,7 +217,6 @@ export function EditorInforme({ id }: { id: string }) {
       const val = { ...valoresVacios(), ...anexa };
       estadoRef.current = { informe: inf, valores: val, valoresGE: anexaGE };
       sucioRef.current = false;
-      setInformeGuardado(persistido);
       setFallo(false);
       setInforme(inf);
       setValores(val);
@@ -257,24 +253,6 @@ export function EditorInforme({ id }: { id: string }) {
       estadoRef.current.valoresGE = next;
       return next;
     });
-  }
-
-  async function guardarBorradorAntesDeFoto() {
-    const actual = estadoRef.current.informe;
-    if (!actual) return;
-    const inf = {
-      ...actual,
-      estado_sync: "pendiente" as const,
-      error_sync: null,
-    };
-    estadoRef.current.informe = inf;
-    setInforme(inf);
-    await guardarBorrador(
-      inf,
-      estadoRef.current.valores,
-      inf.tipo_equipo === "grupo_electrogeno" ? estadoRef.current.valoresGE : undefined
-    );
-    setInformeGuardado(true);
   }
 
   async function enviar() {
@@ -322,15 +300,15 @@ export function EditorInforme({ id }: { id: string }) {
         .count();
       const hayCambios = sucioRef.current || archivosPendientes > 0;
       const resincronizar = !yaSincronizado || hayCambios;
-      const guardado = {
-        ...inf,
-        estado_sync: resincronizar ? ("pendiente" as const) : ("sincronizado" as const),
-        cerrado: inf.cerrado || cerrado,
-      };
+       const guardado = {
+         ...inf,
+         estado_sync: resincronizar ? ("pendiente" as const) : ("sincronizado" as const),
+         listo_para_enviar: true,
+         cerrado: inf.cerrado || cerrado,
+       };
       estadoRef.current.informe = guardado;
       setInforme(guardado);
        await guardarBorrador(guardado, val, inf.tipo_equipo === "grupo_electrogeno" ? ge : undefined);
-       setInformeGuardado(true);
        desbloquearInformeSync(inf.id);
        if (resincronizar) intentarSync();
       mostrarToast({ mensaje: "Informe guardado. Sincronizando...", tipo: "exito" });
@@ -436,7 +414,7 @@ export function EditorInforme({ id }: { id: string }) {
 
   function salirSinGuardar(e: React.MouseEvent<HTMLAnchorElement>) {
     e.preventDefault();
-    if (informeGuardado || window.confirm("¿Realmente quieres salir? Se perderán todos los datos cargados en este informe.")) {
+    if (window.confirm("¿Realmente quieres salir? Se perderán todos los datos cargados en este informe.")) {
       permitirSalida.current = true;
       navegar("#/");
     }
@@ -450,7 +428,7 @@ export function EditorInforme({ id }: { id: string }) {
         paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 3rem)",
       }}
     >
-      <BeforeUnloadGuard permitirSalida={permitirSalida} proteger={!informeGuardado} />
+      <BeforeUnloadGuard permitirSalida={permitirSalida} proteger={true} />
       <header
         className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin bg-primary text-on-primary border-b border-primary-container shadow-sm"
         style={{
@@ -528,7 +506,7 @@ export function EditorInforme({ id }: { id: string }) {
             redactandoIA={redactandoIA}
           />
           <Divisor />
-           <SeccionFotos informeId={informe.id} cerrado={informe.cerrado} obligatoria={informe.tipo_equipo !== "extraordinarios"} onBeforeCapture={guardarBorradorAntesDeFoto} />
+           <SeccionFotos informeId={informe.id} cerrado={informe.cerrado} obligatoria={informe.tipo_equipo !== "extraordinarios"} />
           <Divisor />
           <SeccionFirmas informe={informe} onChange={patchInforme} />
         </fieldset>

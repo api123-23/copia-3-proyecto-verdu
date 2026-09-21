@@ -49,6 +49,7 @@ export function crearInforme(tecnico_id: string | null): InformeGeneral {
     actualizado_en: ahora,
     sincronizado_en: null,
     estado_sync: "pendiente",
+    listo_para_enviar: false,
     error_sync: null,
   };
 }

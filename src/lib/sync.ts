@@ -123,7 +123,7 @@ async function ejecutar() {
       .toArray();
     pendientes.sort((a, b) => a.creado_en.localeCompare(b.creado_en));
     for (const informe of pendientes) {
-      if (informesEnEdicion.has(informe.id)) continue;
+      if (informesEnEdicion.has(informe.id) || !informe.listo_para_enviar) continue;
       try {
         await sincronizarInforme(informe);
       } catch {
@@ -143,6 +143,7 @@ async function ejecutar() {
 
 async function sincronizarInforme(informeOriginal: InformeGeneral) {
   let informe = informeOriginal;
+  if (!informe.listo_para_enviar) return;
   if (informesEnEdicion.has(informe.id)) return;
   const rutasIntento: string[] = [];
   let archivosIniciales: ArchivoLocal[] = [];
@@ -228,6 +229,7 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       cotizacion_notas_ia: informe.cotizacion_notas_ia,
       estado_firma: informe.estado_firma,
       cerrado: informe.cerrado,
+      listo_para_enviar: true,
       firma_tecnico_url: firmaTecnico,
       firma_cliente_url: firmaCliente,
       aclaracion_firma: informe.aclaracion_firma,
@@ -275,16 +277,12 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
 
     await db.informes.update(informe.id, {
       estado_sync: "sincronizado",
+      listo_para_enviar: true,
       sincronizado_en: new Date().toISOString(),
       numero_registro: data.numero_registro ?? informe.numero_registro,
       firma_tecnico_url: firmaTecnico,
       firma_cliente_url: firmaCliente,
     });
-
-    // El editor puede seguir montado mientras la cámara vuelve del background.
-    // Conservamos su borrador local; otro ciclo podrá limpiar el registro cuando
-    // ya no esté bloqueado por el editor.
-    if (informesEnEdicion.has(informe.id)) return;
 
     await db.transaction(
       "rw",

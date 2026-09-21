@@ -40,6 +40,7 @@ function normalizar(f: FilaServidor): InformeGeneral {
     actualizado_en: String(f.actualizado_en),
     sincronizado_en: (f.sincronizado_en as string) ?? null,
     estado_sync: "sincronizado",
+    listo_para_enviar: true,
     error_sync: null,
   };
 }
