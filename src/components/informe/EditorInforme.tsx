@@ -45,7 +45,7 @@ function textoComparable(texto: string): string {
     .trim();
 }
 
-function BeforeUnloadGuard({ permitirSalida, proteger }: { permitirSalida: { current: boolean }; proteger: boolean }) {
+function BeforeUnloadGuard({ permitirSalida, proteger, onConfirmarSalida }: { permitirSalida: { current: boolean }; proteger: boolean; onConfirmarSalida: () => void }) {
   useEffect(() => {
     if (!proteger) return;
     const editorHash = window.location.hash;
@@ -63,6 +63,7 @@ function BeforeUnloadGuard({ permitirSalida, proteger }: { permitirSalida: { cur
       }
       if (nuevoHash === hashAnterior) return;
       if (window.confirm("¿Realmente quieres salir? Se perderán todos los datos cargados en este informe.")) {
+        onConfirmarSalida();
         hashAnterior = nuevoHash;
         return;
       }
@@ -76,6 +77,7 @@ function BeforeUnloadGuard({ permitirSalida, proteger }: { permitirSalida: { cur
         return;
       }
       if (window.confirm("¿Realmente quieres salir? Se perderán todos los datos cargados en este informe.")) {
+        onConfirmarSalida();
         permitirSalida.current = true;
         if (nuevoHash === editorHash) window.history.back();
         else hashAnterior = nuevoHash;
@@ -96,7 +98,7 @@ function BeforeUnloadGuard({ permitirSalida, proteger }: { permitirSalida: { cur
       window.removeEventListener("hashchange", cambioDeHash);
       window.removeEventListener("popstate", navegacionAtras);
     };
-  }, [permitirSalida, proteger]);
+  }, [onConfirmarSalida, permitirSalida, proteger]);
   return null;
 }
 
@@ -153,6 +155,7 @@ export function EditorInforme({ id }: { id: string }) {
   const [toast, setToast] = useState<{ mensaje: string; tipo: "exito" | "error" | "info" } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const permitirSalida = useRef(false);
+  const draftKey = `verdu-borrador-${id}`;
 
   useEffect(() => {
     bloquearInformeSync(id);
@@ -214,7 +217,21 @@ export function EditorInforme({ id }: { id: string }) {
         anexaGE = await cargarAnexaGE(inf.id);
       }
       if (!activo) return;
-      const val = { ...valoresVacios(), ...anexa };
+      let val = { ...valoresVacios(), ...anexa };
+      try {
+        const draft = JSON.parse(sessionStorage.getItem(draftKey) ?? "null") as {
+          informe?: InformeGeneral;
+          valores?: Partial<ValoresBase>;
+          valoresGE?: InformeGrupoElectrogeno;
+        } | null;
+        if (draft?.informe?.id === id) {
+          inf = { ...inf, ...draft.informe };
+          val = { ...val, ...(draft.valores ?? {}) };
+          anexaGE = { ...anexaGE, ...(draft.valoresGE ?? {}) };
+        }
+      } catch {
+        sessionStorage.removeItem(draftKey);
+      }
       estadoRef.current = { informe: inf, valores: val, valoresGE: anexaGE };
       sucioRef.current = false;
       setFallo(false);
@@ -225,7 +242,7 @@ export function EditorInforme({ id }: { id: string }) {
     return () => {
       activo = false;
     };
-  }, [id, cargando, intento]);
+  }, [id, cargando, draftKey, intento]);
 
   function patchInforme(p: Partial<InformeGeneral>) {
     sucioRef.current = true;
@@ -255,6 +272,16 @@ export function EditorInforme({ id }: { id: string }) {
     });
   }
 
+  function guardarSnapshotAntesDeFoto() {
+    const actual = estadoRef.current;
+    if (!actual.informe) return;
+    sessionStorage.setItem(draftKey, JSON.stringify({
+      informe: actual.informe,
+      valores: actual.valores,
+      valoresGE: actual.valoresGE,
+    }));
+  }
+
   async function enviar() {
     if (enviando) return;
     const { informe: inf, valores: val, valoresGE: ge } = estadoRef.current;
@@ -278,7 +305,7 @@ export function EditorInforme({ id }: { id: string }) {
             (inf.tipo_equipo === "secadores" && campo === "horometro")
           ) continue;
           if (inf.tipo_equipo === "vehiculos" && ["aceite_caja", "aceite_diferencial"].includes(campo)) continue;
-          if (val[campo] === null) faltantes.push(CAMPO_LABELS[campo]);
+          if (val[campo] == null) faltantes.push(CAMPO_LABELS[campo]);
         }
       }
       const fotos = await db.archivos.where({ informe_id: inf.id, tipo: "foto" }).count();
@@ -309,6 +336,7 @@ export function EditorInforme({ id }: { id: string }) {
       estadoRef.current.informe = guardado;
       setInforme(guardado);
        await guardarBorrador(guardado, val, inf.tipo_equipo === "grupo_electrogeno" ? ge : undefined);
+       sessionStorage.removeItem(draftKey);
        desbloquearInformeSync(inf.id);
        if (resincronizar) intentarSync();
       mostrarToast({ mensaje: "Informe guardado. Sincronizando...", tipo: "exito" });
@@ -415,6 +443,7 @@ export function EditorInforme({ id }: { id: string }) {
   function salirSinGuardar(e: React.MouseEvent<HTMLAnchorElement>) {
     e.preventDefault();
     if (window.confirm("¿Realmente quieres salir? Se perderán todos los datos cargados en este informe.")) {
+      sessionStorage.removeItem(draftKey);
       permitirSalida.current = true;
       navegar("#/");
     }
@@ -428,7 +457,7 @@ export function EditorInforme({ id }: { id: string }) {
         paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 3rem)",
       }}
     >
-      <BeforeUnloadGuard permitirSalida={permitirSalida} proteger={true} />
+      <BeforeUnloadGuard permitirSalida={permitirSalida} proteger={true} onConfirmarSalida={() => sessionStorage.removeItem(draftKey)} />
       <header
         className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin bg-primary text-on-primary border-b border-primary-container shadow-sm"
         style={{
@@ -506,7 +535,7 @@ export function EditorInforme({ id }: { id: string }) {
             redactandoIA={redactandoIA}
           />
           <Divisor />
-           <SeccionFotos informeId={informe.id} cerrado={informe.cerrado} obligatoria={informe.tipo_equipo !== "extraordinarios"} />
+           <SeccionFotos informeId={informe.id} cerrado={informe.cerrado} obligatoria={informe.tipo_equipo !== "extraordinarios"} onBeforeCapture={guardarSnapshotAntesDeFoto} />
           <Divisor />
           <SeccionFirmas informe={informe} onChange={patchInforme} />
         </fieldset>

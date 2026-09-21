@@ -148,10 +148,12 @@ export default function SeccionFotos({
   informeId,
   cerrado,
   obligatoria = true,
+  onBeforeCapture,
 }: {
   informeId: string;
   cerrado: boolean;
   obligatoria?: boolean;
+  onBeforeCapture?: () => void;
 }) {
   const [categoria, setCategoria] = useState<CategoriaFoto>("inicial");
   const [subiendo, setSubiendo] = useState(false);
@@ -218,7 +220,10 @@ export default function SeccionFotos({
             <button
               type="button"
               className="flex min-h-[120px] flex-col items-center justify-center p-lg bg-surface-container-low border-2 border-dashed border-outline-variant rounded-xl hover:bg-surface-container-high hover:-translate-y-1 hover:shadow-md transition-all duration-300 cursor-pointer group"
-              onClick={() => camaraRef.current?.click()}
+               onClick={() => {
+                 onBeforeCapture?.();
+                 camaraRef.current?.click();
+               }}
               disabled={subiendo}
             >
               <Icono nombre="add_a_photo" className="w-[28px] h-[28px] text-primary mb-2" />
@@ -229,7 +234,10 @@ export default function SeccionFotos({
             <button
               type="button"
               className="flex min-h-[120px] flex-col items-center justify-center p-lg bg-surface-container-low border-2 border-dashed border-outline-variant rounded-xl hover:bg-surface-container-high hover:-translate-y-1 hover:shadow-md transition-all duration-300 cursor-pointer group"
-              onClick={() => galeriaRef.current?.click()}
+               onClick={() => {
+                 onBeforeCapture?.();
+                 galeriaRef.current?.click();
+               }}
               disabled={subiendo}
             >
               <Icono nombre="add_a_photo" className="w-[28px] h-[28px] text-primary mb-2" />
