@@ -103,7 +103,7 @@ export async function traerInformeRemoto(id: string): Promise<boolean> {
             ? db.valores_motocompresor
             : informe.tipo_equipo === "compresor"
               ? db.valores_compresor
-              : informe.tipo_equipo === "vehiculos"
+              : informe.tipo_equipo === "vehiculos" || informe.tipo_equipo === "maquinas_viales"
                 ? db.valores_vehiculos
                 : db.valores_secadores;
         await destino.put({ informe_id: id, ...anexa } as never);

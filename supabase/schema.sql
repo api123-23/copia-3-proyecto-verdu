@@ -40,7 +40,7 @@ create table if not exists informes_generales (
   tecnico_id uuid not null default auth.uid() references auth.users (id),
   fecha_hora timestamptz not null,
   tipo_equipo text not null check (tipo_equipo in (
-    'motocompresor', 'compresor', 'grupo_electrogeno', 'extraordinarios', 'vehiculos', 'secadores'
+    'motocompresor', 'compresor', 'grupo_electrogeno', 'extraordinarios', 'vehiculos', 'maquinas_viales', 'secadores'
   )),
   observaciones text,
   observaciones_ia text,
@@ -71,7 +71,7 @@ alter table public.informes_generales add column if not exists numero_serie text
 
 create table if not exists informes_motocompresor (
   informe_id uuid primary key references informes_generales (id) on delete cascade,
-  horometro numeric(10, 2),
+  horometro text,
   aceite_motor text check (aceite_motor in ('ok', 'alto', 'bajo')),
   aceite_unidad text check (aceite_unidad in ('ok', 'alto', 'bajo')),
   refrig_radiador text check (refrig_radiador in ('ok', 'alto', 'bajo')),
@@ -93,7 +93,7 @@ create table if not exists informes_motocompresor (
 
 create table if not exists informes_compresor (
   informe_id uuid primary key references informes_generales (id) on delete cascade,
-  horometro numeric(10, 2),
+  horometro text,
   aceite_unidad text check (aceite_unidad in ('ok', 'bajo', 'alto')),
   inst_electrica text check (inst_electrica in ('ok', 'mal')),
   jabalina text check (jabalina in ('si', 'no')),
@@ -112,7 +112,7 @@ create table if not exists informes_compresor (
 
 create table if not exists informes_vehiculos (
   informe_id uuid primary key references informes_generales (id) on delete cascade,
-  horometro numeric(10, 2),
+  horometro text,
   kilometros numeric(10, 2),
   aceite_motor text check (aceite_motor in ('ok', 'alto', 'bajo')),
   refrig_radiador text check (refrig_radiador in ('ok', 'alto', 'bajo')),
@@ -121,6 +121,10 @@ create table if not exists informes_vehiculos (
   carroceria text check (carroceria in ('ok', 'mal')),
   temp_ambiente numeric(10, 2),
   temp_refrigerante numeric(10, 2),
+  aceite_caja text check (aceite_caja in ('optimo', 'alto', 'bajo')),
+  aceite_diferencial text check (aceite_diferencial in ('optimo', 'alto', 'bajo')),
+  aceite_hidraulico text check (aceite_hidraulico in ('optimo', 'alto', 'bajo')),
+  aceite_convertidor text check (aceite_convertidor in ('optimo', 'alto', 'bajo')),
   perdida_aceite_motor text check (perdida_aceite_motor in ('si', 'no')),
   perdida_refrigerante text check (perdida_refrigerante in ('si', 'no')),
   perdida_aire text check (perdida_aire in ('si', 'no')),
@@ -129,7 +133,7 @@ create table if not exists informes_vehiculos (
 
 create table if not exists informes_secadores (
   informe_id uuid primary key references informes_generales (id) on delete cascade,
-  horometro numeric(10, 2),
+  horometro text,
   inst_electrica text check (inst_electrica in ('ok', 'mal')),
   carroceria text check (carroceria in ('ok', 'mal')),
   jabalina text check (jabalina in ('si', 'no')),
@@ -234,10 +238,15 @@ begin
 end;
 $$;
 
--- Nuevo tipo de equipo: Secadores.
+-- Nuevas categorías de vehículos.
 alter table informes_generales drop constraint if exists informes_generales_tipo_equipo_check;
 alter table informes_generales add constraint informes_generales_tipo_equipo_check
-  check (tipo_equipo in ('motocompresor', 'compresor', 'grupo_electrogeno', 'extraordinarios', 'vehiculos', 'secadores'));
+  check (tipo_equipo in ('motocompresor', 'compresor', 'grupo_electrogeno', 'extraordinarios', 'vehiculos', 'maquinas_viales', 'secadores'));
+
+alter table informes_vehiculos add column if not exists aceite_caja text check (aceite_caja in ('optimo', 'alto', 'bajo'));
+alter table informes_vehiculos add column if not exists aceite_diferencial text check (aceite_diferencial in ('optimo', 'alto', 'bajo'));
+alter table informes_vehiculos add column if not exists aceite_hidraulico text check (aceite_hidraulico in ('optimo', 'alto', 'bajo'));
+alter table informes_vehiculos add column if not exists aceite_convertidor text check (aceite_convertidor in ('optimo', 'alto', 'bajo'));
 
 select public.garantizar_cascade('informes_motocompresor');
 select public.garantizar_cascade('informes_compresor');
@@ -294,6 +303,12 @@ alter table informes_generales add column if not exists numero_serie text;
 -- Vehículos: horómetro y kilómetros son mediciones independientes y ambas
 -- pueden quedar vacías.
 alter table informes_vehiculos add column if not exists kilometros numeric(10, 2);
+
+-- El horómetro puede contener lecturas alfanuméricas (por ejemplo, "sin display").
+alter table informes_motocompresor alter column horometro type text using horometro::text;
+alter table informes_compresor alter column horometro type text using horometro::text;
+alter table informes_vehiculos alter column horometro type text using horometro::text;
+alter table informes_secadores alter column horometro type text using horometro::text;
 
 -- Compresor: se elimina refrigerante y la pérdida de aceite pasa a llamarse
 -- aceite de unidad. La migración conserva los valores existentes.
@@ -756,9 +771,10 @@ begin
 
   tabla := case p_informe->>'tipo_equipo'
     when 'motocompresor' then 'informes_motocompresor'
-    when 'compresor' then 'informes_compresor'
-    when 'vehiculos' then 'informes_vehiculos'
-    when 'secadores' then 'informes_secadores'
+     when 'compresor' then 'informes_compresor'
+     when 'vehiculos' then 'informes_vehiculos'
+     when 'maquinas_viales' then 'informes_vehiculos'
+     when 'secadores' then 'informes_secadores'
     when 'grupo_electrogeno' then 'informes_grupo_electrogeno'
     else null
   end;

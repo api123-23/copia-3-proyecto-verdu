@@ -27,6 +27,7 @@ export function tablaAnexa(tipo: TipoEquipo): string | null {
     case "compresor":
       return "informes_compresor";
     case "vehiculos":
+    case "maquinas_viales":
       return "informes_vehiculos";
     case "secadores":
       return "informes_secadores";

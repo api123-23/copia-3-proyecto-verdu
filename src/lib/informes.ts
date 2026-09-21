@@ -11,7 +11,8 @@ export const TIPOS_EQUIPO: { value: TipoEquipo; label: string }[] = [
   { value: "compresor", label: "Compresor" },
   { value: "grupo_electrogeno", label: "Grupo Electrógeno" },
   { value: "extraordinarios", label: "Extraordinarios / Relevamientos" },
-  { value: "vehiculos", label: "Vehículos Móviles y Máquinas Viales" },
+  { value: "vehiculos", label: "Vehículos Móviles" },
+  { value: "maquinas_viales", label: "Máquinas Viales/Camiones" },
   { value: "secadores", label: "Secadores" },
 ];
 
@@ -59,6 +60,10 @@ export function formatNumero(n: number | null): string {
 export function valoresVacios(): ValoresBase {
   return {
     horometro: null,
+    aceite_caja: null,
+    aceite_diferencial: null,
+    aceite_hidraulico: null,
+    aceite_convertidor: null,
     kilometros: null,
     aceite_motor: null,
     aceite_unidad: null,
@@ -192,6 +197,27 @@ export const CAMPOS_POR_TIPO: Record<TipoEquipo, (keyof ValoresBase)[]> = {
     "carroceria",
     "temp_ambiente",
     "temp_refrigerante",
+    "aceite_caja",
+    "aceite_diferencial",
+    "perdida_aceite_motor",
+    "perdida_refrigerante",
+    "perdida_aire",
+    "perdida_combustible",
+  ],
+  maquinas_viales: [
+    "horometro",
+    "kilometros",
+    "aceite_motor",
+    "refrig_radiador",
+    "estado_bateria",
+    "inst_electrica",
+    "carroceria",
+    "temp_ambiente",
+    "temp_refrigerante",
+    "aceite_caja",
+    "aceite_diferencial",
+    "aceite_hidraulico",
+    "aceite_convertidor",
     "perdida_aceite_motor",
     "perdida_refrigerante",
     "perdida_aire",
@@ -218,6 +244,10 @@ export const CAMPOS_POR_TIPO: Record<TipoEquipo, (keyof ValoresBase)[]> = {
 
 export const CAMPO_LABELS: Record<keyof ValoresBase, string> = {
   horometro: "Horómetro",
+  aceite_caja: "Aceite Caja",
+  aceite_diferencial: "Aceite Diferencial",
+  aceite_hidraulico: "Aceite Hidráulico",
+  aceite_convertidor: "Aceite Convertidor",
   kilometros: "Kilómetros",
   aceite_motor: "Aceite Motor",
   aceite_unidad: "Aceite Unidad",
@@ -348,6 +378,9 @@ export function normalizarValores(
   tipo: TipoEquipo,
   valores: Record<string, unknown>
 ): void {
+  if (valores.horometro !== null && valores.horometro !== undefined) {
+    valores.horometro = String(valores.horometro);
+  }
   if (tipo === "grupo_electrogeno") {
     const ge = valores as Record<string, unknown>;
     const aCero = (campo: string) => {
@@ -436,7 +469,7 @@ export async function guardarBorrador(
             ? db.valores_motocompresor
             : actualizado.tipo_equipo === "compresor"
               ? db.valores_compresor
-              : actualizado.tipo_equipo === "vehiculos"
+              : actualizado.tipo_equipo === "vehiculos" || actualizado.tipo_equipo === "maquinas_viales"
                 ? db.valores_vehiculos
                 : db.valores_secadores;
         await tabla.put(anexa as never);
@@ -461,8 +494,8 @@ export async function cargarAnexa(
       ? db.valores_motocompresor
       : tipo === "compresor"
         ? db.valores_compresor
-        : tipo === "vehiculos"
-          ? db.valores_vehiculos
+          : tipo === "vehiculos" || tipo === "maquinas_viales"
+            ? db.valores_vehiculos
           : db.valores_secadores;
   const fila = await tabla.get(informe_id);
   if (!fila) return {};

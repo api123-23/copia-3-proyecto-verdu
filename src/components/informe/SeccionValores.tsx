@@ -148,6 +148,8 @@ export default function SeccionValores({
 
   const esCompresor = tipo === "compresor";
   const esSecadores = tipo === "secadores";
+  const esVehiculo = tipo === "vehiculos" || tipo === "maquinas_viales";
+  const esMaquinaVial = tipo === "maquinas_viales";
 
   const bloqueDetenido =
     aplica(tipo, "horometro") ||
@@ -159,7 +161,8 @@ export default function SeccionValores({
     aplica(tipo, "inst_electrica") ||
     aplica(tipo, "carroceria") ||
     aplica(tipo, "jabalina") ||
-    aplica(tipo, "aislacion_suelo");
+    aplica(tipo, "aislacion_suelo") ||
+    esVehiculo;
 
   const bloqueNiveles =
     aplica(tipo, "aceite_motor") ||
@@ -194,7 +197,7 @@ export default function SeccionValores({
             <SubTitulo>Con Motor Detenido</SubTitulo>
             {aplica(tipo, "horometro") ? (
               <div className="mb-sm">
-                <CampoNumero etiqueta="Horómetro" sufijo="HRS" valor={valores.horometro} onChange={set("horometro")} />
+                <CampoNumero etiqueta="Horómetro" sufijo="HRS" texto valor={valores.horometro} onChange={set("horometro")} />
               </div>
             ) : null}
             {aplica(tipo, "kilometros") ? (
@@ -218,6 +221,18 @@ export default function SeccionValores({
               ) : null}
               {aplica(tipo, "conec_purga") ? (
                    <ItemSelect className={esSecadores ? "field-mobile-wide" : ""} etiqueta={esSecadores ? "Conexión de purga" : "Conec. Purga"} opciones={OPCIONES_SI_NO} valor={valores.conec_purga} onChange={set("conec_purga")} />
+              ) : null}
+              {esVehiculo ? (
+                <>
+                  <ItemSelect etiqueta="Aceite Caja" opciones={OPCIONES_OPTIMO_ALTO_BAJO} valor={valores.aceite_caja} onChange={set("aceite_caja")} />
+                  <ItemSelect etiqueta="Aceite Diferencial" opciones={OPCIONES_OPTIMO_ALTO_BAJO} valor={valores.aceite_diferencial} onChange={set("aceite_diferencial")} />
+                  {esMaquinaVial ? (
+                    <>
+                      <ItemSelect etiqueta="Aceite Hidráulico" opciones={OPCIONES_OPTIMO_ALTO_BAJO} valor={valores.aceite_hidraulico} onChange={set("aceite_hidraulico")} />
+                      <ItemSelect etiqueta="Aceite Convertidor" opciones={OPCIONES_OPTIMO_ALTO_BAJO} valor={valores.aceite_convertidor} onChange={set("aceite_convertidor")} />
+                    </>
+                  ) : null}
+                </>
               ) : null}
             </div> : null}
             <div className="grid grid-cols-2 gap-sm">

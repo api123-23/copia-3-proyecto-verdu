@@ -4,6 +4,7 @@ export type TipoEquipo =
   | "grupo_electrogeno"
   | "extraordinarios"
   | "vehiculos"
+  | "maquinas_viales"
   | "secadores";
 
 export type EstadoFirma = "pendiente" | "firmado";
@@ -79,7 +80,11 @@ export interface InformeGeneral {
 }
 
 export interface ValoresBase {
-  horometro: number | null;
+  horometro: string | null;
+  aceite_caja: OptimoBajoAlto;
+  aceite_diferencial: OptimoBajoAlto;
+  aceite_hidraulico: OptimoBajoAlto;
+  aceite_convertidor: OptimoBajoAlto;
   kilometros: number | null;
   aceite_motor: Nivel;
   aceite_unidad: OkBajoAlto;
@@ -122,6 +127,10 @@ export interface ValoresBase {
 
 export type InformeMotocompresor = { informe_id: string } & Omit<
   ValoresBase,
+  | "aceite_caja"
+  | "aceite_diferencial"
+  | "aceite_hidraulico"
+  | "aceite_convertidor"
   | "kilometros"
   | "rpm_min"
   | "rpm_max"
@@ -146,6 +155,10 @@ export type InformeMotocompresor = { informe_id: string } & Omit<
 
 export type InformeCompresor = { informe_id: string } & Omit<
   ValoresBase,
+  | "aceite_caja"
+  | "aceite_diferencial"
+  | "aceite_hidraulico"
+  | "aceite_convertidor"
   | "aceite_motor"
   | "refrig_radiador"
   | "estado_bateria"
@@ -203,6 +216,10 @@ export type InformeVehiculos = { informe_id: string } & Omit<
 
 export type InformeSecadores = { informe_id: string } & Omit<
   ValoresBase,
+  | "aceite_caja"
+  | "aceite_diferencial"
+  | "aceite_hidraulico"
+  | "aceite_convertidor"
   | "kilometros"
   | "aceite_motor"
   | "aceite_unidad"

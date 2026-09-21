@@ -200,12 +200,14 @@ export function CampoNumero({
   onChange,
   sufijo,
   centrado,
+  texto = false,
 }: {
   etiqueta: string;
-  valor: number | null;
-  onChange: (v: number | null) => void;
+  valor: number | string | null;
+  onChange: (v: number | string | null) => void;
   sufijo?: string;
   centrado?: boolean;
+  texto?: boolean;
 }) {
   return (
     <div>
@@ -213,9 +215,10 @@ export function CampoNumero({
       <div className="relative">
         <input
           className={`input-technical text-data-mono font-data-mono h-[28px] ${centrado ? "text-center px-1" : ""} ${sufijo ? "pr-12" : ""}`}
-          type="number"
+          type={texto ? "text" : "number"}
+          inputMode={texto ? "text" : "decimal"}
           value={valor ?? ""}
-          onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
+          onChange={(e) => onChange(e.target.value === "" ? null : texto ? e.target.value : Number(e.target.value))}
         />
         {sufijo ? (
           <span className="absolute right-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-label-caps font-label-caps">
