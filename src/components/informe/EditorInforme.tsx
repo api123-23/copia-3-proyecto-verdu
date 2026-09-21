@@ -45,8 +45,9 @@ function textoComparable(texto: string): string {
     .trim();
 }
 
-function BeforeUnloadGuard({ permitirSalida }: { permitirSalida: { current: boolean } }) {
+function BeforeUnloadGuard({ permitirSalida, proteger }: { permitirSalida: { current: boolean }; proteger: boolean }) {
   useEffect(() => {
+    if (!proteger) return;
     const editorHash = window.location.hash;
     let hashAnterior = editorHash;
     const salir = (e: BeforeUnloadEvent) => {
@@ -95,16 +96,18 @@ function BeforeUnloadGuard({ permitirSalida }: { permitirSalida: { current: bool
       window.removeEventListener("hashchange", cambioDeHash);
       window.removeEventListener("popstate", navegacionAtras);
     };
-  }, [permitirSalida]);
+  }, [permitirSalida, proteger]);
   return null;
 }
 
 function encontrarControlFaltante(nombre: string): HTMLElement | null {
   const buscado = textoComparable(nombre.replace(/\s*\([^)]*\)\s*$/, ""));
-  const candidatos = Array.from(document.querySelectorAll<HTMLElement>("label, span, h2, h3"));
+  const palabras = buscado.split(" ").filter((palabra) => palabra.length > 2);
+  const candidatos = Array.from(document.querySelectorAll<HTMLElement>("[data-validation-label], label, span, h2, h3"));
   const texto = candidatos.find((elemento) => {
-    const actual = textoComparable(elemento.textContent ?? "");
-    return actual === buscado || actual.startsWith(`${buscado} `);
+    const actual = textoComparable(elemento.dataset.validationLabel ?? elemento.textContent ?? "");
+    if (actual === buscado || actual.startsWith(`${buscado} `)) return true;
+    return palabras.length > 0 && palabras.every((palabra) => actual.includes(palabra));
   });
 
   if (texto) {
@@ -143,6 +146,7 @@ export function EditorInforme({ id }: { id: string }) {
   const [valores, setValores] = useState<ValoresBase>(valoresVacios);
   const [valoresGE, setValoresGE] = useState<InformeGrupoElectrogeno>(valoresVaciosGE());
   const [fallo, setFallo] = useState(false);
+  const [informeGuardado, setInformeGuardado] = useState(false);
   const [intento, setIntento] = useState(0);
   const [enviando, setEnviando] = useState(false);
   const [generandoInforme, setGenerandoInforme] = useState(false);
@@ -179,9 +183,13 @@ export function EditorInforme({ id }: { id: string }) {
     let activo = true;
     (async () => {
       let inf = await db.informes.get(id).catch(() => undefined);
+      let persistido = Boolean(inf);
       if (!inf) {
         const traido = await traerInformeRemoto(id).catch(() => false);
-        if (traido) inf = await db.informes.get(id).catch(() => undefined);
+        if (traido) {
+          inf = await db.informes.get(id).catch(() => undefined);
+          persistido = Boolean(inf);
+        }
       }
       if (!inf) {
         const crudo = sessionStorage.getItem("verdu-nuevo");
@@ -212,6 +220,7 @@ export function EditorInforme({ id }: { id: string }) {
       const val = { ...valoresVacios(), ...anexa };
       estadoRef.current = { informe: inf, valores: val, valoresGE: anexaGE };
       sucioRef.current = false;
+      setInformeGuardado(persistido);
       setFallo(false);
       setInforme(inf);
       setValores(val);
@@ -248,6 +257,24 @@ export function EditorInforme({ id }: { id: string }) {
       estadoRef.current.valoresGE = next;
       return next;
     });
+  }
+
+  async function guardarBorradorAntesDeFoto() {
+    const actual = estadoRef.current.informe;
+    if (!actual) return;
+    const inf = {
+      ...actual,
+      estado_sync: "pendiente" as const,
+      error_sync: null,
+    };
+    estadoRef.current.informe = inf;
+    setInforme(inf);
+    await guardarBorrador(
+      inf,
+      estadoRef.current.valores,
+      inf.tipo_equipo === "grupo_electrogeno" ? estadoRef.current.valoresGE : undefined
+    );
+    setInformeGuardado(true);
   }
 
   async function enviar() {
@@ -303,6 +330,7 @@ export function EditorInforme({ id }: { id: string }) {
       estadoRef.current.informe = guardado;
       setInforme(guardado);
        await guardarBorrador(guardado, val, inf.tipo_equipo === "grupo_electrogeno" ? ge : undefined);
+       setInformeGuardado(true);
        desbloquearInformeSync(inf.id);
        if (resincronizar) intentarSync();
       mostrarToast({ mensaje: "Informe guardado. Sincronizando...", tipo: "exito" });
@@ -408,7 +436,7 @@ export function EditorInforme({ id }: { id: string }) {
 
   function salirSinGuardar(e: React.MouseEvent<HTMLAnchorElement>) {
     e.preventDefault();
-    if (window.confirm("¿Realmente quieres salir? Se perderán todos los datos cargados en este informe.")) {
+    if (informeGuardado || window.confirm("¿Realmente quieres salir? Se perderán todos los datos cargados en este informe.")) {
       permitirSalida.current = true;
       navegar("#/");
     }
@@ -422,7 +450,7 @@ export function EditorInforme({ id }: { id: string }) {
         paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 3rem)",
       }}
     >
-      <BeforeUnloadGuard permitirSalida={permitirSalida} />
+      <BeforeUnloadGuard permitirSalida={permitirSalida} proteger={!informeGuardado} />
       <header
         className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin bg-primary text-on-primary border-b border-primary-container shadow-sm"
         style={{
@@ -500,7 +528,7 @@ export function EditorInforme({ id }: { id: string }) {
             redactandoIA={redactandoIA}
           />
           <Divisor />
-           <SeccionFotos informeId={informe.id} cerrado={informe.cerrado} obligatoria={informe.tipo_equipo !== "extraordinarios"} />
+           <SeccionFotos informeId={informe.id} cerrado={informe.cerrado} obligatoria={informe.tipo_equipo !== "extraordinarios"} onBeforeCapture={guardarBorradorAntesDeFoto} />
           <Divisor />
           <SeccionFirmas informe={informe} onChange={patchInforme} />
         </fieldset>

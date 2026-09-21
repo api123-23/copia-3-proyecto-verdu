@@ -89,7 +89,7 @@ export function ItemSelect({
 }) {
   const esSiNo = opciones.length === 2 && opciones.every((opcion) => opcion.value === "si" || opcion.value === "no");
   return (
-    <div className={`flex justify-between items-center bg-surface-container-low p-1 rounded field-status-${valor ?? "empty"} ${esSiNo ? "field-binary" : ""} ${className}`}>
+    <div data-validation-label={etiqueta} className={`flex justify-between items-center bg-surface-container-low p-1 rounded field-status-${valor ?? "empty"} ${esSiNo ? "field-binary" : ""} ${className}`}>
       <span className="min-w-0 flex-1 pr-2 text-body-md font-body-md text-[12px] leading-tight field-label">{etiqueta}</span>
       <select
         className={`select-small ${valor === "no" || valor === "mal" ? "text-error" : ""}`}
@@ -122,7 +122,7 @@ export function ItemSelectFull({
 }) {
   const esSiNo = opciones.length === 2 && opciones.every((opcion) => opcion.value === "si" || opcion.value === "no");
   return (
-    <div className={`flex justify-between items-center bg-surface-container-low p-1.5 rounded field-status-${valor ?? "empty"} ${esSiNo ? "field-binary" : ""} ${className ?? ""}`}>
+    <div data-validation-label={etiqueta} className={`flex justify-between items-center bg-surface-container-low p-1.5 rounded field-status-${valor ?? "empty"} ${esSiNo ? "field-binary" : ""} ${className ?? ""}`}>
        <span className="min-w-0 flex-1 pr-2 text-body-md font-body-md text-[12px] leading-tight field-label">{etiqueta}</span>
       <select
         className={`select-small ${valor === "no" || valor === "mal" ? "text-error" : ""}`}

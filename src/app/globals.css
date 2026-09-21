@@ -340,6 +340,8 @@ html.dark .dual-option button { background: #162430; color: #e8eef5; }
 html.dark .dual-option button:hover { background: #243747; }
 html.dark .field-binary.field-status-si { background: #173d31 !important; border-color: #3d9c70 !important; color: #b8f0cc; }
 html.dark .field-binary.field-status-no { background: #4a2428 !important; border-color: #c75a5a !important; color: #ffc4bd; }
+html.dark .field-status-ok { background: #173d31 !important; border-color: #3d9c70 !important; color: #b8f0cc; }
+html.dark .field-status-mal { background: #4a2428 !important; border-color: #c75a5a !important; color: #ffc4bd; }
 html.dark .bg-green-100 { background-color: #173d31 !important; color: #9be2bd !important; }
 html.dark .bg-amber-100 { background-color: #493715 !important; color: #ffda8a !important; }
 html.dark .bg-red-100 { background-color: #4a2428 !important; color: #ffb4ab !important; }

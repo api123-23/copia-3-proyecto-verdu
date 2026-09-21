@@ -148,10 +148,12 @@ export default function SeccionFotos({
   informeId,
   cerrado,
   obligatoria = true,
+  onBeforeCapture,
 }: {
   informeId: string;
   cerrado: boolean;
   obligatoria?: boolean;
+  onBeforeCapture?: () => Promise<void>;
 }) {
   const [categoria, setCategoria] = useState<CategoriaFoto>("inicial");
   const [subiendo, setSubiendo] = useState(false);
@@ -165,6 +167,11 @@ export default function SeccionFotos({
   async function onFile(file: File) {
     setSubiendo(true);
     try {
+      try {
+        await onBeforeCapture?.();
+      } catch (e) {
+        console.warn("[fotos] No se pudo guardar el borrador antes de la foto:", e);
+      }
       let blob: Blob;
       try {
         blob = await comprimirImagenWebp(file);

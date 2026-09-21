@@ -281,6 +281,11 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       firma_cliente_url: firmaCliente,
     });
 
+    // El editor puede seguir montado mientras la cámara vuelve del background.
+    // Conservamos su borrador local; otro ciclo podrá limpiar el registro cuando
+    // ya no esté bloqueado por el editor.
+    if (informesEnEdicion.has(informe.id)) return;
+
     await db.transaction(
       "rw",
       [db.informes, db.valores_motocompresor, db.valores_compresor, db.valores_vehiculos, db.valores_secadores, db.valores_grupo_electrogeno, db.archivos, db.blobs],
