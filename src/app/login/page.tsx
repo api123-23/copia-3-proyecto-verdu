@@ -37,8 +37,7 @@ export default function LoginPage() {
       <div aria-hidden="true" className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-sky-300/10 blur-3xl" />
       <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 -right-20 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
       <main
-        className="flex items-center justify-center px-margin"
-        style={{ minHeight: "calc(100dvh - env(safe-area-inset-top, 0px))" }}
+        className="flex min-h-dvh items-center justify-center px-margin"
       >
       <form
         onSubmit={entrar}
