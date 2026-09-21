@@ -47,15 +47,14 @@ function textoComparable(texto: string): string {
 
 function BeforeUnloadGuard({ permitirSalida }: { permitirSalida: { current: boolean } }) {
   useEffect(() => {
-    let hashAnterior = window.location.hash;
-    let restaurando = false;
+    const editorHash = window.location.hash;
+    let hashAnterior = editorHash;
     const salir = (e: BeforeUnloadEvent) => {
       e.preventDefault();
       e.returnValue = "¿Realmente quieres salir? Se perderán todos los datos cargados en este informe.";
     };
     const cambioDeHash = () => {
       const nuevoHash = window.location.hash;
-      if (restaurando) return;
       if (permitirSalida.current) {
         permitirSalida.current = false;
         hashAnterior = nuevoHash;
@@ -66,16 +65,10 @@ function BeforeUnloadGuard({ permitirSalida }: { permitirSalida: { current: bool
         hashAnterior = nuevoHash;
         return;
       }
-      restaurando = true;
       window.location.hash = hashAnterior;
     };
     const navegacionAtras = () => {
       const nuevoHash = window.location.hash;
-      if (restaurando) {
-        restaurando = false;
-        hashAnterior = nuevoHash;
-        return;
-      }
       if (permitirSalida.current) {
         permitirSalida.current = false;
         hashAnterior = nuevoHash;
@@ -83,11 +76,16 @@ function BeforeUnloadGuard({ permitirSalida }: { permitirSalida: { current: bool
       }
       if (window.confirm("¿Realmente quieres salir? Se perderán todos los datos cargados en este informe.")) {
         permitirSalida.current = true;
-        hashAnterior = nuevoHash;
+        if (nuevoHash === editorHash) window.history.back();
+        else hashAnterior = nuevoHash;
         return;
       }
-      restaurando = true;
-      window.history.forward();
+      window.history.pushState(
+        { editorGuard: true },
+        "",
+        `${window.location.pathname}${window.location.search}${editorHash}`
+      );
+      hashAnterior = editorHash;
     };
     window.addEventListener("beforeunload", salir);
     window.addEventListener("hashchange", cambioDeHash);
