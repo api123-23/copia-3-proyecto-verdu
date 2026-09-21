@@ -50,7 +50,8 @@ export async function listarRemotos(): Promise<InformeGeneral[]> {
     .from("informes_generales")
     .select("*")
     .order("fecha_hora", { ascending: false });
-  if (error || !data) return [];
+  if (error) throw error;
+  if (!data) throw new Error("Supabase no devolvió los informes.");
   return (data as FilaServidor[]).map(normalizar);
 }
 

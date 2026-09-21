@@ -9,6 +9,7 @@ import type { InformeGeneral } from "@/lib/types";
 import { TIPOS_EQUIPO, formatNumero } from "@/lib/informes";
 import { intentarSync } from "@/lib/sync";
 import { useSesion } from "@/lib/useSesion";
+import { usePerfil } from "@/lib/usePerfil";
 import { LogoTipo } from "@/components/LogoTipo";
 import { Icono } from "@/components/Icono";
 import { PantallaCarga } from "@/components/PantallaCarga";
@@ -34,6 +35,7 @@ function formatoFecha(iso: string): string {
 
 export function ListaInformes() {
   const { cargando, sesion } = useSesion(true);
+  const { esAdmin } = usePerfil();
   const locales = useLiveQuery(
     () => db.informes.where("estado_sync").notEqual("sincronizado").toArray(),
     []
@@ -41,6 +43,7 @@ export function ListaInformes() {
   const [remotos, setRemotos] = useState<InformeGeneral[]>([]);
   const [online, setOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
   const [actualizando, setActualizando] = useState(false);
+  const [errorActualizacion, setErrorActualizacion] = useState<string | null>(null);
   const [resaltadoId, setResaltadoId] = useState<string | null>(null);
   const [cargandoTecnicos, setCargandoTecnicos] = useState(true);
 
@@ -145,37 +148,43 @@ export function ListaInformes() {
   async function actualizar() {
     if (actualizando) return;
     setActualizando(true);
+    setErrorActualizacion(null);
     try {
+      if (!(await intentarSync())) {
+        throw new Error("No se pudo completar la sincronización antes de actualizar.");
+      }
+      const lista = await listarRemotos();
       await db.transaction(
         "rw",
         [
           db.informes,
           db.valores_motocompresor,
-           db.valores_compresor,
-           db.valores_vehiculos,
-           db.valores_secadores,
-           db.valores_grupo_electrogeno,
+          db.valores_compresor,
+          db.valores_vehiculos,
+          db.valores_secadores,
+          db.valores_grupo_electrogeno,
           db.archivos,
           db.blobs,
         ],
         async () => {
           await db.informes.clear();
           await db.valores_motocompresor.clear();
-           await db.valores_compresor.clear();
-           await db.valores_vehiculos.clear();
-           await db.valores_secadores.clear();
-           await db.valores_grupo_electrogeno.clear();
+          await db.valores_compresor.clear();
+          await db.valores_vehiculos.clear();
+          await db.valores_secadores.clear();
+          await db.valores_grupo_electrogeno.clear();
           await db.archivos.clear();
           await db.blobs.clear();
         }
       );
-      const lista = await listarRemotos();
       setRemotos(lista);
       if (lista.length > 0) {
         const id = lista[0].id;
         setResaltadoId(id);
         window.setTimeout(() => setResaltadoId(null), 2800);
       }
+    } catch (error) {
+      setErrorActualizacion(error instanceof Error ? error.message : "No se pudo actualizar la lista.");
     } finally {
       setActualizando(false);
     }
@@ -198,6 +207,8 @@ export function ListaInformes() {
     const refrescar = () => {
       void listarRemotos().then((r) => {
         if (activo) setRemotos(r);
+      }).catch((error) => {
+        console.error("[lista] No se pudieron actualizar los informes:", error);
       });
     };
     refrescar();
@@ -216,7 +227,9 @@ export function ListaInformes() {
   if (cargando || !locales || (online && cargandoTecnicos))
     return <PantallaCarga mensaje="Cargando informes..." />;
 
-  const pendientesLocales = locales.filter((l) => l.estado_sync !== "sincronizado");
+  const pendientesLocales = locales.filter((l) =>
+    l.estado_sync !== "sincronizado" && (esAdmin || l.estado_firma !== "firmado")
+  );
 
   const informesMap = new Map<string, InformeGeneral>();
   if (online) {
@@ -420,6 +433,11 @@ export function ListaInformes() {
           <span className="w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse shrink-0" />
           <p className="text-[13px] font-bold text-yellow-800">Offline</p>
           <p className="text-[12px] text-yellow-700 truncate">Mostrando informes locales. Sin conexión a internet.</p>
+        </div>
+      ) : null}
+      {errorActualizacion ? (
+        <div className="rounded-lg border border-error bg-error-container px-3 py-2 text-[12px] text-error">
+          No se pudo actualizar. Los datos locales se conservaron. {errorActualizacion}
         </div>
       ) : null}
       <div className="flex items-center justify-between">

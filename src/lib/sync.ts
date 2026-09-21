@@ -10,6 +10,7 @@ const BACKOFF_MAX = 300000;
 let backoff = BACKOFF_INICIAL;
 let timer: ReturnType<typeof setTimeout> | null = null;
 let corriendo = false;
+let syncEnCurso: Promise<boolean> | null = null;
 const informesEnEdicion = new Set<string>();
 
 export function bloquearInformeSync(id: string): void {
@@ -41,6 +42,28 @@ export function tablaAnexa(tipo: TipoEquipo): string | null {
 async function conSesion(): Promise<boolean> {
   const { data } = await supabase().auth.getSession();
   return Boolean(data.session);
+}
+
+async function resolverNumeroInforme(informe: InformeGeneral): Promise<number> {
+  if (informe.numero_registro !== null && informe.numero_registro !== undefined) {
+    return informe.numero_registro;
+  }
+
+  const existente = await supabase()
+    .from("informes_generales")
+    .select("numero_registro")
+    .eq("id", informe.id)
+    .maybeSingle();
+  if (existente.error) throw existente.error;
+  if (existente.data?.numero_registro !== null && existente.data?.numero_registro !== undefined) {
+    return Number(existente.data.numero_registro);
+  }
+
+  const siguiente = await supabase().rpc("siguiente_numero_informe");
+  if (siguiente.error || siguiente.data === null || siguiente.data === undefined) {
+    throw siguiente.error ?? new Error("No se pudo asignar el número del informe.");
+  }
+  return Number(siguiente.data);
 }
 
 async function hayConexion(): Promise<boolean> {
@@ -94,27 +117,34 @@ function programarReintento() {
   backoff = Math.min(backoff * 2, BACKOFF_MAX);
 }
 
-export function intentarSync() {
-  void (async () => {
-    if (corriendo) return;
-    if (!(await conSesion())) return;
+export function intentarSync(): Promise<boolean> {
+  if (syncEnCurso) return syncEnCurso;
+  syncEnCurso = (async () => {
+    if (corriendo) return true;
+    if (!(await conSesion())) return false;
     if (!(await hayConexion())) {
       programarReintento();
-      return;
+      return false;
     }
     const locks = typeof navigator !== "undefined" ? navigator.locks : undefined;
     if (locks) {
-      await locks.request("sync-informes", { ifAvailable: true }, async (lock) => {
-        if (!lock) return;
-        await ejecutar();
+      return await locks.request("sync-informes", { ifAvailable: true }, async (lock) => {
+        if (!lock) return false;
+        return await ejecutar();
       });
     } else {
-      await ejecutar();
+      return await ejecutar();
     }
-  })();
+  })().catch((error) => {
+    console.error("[sync] error inesperado:", error);
+    return false;
+  }).finally(() => {
+    syncEnCurso = null;
+  });
+  return syncEnCurso;
 }
 
-async function ejecutar() {
+async function ejecutar(): Promise<boolean> {
   corriendo = true;
   let huboError = false;
   try {
@@ -139,6 +169,7 @@ async function ejecutar() {
     corriendo = false;
     if (typeof window !== "undefined") window.dispatchEvent(new Event("verdu-sync"));
   }
+  return !huboError;
 }
 
 async function sincronizarInforme(informeOriginal: InformeGeneral) {
@@ -156,6 +187,9 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       informe = { ...informe, tecnico_id: uid };
       await db.informes.update(informe.id, { tecnico_id: uid });
     }
+    const numero = await resolverNumeroInforme(informe);
+    informe = { ...informe, numero_registro: numero };
+    await db.informes.update(informe.id, { numero_registro: numero });
     await db.informes.update(informe.id, { estado_sync: "subiendo_imagenes", error_sync: null });
     const archivos = await db.archivos.where("informe_id").equals(informe.id).toArray();
     archivosIniciales = archivos;

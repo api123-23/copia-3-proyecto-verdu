@@ -155,7 +155,6 @@ export function EditorInforme({ id }: { id: string }) {
   const [toast, setToast] = useState<{ mensaje: string; tipo: "exito" | "error" | "info" } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const permitirSalida = useRef(false);
-  const draftKey = `verdu-borrador-${id}`;
 
   useEffect(() => {
     bloquearInformeSync(id);
@@ -217,21 +216,7 @@ export function EditorInforme({ id }: { id: string }) {
         anexaGE = await cargarAnexaGE(inf.id);
       }
       if (!activo) return;
-      let val = { ...valoresVacios(), ...anexa };
-      try {
-        const draft = JSON.parse(sessionStorage.getItem(draftKey) ?? "null") as {
-          informe?: InformeGeneral;
-          valores?: Partial<ValoresBase>;
-          valoresGE?: InformeGrupoElectrogeno;
-        } | null;
-        if (draft?.informe?.id === id) {
-          inf = { ...inf, ...draft.informe };
-          val = { ...val, ...(draft.valores ?? {}) };
-          anexaGE = { ...anexaGE, ...(draft.valoresGE ?? {}) };
-        }
-      } catch {
-        sessionStorage.removeItem(draftKey);
-      }
+      const val = { ...valoresVacios(), ...anexa };
       estadoRef.current = { informe: inf, valores: val, valoresGE: anexaGE };
       sucioRef.current = false;
       setFallo(false);
@@ -242,7 +227,7 @@ export function EditorInforme({ id }: { id: string }) {
     return () => {
       activo = false;
     };
-  }, [id, cargando, draftKey, intento]);
+  }, [id, cargando, intento]);
 
   function patchInforme(p: Partial<InformeGeneral>) {
     sucioRef.current = true;
@@ -270,16 +255,6 @@ export function EditorInforme({ id }: { id: string }) {
       estadoRef.current.valoresGE = next;
       return next;
     });
-  }
-
-  function guardarSnapshotAntesDeFoto() {
-    const actual = estadoRef.current;
-    if (!actual.informe) return;
-    sessionStorage.setItem(draftKey, JSON.stringify({
-      informe: actual.informe,
-      valores: actual.valores,
-      valoresGE: actual.valoresGE,
-    }));
   }
 
   async function enviar() {
@@ -336,7 +311,6 @@ export function EditorInforme({ id }: { id: string }) {
       estadoRef.current.informe = guardado;
       setInforme(guardado);
        await guardarBorrador(guardado, val, inf.tipo_equipo === "grupo_electrogeno" ? ge : undefined);
-       sessionStorage.removeItem(draftKey);
        desbloquearInformeSync(inf.id);
        if (resincronizar) intentarSync();
       mostrarToast({ mensaje: "Informe guardado. Sincronizando...", tipo: "exito" });
@@ -443,7 +417,6 @@ export function EditorInforme({ id }: { id: string }) {
   function salirSinGuardar(e: React.MouseEvent<HTMLAnchorElement>) {
     e.preventDefault();
     if (window.confirm("¿Realmente quieres salir? Se perderán todos los datos cargados en este informe.")) {
-      sessionStorage.removeItem(draftKey);
       permitirSalida.current = true;
       navegar("#/");
     }
@@ -457,7 +430,7 @@ export function EditorInforme({ id }: { id: string }) {
         paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 3rem)",
       }}
     >
-      <BeforeUnloadGuard permitirSalida={permitirSalida} proteger={true} onConfirmarSalida={() => sessionStorage.removeItem(draftKey)} />
+      <BeforeUnloadGuard permitirSalida={permitirSalida} proteger={true} onConfirmarSalida={() => undefined} />
       <header
         className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin bg-primary text-on-primary border-b border-primary-container shadow-sm"
         style={{
@@ -535,7 +508,7 @@ export function EditorInforme({ id }: { id: string }) {
             redactandoIA={redactandoIA}
           />
           <Divisor />
-           <SeccionFotos informeId={informe.id} cerrado={informe.cerrado} obligatoria={informe.tipo_equipo !== "extraordinarios"} onBeforeCapture={guardarSnapshotAntesDeFoto} />
+           <SeccionFotos informeId={informe.id} cerrado={informe.cerrado} obligatoria={informe.tipo_equipo !== "extraordinarios"} />
           <Divisor />
           <SeccionFirmas informe={informe} onChange={patchInforme} />
         </fieldset>

@@ -797,6 +797,20 @@ begin
     ) using p_valores;
   end if;
 
+  if exists (
+    select 1
+    from jsonb_to_recordset(coalesce(p_archivos, '[]'::jsonb)) as x(
+      id uuid,
+      informe_id uuid,
+      tipo text,
+      categoria text,
+      url text
+    )
+    where x.informe_id is distinct from (p_informe->>'id')::uuid
+  ) then
+    raise exception 'Un archivo no pertenece al informe sincronizado' using errcode = '22023';
+  end if;
+
   if jsonb_array_length(coalesce(p_archivos, '[]'::jsonb)) > 0 then
     insert into public.informe_archivos (id, informe_id, tipo, categoria, url)
       select x.id, x.informe_id, x.tipo, x.categoria, x.url
@@ -935,8 +949,8 @@ as $$
       select 1
       from public.informes_generales g
       where g.id = informe
-        and g.tecnico_id = auth.uid()
-        and g.estado_firma <> 'firmado'
+      and g.tecnico_id = auth.uid()
+      and g.estado_firma <> 'firmado'
     );
 $$;
 
@@ -990,7 +1004,7 @@ create policy informes_update on informes_generales for update to authenticated
   with check (public.puede_editar_informe(id));
 drop policy if exists informes_delete_admin on informes_generales;
 create policy informes_delete_admin on informes_generales for delete to authenticated
-  using (true);
+  using (public.es_admin());
 
 drop policy if exists moto_select on informes_motocompresor;
 create policy moto_select on informes_motocompresor for select to authenticated
@@ -1003,7 +1017,7 @@ create policy moto_update on informes_motocompresor for update to authenticated
   using (public.puede_editar_informe(informe_id));
 drop policy if exists moto_delete on informes_motocompresor;
 create policy moto_delete on informes_motocompresor for delete to authenticated
-  using (true);
+  using (public.es_admin());
 
 drop policy if exists comp_select on informes_compresor;
 create policy comp_select on informes_compresor for select to authenticated
@@ -1016,7 +1030,7 @@ create policy comp_update on informes_compresor for update to authenticated
   using (public.puede_editar_informe(informe_id));
 drop policy if exists comp_delete on informes_compresor;
 create policy comp_delete on informes_compresor for delete to authenticated
-  using (true);
+  using (public.es_admin());
 
 drop policy if exists veh_select on informes_vehiculos;
 create policy veh_select on informes_vehiculos for select to authenticated
@@ -1029,7 +1043,7 @@ create policy veh_update on informes_vehiculos for update to authenticated
   using (public.puede_editar_informe(informe_id));
 drop policy if exists veh_delete on informes_vehiculos;
 create policy veh_delete on informes_vehiculos for delete to authenticated
-  using (true);
+  using (public.es_admin());
 
 drop policy if exists sec_select on informes_secadores;
 create policy sec_select on informes_secadores for select to authenticated
@@ -1042,7 +1056,7 @@ create policy sec_update on informes_secadores for update to authenticated
   using (public.puede_editar_informe(informe_id));
 drop policy if exists sec_delete on informes_secadores;
 create policy sec_delete on informes_secadores for delete to authenticated
-  using (true);
+  using (public.es_admin());
 
 drop policy if exists ge_select on informes_grupo_electrogeno;
 create policy ge_select on informes_grupo_electrogeno for select to authenticated
@@ -1055,7 +1069,7 @@ create policy ge_update on informes_grupo_electrogeno for update to authenticate
   using (public.puede_editar_informe(informe_id));
 drop policy if exists ge_delete on informes_grupo_electrogeno;
 create policy ge_delete on informes_grupo_electrogeno for delete to authenticated
-  using (true);
+  using (public.es_admin());
 
 drop policy if exists archivos_select on informe_archivos;
 create policy archivos_select on informe_archivos for select to authenticated
@@ -1068,7 +1082,7 @@ create policy archivos_update on informe_archivos for update to authenticated
   using (public.puede_editar_informe(informe_id));
 drop policy if exists archivos_delete on informe_archivos;
 create policy archivos_delete on informe_archivos for delete to authenticated
-  using (true);
+  using (public.es_admin());
 
 insert into storage.buckets (id, name, public)
 values ('informe-archivos', 'informe-archivos', false)
