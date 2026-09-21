@@ -45,6 +45,44 @@ function textoComparable(texto: string): string {
     .trim();
 }
 
+function BeforeUnloadGuard({ permitirSalida }: { permitirSalida: { current: boolean } }) {
+  useEffect(() => {
+    let hashAnterior = window.location.hash;
+    let revirtiendo = false;
+    const salir = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "¿Realmente quieres salir? Se perderán todos los datos cargados en este informe.";
+    };
+    const cambioDeHash = () => {
+      const nuevoHash = window.location.hash;
+      if (revirtiendo) {
+        revirtiendo = false;
+        hashAnterior = nuevoHash;
+        return;
+      }
+      if (permitirSalida.current) {
+        permitirSalida.current = false;
+        hashAnterior = nuevoHash;
+        return;
+      }
+      if (nuevoHash === hashAnterior) return;
+      if (window.confirm("¿Realmente quieres salir? Se perderán todos los datos cargados en este informe.")) {
+        hashAnterior = nuevoHash;
+        return;
+      }
+      revirtiendo = true;
+      window.location.hash = hashAnterior;
+    };
+    window.addEventListener("beforeunload", salir);
+    window.addEventListener("hashchange", cambioDeHash);
+    return () => {
+      window.removeEventListener("beforeunload", salir);
+      window.removeEventListener("hashchange", cambioDeHash);
+    };
+  }, [permitirSalida]);
+  return null;
+}
+
 function encontrarControlFaltante(nombre: string): HTMLElement | null {
   const buscado = textoComparable(nombre.replace(/\s*\([^)]*\)\s*$/, ""));
   const candidatos = Array.from(document.querySelectorAll<HTMLElement>("label, span, h2, h3"));
@@ -95,6 +133,7 @@ export function EditorInforme({ id }: { id: string }) {
   const [redactandoIA, setRedactandoIA] = useState(false);
   const [toast, setToast] = useState<{ mensaje: string; tipo: "exito" | "error" | "info" } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const permitirSalida = useRef(false);
 
   useEffect(() => {
     bloquearInformeSync(id);
@@ -251,7 +290,10 @@ export function EditorInforme({ id }: { id: string }) {
        desbloquearInformeSync(inf.id);
        if (resincronizar) intentarSync();
       mostrarToast({ mensaje: "Informe guardado. Sincronizando...", tipo: "exito" });
-      setTimeout(() => navegar("#/"), 700);
+       setTimeout(() => {
+         permitirSalida.current = true;
+         navegar("#/" );
+       }, 700);
     } catch {
       mostrarToast({ mensaje: "No se pudo guardar el informe. Reintentá.", tipo: "error" });
     } finally {
@@ -348,6 +390,14 @@ export function EditorInforme({ id }: { id: string }) {
     year: "numeric",
   });
 
+  function salirSinGuardar(e: React.MouseEvent<HTMLAnchorElement>) {
+    e.preventDefault();
+    if (window.confirm("¿Realmente quieres salir? Se perderán todos los datos cargados en este informe.")) {
+      permitirSalida.current = true;
+      navegar("#/");
+    }
+  }
+
   return (
     <div
       className="pb-xl"
@@ -356,6 +406,7 @@ export function EditorInforme({ id }: { id: string }) {
         paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 3rem)",
       }}
     >
+      <BeforeUnloadGuard permitirSalida={permitirSalida} />
       <header
         className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin bg-primary text-on-primary border-b border-primary-container shadow-sm"
         style={{
@@ -368,6 +419,7 @@ export function EditorInforme({ id }: { id: string }) {
             href="#/"
             className="hover:bg-primary-container active:scale-95 transition-all px-2 py-1 rounded"
             aria-label="Volver al listado"
+            onClick={salirSinGuardar}
           >
             <Icono nombre="arrow_back" className="w-[16px] h-[16px]" />
           </a>

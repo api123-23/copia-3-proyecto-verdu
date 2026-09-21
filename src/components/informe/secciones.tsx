@@ -318,7 +318,7 @@ export function SeccionOperativa({
     <Seccion titulo="¿La máquina queda operativa?">
       <div className="flex items-center justify-between bg-surface-container-low p-1 rounded">
         <span className="text-body-md font-body-md text-[12px]">Operativa</span>
-        <div className="dual-option w-24">
+        <div className={`dual-option w-24 field-binary field-status-${informe.maquina_operativa === null ? "empty" : informe.maquina_operativa ? "si" : "no"}`}>
           <button
             type="button"
             className={informe.maquina_operativa === true ? "selected-ok" : ""}
@@ -354,7 +354,7 @@ export function SeccionCotizacion({
     <Seccion titulo="Cotización">
       <div className="space-y-sm">
         <Label>¿Requiere cotización adicional?</Label>
-        <div className="dual-option max-w-40">
+        <div className={`dual-option max-w-40 field-binary field-status-${informe.requiere_cotizacion ? "si" : "no"}`}>
           <button
             type="button"
             className={informe.requiere_cotizacion ? "selected-ok" : ""}

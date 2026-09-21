@@ -177,6 +177,12 @@
   .field-status-ok, .field-status-si { background: #eaf8f0; box-shadow: inset 3px 0 0 #32a36f; }
   .field-status-mal, .field-status-no { background: #fff0ef; box-shadow: inset 3px 0 0 #c84b45; }
   .field-status-bajo, .field-status-alto, .field-status-optimo { background: #fff8e5; box-shadow: inset 3px 0 0 #d19a21; }
+  .field-binary.field-status-si { background: #dcf7e8; border-color: #45af78; box-shadow: inset 4px 0 0 #23945f; }
+  .field-binary.field-status-no { background: #ffe4e1; border-color: #d56b62; box-shadow: inset 4px 0 0 #ba1a1a; }
+  .field-binary.field-status-si .select-small,
+  .field-binary.field-status-no .select-small { background-color: transparent; font-weight: 700; }
+  .field-binary.field-status-si .dual-option button.selected-ok,
+  .field-binary.field-status-no .dual-option button.selected-error { font-weight: 800; }
   .section-header {
     @apply bg-surface-container-low border-y border-outline-variant py-1 px-md flex items-center justify-between mb-sm;
   }
@@ -229,6 +235,7 @@
   .section-card:hover {
     box-shadow: 0 12px 28px rgb(0 42 82 / 10%);
   }
+  .field-label { overflow-wrap: break-word; word-break: normal; }
   .section-accent-general { border-left: 5px solid #1767a9; }
   .section-accent-data { border-left: 5px solid #16806a; }
   .section-accent-evidence { border-left: 5px solid #7b55ad; }
@@ -331,6 +338,8 @@ html.dark .section-photos .section-body,
 html.dark .section-signatures .section-body { background: #17232e; }
 html.dark .dual-option button { background: #162430; color: #e8eef5; }
 html.dark .dual-option button:hover { background: #243747; }
+html.dark .field-binary.field-status-si { background: #173d31 !important; border-color: #3d9c70 !important; color: #b8f0cc; }
+html.dark .field-binary.field-status-no { background: #4a2428 !important; border-color: #c75a5a !important; color: #ffc4bd; }
 html.dark .bg-green-100 { background-color: #173d31 !important; color: #9be2bd !important; }
 html.dark .bg-amber-100 { background-color: #493715 !important; color: #ffda8a !important; }
 html.dark .bg-red-100 { background-color: #4a2428 !important; color: #ffb4ab !important; }
@@ -374,6 +383,7 @@ html.dark .signature-canvas { background: #162430 !important; border-color: #718
 @media (max-width: 767px) {
   .section-card { margin-bottom: 1.25rem; }
   .section-body { padding: 1rem 0.8rem; }
+  .section-values-standard .grid.grid-cols-2 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
   .section-values-standard .field-mobile-wide { flex-direction: column; align-items: stretch; gap: 0.35rem; }
   .section-values-standard .field-mobile-wide .select-small { align-self: flex-end; }
   .section-values-standard .field-status-ok,
