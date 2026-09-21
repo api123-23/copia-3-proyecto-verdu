@@ -48,18 +48,14 @@ function textoComparable(texto: string): string {
 function BeforeUnloadGuard({ permitirSalida }: { permitirSalida: { current: boolean } }) {
   useEffect(() => {
     let hashAnterior = window.location.hash;
-    let revirtiendo = false;
+    let restaurando = false;
     const salir = (e: BeforeUnloadEvent) => {
       e.preventDefault();
       e.returnValue = "¿Realmente quieres salir? Se perderán todos los datos cargados en este informe.";
     };
     const cambioDeHash = () => {
       const nuevoHash = window.location.hash;
-      if (revirtiendo) {
-        revirtiendo = false;
-        hashAnterior = nuevoHash;
-        return;
-      }
+      if (restaurando) return;
       if (permitirSalida.current) {
         permitirSalida.current = false;
         hashAnterior = nuevoHash;
@@ -70,14 +66,36 @@ function BeforeUnloadGuard({ permitirSalida }: { permitirSalida: { current: bool
         hashAnterior = nuevoHash;
         return;
       }
-      revirtiendo = true;
+      restaurando = true;
       window.location.hash = hashAnterior;
+    };
+    const navegacionAtras = () => {
+      const nuevoHash = window.location.hash;
+      if (restaurando) {
+        restaurando = false;
+        hashAnterior = nuevoHash;
+        return;
+      }
+      if (permitirSalida.current) {
+        permitirSalida.current = false;
+        hashAnterior = nuevoHash;
+        return;
+      }
+      if (window.confirm("¿Realmente quieres salir? Se perderán todos los datos cargados en este informe.")) {
+        permitirSalida.current = true;
+        hashAnterior = nuevoHash;
+        return;
+      }
+      restaurando = true;
+      window.history.forward();
     };
     window.addEventListener("beforeunload", salir);
     window.addEventListener("hashchange", cambioDeHash);
+    window.addEventListener("popstate", navegacionAtras);
     return () => {
       window.removeEventListener("beforeunload", salir);
       window.removeEventListener("hashchange", cambioDeHash);
+      window.removeEventListener("popstate", navegacionAtras);
     };
   }, [permitirSalida]);
   return null;
