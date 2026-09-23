@@ -84,7 +84,6 @@ create table if not exists informes_motocompresor (
   temp_ambiente numeric(10, 2),
   temp_refrigerante numeric(10, 2),
   presion_unidad_comp numeric(10, 2),
-  presion_aceite_motor text check (presion_aceite_motor in ('ok', 'bajo')),
   perdida_aceite_motor text check (perdida_aceite_motor in ('si', 'no')),
   perdida_refrigerante text check (perdida_refrigerante in ('si', 'no')),
   perdida_aire text check (perdida_aire in ('si', 'no')),
@@ -99,7 +98,6 @@ create table if not exists informes_compresor (
   aislacion_suelo text check (aislacion_suelo in ('si', 'no')),
   tension_linea numeric(10, 2),
   temp_ambiente numeric(10, 2),
-  circuito_refr_m text check (circuito_refr_m in ('ok', 'mal')),
   circuito_despresuriz text check (circuito_despresuriz in ('si', 'no')),
   circuito_arranque text check (circuito_arranque in ('ok', 'mal')),
   circuito_seguridad text check (circuito_seguridad in ('ok', 'mal')),
@@ -307,6 +305,8 @@ alter table informes_vehiculos add column if not exists kilometros numeric(10, 2
 alter table informes_motocompresor alter column horometro type text using horometro::text;
 alter table informes_motocompresor drop column if exists conec_purga;
 alter table informes_motocompresor drop column if exists jabalina;
+alter table informes_motocompresor drop column if exists presion_aceite_motor;
+alter table informes_compresor drop column if exists circuito_refr_m;
 alter table informes_compresor alter column horometro type text using horometro::text;
 alter table informes_vehiculos alter column horometro type text using horometro::text;
 alter table informes_secadores alter column horometro type text using horometro::text;

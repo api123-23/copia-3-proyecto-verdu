@@ -501,6 +501,12 @@ export async function cargarAnexa(
     resto.perdida_aceite_motor = resto.perdida_aceite_unidad;
     delete resto.perdida_aceite_unidad;
     delete resto.aceite_unidad;
+    delete resto.circuito_refr_m;
+  }
+  if (tipo === "motocompresor") {
+    delete resto.conec_purga;
+    delete resto.jabalina;
+    delete resto.presion_aceite_motor;
   }
   normalizarValores(tipo, resto);
   return resto as Partial<ValoresBase>;

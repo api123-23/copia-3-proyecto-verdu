@@ -322,7 +322,9 @@ export default function SeccionValores({
                 <h4 className="text-[10px] font-bold text-on-surface-variant mb-xs">PRESIÓN</h4>
                 <div className="grid grid-cols-2 gap-sm">
                   <CampoNumero etiqueta="Unid. Comp." valor={valores.presion_unidad_comp} onChange={set("presion_unidad_comp")} />
-                  <ItemSelect etiqueta="Aceite Motor" opciones={OPCIONES_OK_BAJO} valor={valores.presion_aceite_motor} onChange={set("presion_aceite_motor")} />
+                  {aplica(tipo, "presion_aceite_motor") ? (
+                    <ItemSelect etiqueta="Aceite Motor" opciones={OPCIONES_OK_BAJO} valor={valores.presion_aceite_motor} onChange={set("presion_aceite_motor")} />
+                  ) : null}
                 </div>
               </div>
             ) : null}
