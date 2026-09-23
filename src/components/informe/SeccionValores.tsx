@@ -154,7 +154,7 @@ export default function SeccionValores({
   const bloqueDetenido =
     aplica(tipo, "horometro") ||
     aplica(tipo, "aceite_motor") ||
-    aplica(tipo, "aceite_unidad") ||
+    (tipo === "motocompresor" && aplica(tipo, "aceite_unidad")) ||
     aplica(tipo, "refrig_radiador") ||
     aplica(tipo, "estado_bateria") ||
     aplica(tipo, "conec_purga") ||
@@ -166,7 +166,7 @@ export default function SeccionValores({
 
   const bloqueNiveles =
     aplica(tipo, "aceite_motor") ||
-    aplica(tipo, "aceite_unidad") ||
+    (tipo === "motocompresor" && aplica(tipo, "aceite_unidad")) ||
     aplica(tipo, "refrig_radiador") ||
     aplica(tipo, "estado_bateria") ||
     aplica(tipo, "conec_purga");
@@ -210,7 +210,7 @@ export default function SeccionValores({
               {aplica(tipo, "aceite_motor") ? (
                 <ItemSelect etiqueta="Aceite Motor" opciones={OPCIONES_NIVEL} valor={valores.aceite_motor} onChange={set("aceite_motor")} />
               ) : null}
-              {aplica(tipo, "aceite_unidad") ? (
+              {tipo === "motocompresor" && aplica(tipo, "aceite_unidad") ? (
                 <ItemSelect etiqueta="Aceite Unidad" opciones={OPCIONES_NIVEL} valor={valores.aceite_unidad} onChange={set("aceite_unidad")} />
               ) : null}
               {aplica(tipo, "refrig_radiador") ? (
@@ -347,7 +347,7 @@ export default function SeccionValores({
             <h4 className="text-[10px] font-bold text-on-surface-variant mb-xs">PÉRDIDAS</h4>
             <div className="grid grid-cols-2 gap-sm">
               {aplica(tipo, "perdida_aceite_motor") ? (
-                 <ItemSelect etiqueta={esCompresor ? "Aceite Unidad" : "Aceite Motor"} opciones={OPCIONES_SI_NO} valor={valores.perdida_aceite_motor} onChange={set("perdida_aceite_motor")} />
+                 <ItemSelect etiqueta={esCompresor ? "Pérdida de aceite de unidad" : "Aceite Motor"} opciones={OPCIONES_SI_NO} valor={valores.perdida_aceite_motor} onChange={set("perdida_aceite_motor")} />
               ) : null}
               {aplica(tipo, "perdida_refrigerante") ? (
                   <ItemSelect etiqueta="Refrigerante" opciones={OPCIONES_SI_NO} valor={valores.perdida_refrigerante} onChange={set("perdida_refrigerante")} />

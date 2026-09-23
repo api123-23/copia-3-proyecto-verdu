@@ -173,7 +173,6 @@ export const CAMPOS_POR_TIPO: Record<TipoEquipo, (keyof ValoresBase)[]> = {
   ],
   compresor: [
     "horometro",
-    "aceite_unidad",
     "inst_electrica",
     "jabalina",
     "aislacion_suelo",
@@ -413,8 +412,10 @@ export function normalizarValores(
       }
     }
   } else if (tipo === "compresor" || tipo === "motocompresor") {
-    if (valores.aceite_unidad === "si") valores.aceite_unidad = "ok";
-    else if (valores.aceite_unidad === "no") valores.aceite_unidad = "bajo";
+    if (tipo === "motocompresor") {
+      if (valores.aceite_unidad === "si") valores.aceite_unidad = "ok";
+      else if (valores.aceite_unidad === "no") valores.aceite_unidad = "bajo";
+    }
     if (tipo === "compresor") {
       if (valores.tiempo_y_delta === "si") valores.tiempo_y_delta = "ok";
       else if (valores.tiempo_y_delta === "no" || valores.tiempo_y_delta === "mal")
@@ -505,6 +506,7 @@ export async function cargarAnexa(
   if (tipo === "compresor") {
     resto.perdida_aceite_motor = resto.perdida_aceite_unidad;
     delete resto.perdida_aceite_unidad;
+    delete resto.aceite_unidad;
   }
   normalizarValores(tipo, resto);
   return resto as Partial<ValoresBase>;

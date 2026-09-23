@@ -96,7 +96,6 @@ create table if not exists informes_motocompresor (
 create table if not exists informes_compresor (
   informe_id uuid primary key references informes_generales (id) on delete cascade,
   horometro text,
-  aceite_unidad text check (aceite_unidad in ('ok', 'bajo', 'alto')),
   inst_electrica text check (inst_electrica in ('ok', 'mal')),
   jabalina text check (jabalina in ('si', 'no')),
   aislacion_suelo text check (aislacion_suelo in ('si', 'no')),
@@ -395,14 +394,9 @@ update informes_motocompresor set aceite_unidad = case
 alter table informes_motocompresor add constraint informes_motocompresor_aceite_unidad_check
   check (aceite_unidad in ('ok', 'bajo', 'alto'));
 
--- COMPRESOR: aceite unidad pasa a ok/bajo/alto (legacy si/no)
-select public.dropar_checks_de_columna('informes_compresor', 'aceite_unidad');
-update informes_compresor set aceite_unidad = case
-  when aceite_unidad = 'si' then 'ok'
-  when aceite_unidad = 'no' then 'bajo'
-  else aceite_unidad end;
-alter table informes_compresor add constraint informes_compresor_aceite_unidad_check
-  check (aceite_unidad in ('ok', 'bajo', 'alto'));
+-- COMPRESOR: Aceite Unidad no corresponde a este equipo. Se elimina también
+-- de instalaciones existentes; perdida_aceite_unidad es un dato distinto y se conserva.
+alter table informes_compresor drop column if exists aceite_unidad;
 
 -- COMPRESOR: tiempo de conmutación Y-Δ pasa a ok/bajo/alto (legacy si/no/mal)
 select public.dropar_checks_de_columna('informes_compresor', 'tiempo_y_delta');

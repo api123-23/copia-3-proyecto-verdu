@@ -165,7 +165,6 @@ export type InformeCompresor = { informe_id: string } & Omit<
   | "estado_bateria"
   | "conec_purga"
   | "carroceria"
-  | "aceite_unidad"
   | "temp_refrigerante"
   | "rpm_min"
   | "rpm_max"
@@ -182,9 +181,7 @@ export type InformeCompresor = { informe_id: string } & Omit<
   | "perdida_aire"
   | "perdida_combustible"
   | "kilometros"
-> & {
-  aceite_unidad: OkBajoAlto;
-};
+ >;
 
 export type InformeVehiculos = { informe_id: string } & Omit<
   ValoresBase,
