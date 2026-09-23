@@ -78,8 +78,10 @@ create table if not exists informes_motocompresor (
   aceite_unidad text check (aceite_unidad in ('ok', 'alto', 'bajo')),
   refrig_radiador text check (refrig_radiador in ('ok', 'alto', 'bajo')),
   estado_bateria text check (estado_bateria in ('ok', 'mal', 'no_tiene')),
+  conec_purga text check (conec_purga in ('si', 'no')),
   inst_electrica text check (inst_electrica in ('ok', 'mal')),
   carroceria text check (carroceria in ('ok', 'mal')),
+  jabalina text check (jabalina in ('si', 'no')),
   aislacion_suelo text check (aislacion_suelo in ('si', 'no')),
   temp_ambiente numeric(10, 2),
   temp_refrigerante numeric(10, 2),
@@ -305,8 +307,6 @@ alter table informes_vehiculos add column if not exists kilometros numeric(10, 2
 
 -- El horómetro puede contener lecturas alfanuméricas (por ejemplo, "sin display").
 alter table informes_motocompresor alter column horometro type text using horometro::text;
-alter table informes_motocompresor drop column if exists conec_purga;
-alter table informes_motocompresor drop column if exists jabalina;
 alter table informes_compresor alter column horometro type text using horometro::text;
 alter table informes_vehiculos alter column horometro type text using horometro::text;
 alter table informes_secadores alter column horometro type text using horometro::text;
