@@ -180,7 +180,6 @@ export type InformeCompresor = { informe_id: string } & Omit<
   | "perdida_refrigerante"
   | "perdida_aire"
   | "perdida_combustible"
-  | "perdida_aceite_motor"
   | "kilometros"
  >;
 

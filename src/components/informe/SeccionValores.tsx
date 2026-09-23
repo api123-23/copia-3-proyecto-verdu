@@ -346,7 +346,7 @@ export default function SeccionValores({
             <h4 className="text-[10px] font-bold text-on-surface-variant mb-xs">PÉRDIDAS</h4>
             <div className="grid grid-cols-2 gap-sm">
                {aplica(tipo, "perdida_aceite_motor") ? (
-                  <ItemSelect etiqueta="Aceite Motor" opciones={OPCIONES_SI_NO} valor={valores.perdida_aceite_motor} onChange={set("perdida_aceite_motor")} />
+                 <ItemSelect etiqueta={tipo === "compresor" ? "Pérdida de aceite de unidad" : "Aceite Motor"} opciones={OPCIONES_SI_NO} valor={valores.perdida_aceite_motor} onChange={set("perdida_aceite_motor")} />
                ) : null}
               {aplica(tipo, "perdida_refrigerante") ? (
                   <ItemSelect etiqueta="Refrigerante" opciones={OPCIONES_SI_NO} valor={valores.perdida_refrigerante} onChange={set("perdida_refrigerante")} />
