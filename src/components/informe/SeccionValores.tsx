@@ -147,6 +147,8 @@ export default function SeccionValores({
     onChange({ [campo]: v } as Patch);
 
   const esSecadores = tipo === "secadores";
+  const esCompresor = tipo === "compresor";
+  const esMotocompresor = tipo === "motocompresor";
   const esVehiculo = tipo === "vehiculos" || tipo === "maquinas_viales";
   const esMaquinaVial = tipo === "maquinas_viales";
 
@@ -301,7 +303,7 @@ export default function SeccionValores({
               <div className="mb-sm border-b border-outline-variant pb-sm">
                  <h4 className="text-[10px] font-bold text-on-surface-variant mb-xs">TEMPERATURA (°C)</h4>
                  <div className="grid grid-cols-2 gap-sm">
-                  <CampoNumero etiqueta="Ambiente" valor={valores.temp_ambiente} onChange={set("temp_ambiente")} />
+                   <CampoNumero etiqueta={esCompresor ? "Temperatura de unidad" : "Ambiente"} valor={valores.temp_ambiente} onChange={set("temp_ambiente")} />
                    {aplica(tipo, "temp_refrigerante") ? (
                      <CampoNumero
                        etiqueta="Refrigerante"
@@ -346,7 +348,7 @@ export default function SeccionValores({
             <h4 className="text-[10px] font-bold text-on-surface-variant mb-xs">PÉRDIDAS</h4>
             <div className="grid grid-cols-2 gap-sm">
                {aplica(tipo, "perdida_aceite_motor") ? (
-                 <ItemSelect etiqueta={tipo === "compresor" ? "Pérdida de aceite de unidad" : "Aceite Motor"} opciones={OPCIONES_SI_NO} valor={valores.perdida_aceite_motor} onChange={set("perdida_aceite_motor")} />
+                 <ItemSelect etiqueta={esMotocompresor ? "Pérdida de aceite de unidad" : tipo === "compresor" ? "Pérdida de aceite de unidad" : "Aceite Motor"} opciones={OPCIONES_SI_NO} valor={valores.perdida_aceite_motor} onChange={set("perdida_aceite_motor")} />
                ) : null}
               {aplica(tipo, "perdida_refrigerante") ? (
                   <ItemSelect etiqueta="Refrigerante" opciones={OPCIONES_SI_NO} valor={valores.perdida_refrigerante} onChange={set("perdida_refrigerante")} />

@@ -157,16 +157,14 @@ export const CAMPOS_POR_TIPO: Record<TipoEquipo, (keyof ValoresBase)[]> = {
     "aceite_unidad",
     "refrig_radiador",
     "estado_bateria",
-    "conec_purga",
     "inst_electrica",
     "carroceria",
-    "jabalina",
     "aislacion_suelo",
     "temp_ambiente",
     "temp_refrigerante",
     "presion_unidad_comp",
     "presion_aceite_motor",
-    "perdida_aceite_motor",
+     "perdida_aceite_motor",
     "perdida_refrigerante",
     "perdida_aire",
     "perdida_combustible",
@@ -503,6 +501,10 @@ export async function cargarAnexa(
     resto.perdida_aceite_motor = resto.perdida_aceite_unidad;
     delete resto.perdida_aceite_unidad;
     delete resto.aceite_unidad;
+  }
+  if (tipo === "motocompresor") {
+    delete resto.conec_purga;
+    delete resto.jabalina;
   }
   normalizarValores(tipo, resto);
   return resto as Partial<ValoresBase>;
