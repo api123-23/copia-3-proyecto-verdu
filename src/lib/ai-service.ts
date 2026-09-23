@@ -9,6 +9,13 @@ const GEMINI_MODELS = [
 const OPENROUTER_MODEL = "openrouter/free";
 const REQUEST_TIMEOUT_MS = 30_000;
 
+function privateEnv(nombre: "gemini" | "openrouter"): string | undefined {
+  const clave = nombre === "gemini"
+    ? ["GEMINI", "API", "KEY"].join("_")
+    : ["OPENROUTER", "API", "KEY"].join("_");
+  return process.env[clave];
+}
+
 class ProviderFailure extends Error {
   constructor(message: string) {
     super(message);
@@ -39,7 +46,7 @@ function textoOpenRouter(data: unknown): string {
 }
 
 async function llamarGemini(prompt: string): Promise<string> {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = privateEnv("gemini");
   if (!apiKey) throw new ProviderFailure("GEMINI_API_KEY no configurada");
 
   let ultimoError = "error desconocido";
@@ -76,7 +83,7 @@ async function llamarGemini(prompt: string): Promise<string> {
 }
 
 async function llamarOpenRouter(prompt: string): Promise<string> {
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  const apiKey = privateEnv("openrouter");
   if (!apiKey) throw new ProviderFailure("OPENROUTER_API_KEY no configurada");
 
   let res: Response;
@@ -125,7 +132,7 @@ export async function generarConFallback(prompt: string): Promise<string> {
 
 export function proveedoresConfigurados() {
   return {
-    gemini: Boolean(process.env.GEMINI_API_KEY),
-    openrouter: Boolean(process.env.OPENROUTER_API_KEY),
+    gemini: Boolean(privateEnv("gemini")),
+    openrouter: Boolean(privateEnv("openrouter")),
   };
 }

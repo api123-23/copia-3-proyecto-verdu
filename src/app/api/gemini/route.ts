@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { generarConFallback, proveedoresConfigurados } from "@/lib/ai-service";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 // Health check: sirve para verificar en el deploy que el endpoint /api/gemini
 // existe (si esto da 200, el problema está en la key/modelo de Google, no el route).
 export async function GET() {
