@@ -185,7 +185,6 @@ export const CAMPOS_POR_TIPO: Record<TipoEquipo, (keyof ValoresBase)[]> = {
     "circuito_electr",
     "tiempo_y_delta",
     "diferencial",
-    "perdida_aceite_motor",
   ],
   vehiculos: [
     "horometro",
@@ -433,10 +432,6 @@ export function construirAnexa(
   if (tipo === "grupo_electrogeno") return null;
   const out: Record<string, unknown> = { informe_id };
   for (const campo of CAMPOS_POR_TIPO[tipo]) out[campo] = v[campo];
-  if (tipo === "compresor") {
-    out.perdida_aceite_unidad = out.perdida_aceite_motor;
-    delete out.perdida_aceite_motor;
-  }
   normalizarValores(tipo, out);
   return out;
 }
@@ -504,9 +499,9 @@ export async function cargarAnexa(
   const resto = { ...fila } as unknown as Record<string, unknown>;
   delete resto.informe_id;
   if (tipo === "compresor") {
-    resto.perdida_aceite_motor = resto.perdida_aceite_unidad;
-    delete resto.perdida_aceite_unidad;
     delete resto.aceite_unidad;
+    delete resto.perdida_aceite_unidad;
+    delete resto.perdida_aceite_motor;
   }
   normalizarValores(tipo, resto);
   return resto as Partial<ValoresBase>;

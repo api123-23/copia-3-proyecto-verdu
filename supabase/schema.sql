@@ -107,8 +107,7 @@ create table if not exists informes_compresor (
   circuito_seguridad text check (circuito_seguridad in ('ok', 'mal')),
   circuito_electr text check (circuito_electr in ('ok', 'mal')),
   tiempo_y_delta text check (tiempo_y_delta in ('ok', 'bajo', 'alto')),
-  diferencial text,
-  perdida_aceite_unidad text check (perdida_aceite_unidad in ('si', 'no'))
+  diferencial text
 );
 
 create table if not exists informes_vehiculos (
@@ -311,20 +310,10 @@ alter table informes_compresor alter column horometro type text using horometro:
 alter table informes_vehiculos alter column horometro type text using horometro::text;
 alter table informes_secadores alter column horometro type text using horometro::text;
 
--- Compresor: se elimina refrigerante y la pérdida de aceite pasa a llamarse
--- aceite de unidad. La migración conserva los valores existentes.
+-- Compresor: se elimina el campo de pérdida de aceite de unidad.
 alter table informes_compresor drop column if exists temp_refrigerante;
-do $$
-begin
-  if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'informes_compresor' and column_name = 'perdida_aceite_motor')
-     and not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'informes_compresor' and column_name = 'perdida_aceite_unidad') then
-    alter table informes_compresor rename column perdida_aceite_motor to perdida_aceite_unidad;
-  elsif exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'informes_compresor' and column_name = 'perdida_aceite_motor')
-     and exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'informes_compresor' and column_name = 'perdida_aceite_unidad') then
-    update informes_compresor set perdida_aceite_unidad = coalesce(perdida_aceite_unidad, perdida_aceite_motor);
-    alter table informes_compresor drop column perdida_aceite_motor;
-  end if;
-end $$;
+alter table informes_compresor drop column if exists perdida_aceite_unidad;
+alter table informes_compresor drop column if exists perdida_aceite_motor;
 
 -- Ayuda idempotente: elimina TODOS los checks de una columna (incluso si el nombre
 -- cambió por renombres o quedó truncado por el límite de 63 caracteres).
@@ -356,15 +345,27 @@ end $$;
 
 -- VEHÍCULOS: inspección de batería pasa a Ok/Mal (legacy si/no/alto/bajo)
 select public.dropar_checks_de_columna('informes_vehiculos', 'estado_bateria');
-update informes_vehiculos set estado_bateria = null where estado_bateria in ('alto', 'bajo');
+update informes_vehiculos
+set estado_bateria = case
+  when lower(trim(estado_bateria)) = 'si' then 'ok'
+  when lower(trim(estado_bateria)) = 'no' then 'mal'
+  when lower(trim(estado_bateria)) in ('ok', 'mal') then lower(trim(estado_bateria))
+  else null
+end;
 alter table informes_vehiculos add constraint informes_vehiculos_estado_bateria_check
   check (estado_bateria in ('ok', 'mal'));
 
 -- MOTODES: batería también pasa a Ok/Mal
 select public.dropar_checks_de_columna('informes_motocompresor', 'estado_bateria');
-update informes_motocompresor set estado_bateria = null where estado_bateria in ('alto', 'bajo');
+update informes_motocompresor
+set estado_bateria = case
+  when lower(trim(estado_bateria)) = 'si' then 'ok'
+  when lower(trim(estado_bateria)) = 'no' then 'mal'
+  when lower(trim(estado_bateria)) in ('ok', 'mal', 'no_tiene') then lower(trim(estado_bateria))
+  else null
+end;
 alter table informes_motocompresor add constraint informes_motocompresor_estado_bateria_check
-  check (estado_bateria in ('ok', 'mal'));
+  check (estado_bateria in ('ok', 'mal', 'no_tiene'));
 
 -- COMPRESOR: tensión de línea unificada en un solo campo
 alter table informes_compresor add column if not exists tension_linea numeric(10, 2);
@@ -395,7 +396,7 @@ alter table informes_motocompresor add constraint informes_motocompresor_aceite_
   check (aceite_unidad in ('ok', 'bajo', 'alto'));
 
 -- COMPRESOR: Aceite Unidad no corresponde a este equipo. Se elimina también
--- de instalaciones existentes; perdida_aceite_unidad es un dato distinto y se conserva.
+-- de instalaciones existentes, incluyendo la pérdida de aceite de unidad.
 alter table informes_compresor drop column if exists aceite_unidad;
 
 -- COMPRESOR: tiempo de conmutación Y-Δ pasa a ok/bajo/alto (legacy si/no/mal)
