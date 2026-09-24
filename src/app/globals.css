@@ -266,6 +266,7 @@
 .modal-backdrop-in { animation: modalIn 300ms ease-out both; }
 .modal-panel-in { animation: modalPanelIn 420ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 .photo-thumb-in { animation: listItemIn 450ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.pdf-download-host { position: fixed; top: 0; left: -10000px; z-index: -1; width: 210mm; background: white; }
 
 .theme-toggle {
   display: inline-flex;

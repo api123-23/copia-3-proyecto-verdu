@@ -13,6 +13,7 @@ import { usePerfil } from "@/lib/usePerfil";
 import { LogoTipo } from "@/components/LogoTipo";
 import { Icono } from "@/components/Icono";
 import { PantallaCarga } from "@/components/PantallaCarga";
+import { VistaPdfInforme } from "@/components/informe/VistaPdfInforme";
 
 const BADGE_SYNC: Record<string, { label: string; clase: string }> = {
   pendiente: { label: "Subiendo...", clase: "bg-amber-100 text-amber-800 animate-pulse" },
@@ -45,6 +46,7 @@ export function ListaInformes() {
   const [actualizando, setActualizando] = useState(false);
   const [errorActualizacion, setErrorActualizacion] = useState<string | null>(null);
   const [resaltadoId, setResaltadoId] = useState<string | null>(null);
+  const [descargandoId, setDescargandoId] = useState<string | null>(null);
   const [cargandoTecnicos, setCargandoTecnicos] = useState(true);
 
   const [esPc, setEsPc] = useState(false);
@@ -428,6 +430,16 @@ export function ListaInformes() {
 
   return (
     <div className="mx-4 md:mx-0 space-y-sm">
+      {descargandoId ? (
+        <div id={`pdf-download-${descargandoId}`} className="pdf-download-host" aria-hidden="true">
+          <VistaPdfInforme
+            id={descargandoId}
+            modoDescarga
+            downloadRootId={`pdf-download-${descargandoId}`}
+            onDescargaTerminada={() => setDescargandoId(null)}
+          />
+        </div>
+      ) : null}
       {!online ? (
         <div className="flex items-center gap-2 rounded-lg bg-yellow-100 border border-yellow-300 px-3 py-2">
           <span className="w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse shrink-0" />
@@ -538,8 +550,7 @@ export function ListaInformes() {
                           className="inline-flex items-center rounded border border-primary px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-primary hover:bg-primary hover:text-white active:scale-95 transition-all"
                           onClick={(e) => {
                             e.stopPropagation();
-                            sessionStorage.setItem("verdu-descargar-pdf", inf.id);
-                            window.location.hash = `#/informe/${encodeURIComponent(inf.id)}/pdf`;
+                            setDescargandoId(inf.id);
                           }}
                         >
                           Descargar
@@ -627,8 +638,7 @@ export function ListaInformes() {
                     className="inline-flex items-center rounded border border-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-primary active:scale-95 transition-all"
                     onClick={(e) => {
                       e.stopPropagation();
-                      sessionStorage.setItem("verdu-descargar-pdf", inf.id);
-                      window.location.hash = `#/informe/${encodeURIComponent(inf.id)}/pdf`;
+                       setDescargandoId(inf.id);
                     }}
                   >
                     Descargar

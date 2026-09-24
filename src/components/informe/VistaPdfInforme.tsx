@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
@@ -218,7 +218,17 @@ function Fotos({ archivos, urls }: { archivos: ArchivoLocal[]; urls: Record<stri
   );
 }
 
-export function VistaPdfInforme({ id }: { id: string }) {
+export function VistaPdfInforme({
+  id,
+  modoDescarga = false,
+  downloadRootId,
+  onDescargaTerminada,
+}: {
+  id: string;
+  modoDescarga?: boolean;
+  downloadRootId?: string;
+  onDescargaTerminada?: () => void;
+}) {
   const [informe, setInforme] = useState<InformeGeneral | null>(null);
   const [valores, setValores] = useState<ValoresBase | null>(null);
   const [valoresGE, setValoresGE] = useState<InformeGrupoElectrogeno>(valoresVaciosGE());
@@ -233,6 +243,7 @@ export function VistaPdfInforme({ id }: { id: string }) {
   const cargandoArchivos = archivos === undefined || precarga?.clave !== claveArchivos;
   const archivosPdf = precarga?.clave === claveArchivos ? precarga.urls : {};
   const erroresArchivos = precarga?.clave === claveArchivos ? precarga.errores : [];
+  const descargaIniciada = useRef(false);
 
   useEffect(() => {
     let activo = true;
@@ -315,17 +326,34 @@ export function VistaPdfInforme({ id }: { id: string }) {
   }, [cargandoArchivos, erroresArchivos.length]);
 
   useEffect(() => {
-    if (!informe || cargandoArchivos || erroresArchivos.length > 0) return;
-    if (sessionStorage.getItem("verdu-descargar-pdf") !== id) return;
-    sessionStorage.removeItem("verdu-descargar-pdf");
-    const equipo = nombreEquipo(informe.tipo_equipo).replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
-    const cliente = (informe.cliente_nombre || "informe").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
-    const tituloAnterior = document.title;
-    document.title = `Informe-${formatNumero(informe.numero_registro)}-${equipo}-${cliente}`;
-    void imprimir().finally(() => {
-      window.setTimeout(() => { document.title = tituloAnterior; }, 1000);
-    });
-  }, [cargandoArchivos, erroresArchivos.length, id, imprimir, informe]);
+    if (!modoDescarga || descargaIniciada.current || !informe || cargandoArchivos || erroresArchivos.length > 0) return;
+    const root = downloadRootId ? document.getElementById(downloadRootId) : null;
+    const hoja = root?.querySelector<HTMLElement>(".pdf-hoja");
+    if (!hoja) return;
+    descargaIniciada.current = true;
+    void (async () => {
+      try {
+        const { default: html2pdf } = await import("html2pdf.js");
+        const equipo = nombreEquipo(informe.tipo_equipo).replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
+        const cliente = (informe.cliente_nombre || "informe").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
+        await html2pdf()
+          .set({
+            margin: 0,
+            filename: `Informe-${formatNumero(informe.numero_registro)}-${equipo}-${cliente}.pdf`,
+            image: { type: "jpeg", quality: 0.95 },
+            html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
+            jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+          })
+          .from(hoja)
+          .save();
+      } catch (error) {
+        console.error("[pdf] No se pudo descargar el informe:", error);
+        window.alert("No se pudo generar el PDF. Intentá nuevamente.");
+      } finally {
+        onDescargaTerminada?.();
+      }
+    })();
+  }, [cargandoArchivos, downloadRootId, erroresArchivos.length, informe, modoDescarga, onDescargaTerminada]);
 
   if (fallo) return <main className="pdf-error"><p>No se pudo cargar el informe.</p><a href="#/">Volver al listado</a></main>;
   if (!informe || !valores || !archivos) return <PantallaCarga mensaje="Preparando informe para imprimir..." />;
