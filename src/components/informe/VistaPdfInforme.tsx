@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
@@ -300,7 +300,7 @@ export function VistaPdfInforme({ id }: { id: string }) {
     };
   }, [archivos, claveArchivos]);
 
-  async function imprimir() {
+  const imprimir = useCallback(async () => {
     if (cargandoArchivos || erroresArchivos.length > 0) return;
     const imagenes = Array.from(document.querySelectorAll<HTMLImageElement>("[data-pdf-image='true']"));
     await Promise.all(imagenes.map((imagen) => {
@@ -312,7 +312,20 @@ export function VistaPdfInforme({ id }: { id: string }) {
     }));
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
     window.print();
-  }
+  }, [cargandoArchivos, erroresArchivos.length]);
+
+  useEffect(() => {
+    if (!informe || cargandoArchivos || erroresArchivos.length > 0) return;
+    if (sessionStorage.getItem("verdu-descargar-pdf") !== id) return;
+    sessionStorage.removeItem("verdu-descargar-pdf");
+    const equipo = nombreEquipo(informe.tipo_equipo).replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
+    const cliente = (informe.cliente_nombre || "informe").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
+    const tituloAnterior = document.title;
+    document.title = `Informe-${formatNumero(informe.numero_registro)}-${equipo}-${cliente}`;
+    void imprimir().finally(() => {
+      window.setTimeout(() => { document.title = tituloAnterior; }, 1000);
+    });
+  }, [cargandoArchivos, erroresArchivos.length, id, imprimir, informe]);
 
   if (fallo) return <main className="pdf-error"><p>No se pudo cargar el informe.</p><a href="#/">Volver al listado</a></main>;
   if (!informe || !valores || !archivos) return <PantallaCarga mensaje="Preparando informe para imprimir..." />;

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { usePerfil } from "@/lib/usePerfil";
+import { limpiarSesionCache } from "@/lib/useSesion";
 import { Icono } from "@/components/Icono";
 import type { Session } from "@supabase/supabase-js";
 
@@ -44,6 +45,7 @@ export function MenuPerfil({ sesion }: { sesion: Session | null }) {
   async function cerrarSesion() {
     if (!window.confirm("¿Seguro que querés cerrar sesión?")) return;
     await supabase().auth.signOut();
+    limpiarSesionCache();
     router.replace("/login");
   }
 

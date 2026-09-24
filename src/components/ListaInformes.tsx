@@ -531,14 +531,27 @@ export function ListaInformes() {
                       <span className="text-[10px] text-on-surface-variant">—</span>
                      )}
                    </td>
-                   <td className="px-3 py-2 text-right">
-                     <a
-                       href={`#/informe/${encodeURIComponent(inf.id)}/pdf`}
-                       onClick={(e) => e.stopPropagation()}
-                       className="inline-flex items-center rounded border border-primary px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-primary hover:bg-primary hover:text-white active:scale-95 transition-all"
-                     >
-                       PDF
-                     </a>
+                    <td className="px-3 py-2 text-right">
+                      <div className="flex justify-end gap-1">
+                        <button
+                          type="button"
+                          className="inline-flex items-center rounded border border-primary px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-primary hover:bg-primary hover:text-white active:scale-95 transition-all"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            sessionStorage.setItem("verdu-descargar-pdf", inf.id);
+                            window.location.hash = `#/informe/${encodeURIComponent(inf.id)}/pdf`;
+                          }}
+                        >
+                          Descargar
+                        </button>
+                        <a
+                          href={`#/informe/${encodeURIComponent(inf.id)}/pdf`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center rounded border border-primary px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-primary hover:bg-primary hover:text-white active:scale-95 transition-all"
+                        >
+                          Vista PDF
+                        </a>
+                      </div>
                    </td>
                 </tr>
               );
@@ -608,8 +621,19 @@ export function ListaInformes() {
                   </button>
                 </div>
                ) : null}
-               <div className="mt-sm flex justify-end">
-                 <button
+                <div className="mt-sm flex justify-end gap-1">
+                  <button
+                    type="button"
+                    className="inline-flex items-center rounded border border-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-primary active:scale-95 transition-all"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      sessionStorage.setItem("verdu-descargar-pdf", inf.id);
+                      window.location.hash = `#/informe/${encodeURIComponent(inf.id)}/pdf`;
+                    }}
+                  >
+                    Descargar
+                  </button>
+                  <button
                     type="button"
                     className="inline-flex items-center rounded border border-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-primary active:scale-95 transition-all"
                     onClick={(e) => {
@@ -617,7 +641,7 @@ export function ListaInformes() {
                       window.location.hash = `#/informe/${encodeURIComponent(inf.id)}/pdf`;
                    }}
                  >
-                   Ver PDF
+                    Vista PDF
                  </button>
                </div>
               </div>

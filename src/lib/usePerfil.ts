@@ -4,6 +4,20 @@ import { useEffect, useState } from "react";
 import { useSesion } from "@/lib/useSesion";
 import { supabase } from "@/lib/supabase";
 
+function clavePerfil(uid: string): string {
+  return `air-power-perfil-${uid}`;
+}
+
+function leerPerfilCache(uid: string): PerfilActual {
+  if (typeof window === "undefined") return null;
+  try {
+    const cache = JSON.parse(window.localStorage.getItem(clavePerfil(uid)) ?? "null") as { uid?: string; perfil?: PerfilActual } | null;
+    return cache?.uid === uid ? cache.perfil ?? null : null;
+  } catch {
+    return null;
+  }
+}
+
 export type PerfilActual = {
   rol: "tecnico" | "admin";
   email: string | null;
@@ -24,7 +38,19 @@ export function usePerfil(): {
 
   useEffect(() => {
     if (!sesion?.user?.id) {
-      return;
+      const id = window.setTimeout(() => {
+        setPerfil(null);
+        setCargando(false);
+      }, 0);
+      return () => window.clearTimeout(id);
+    }
+    const uid = sesion.user.id;
+    const cache = leerPerfilCache(uid);
+    if (cache) {
+      queueMicrotask(() => {
+        setPerfil(cache);
+        setCargando(false);
+      });
     }
     let activo = true;
     (async () => {
@@ -36,18 +62,20 @@ export function usePerfil(): {
           .maybeSingle();
         if (!activo) return;
         if (data) {
-          setPerfil({
+          const nuevoPerfil = {
             rol: data.rol === "admin" ? "admin" : "tecnico",
             email: data.email || sesion.user.email || null,
             nombre: data.nombre ?? null,
             apellido: data.apellido ?? null,
-          });
-        } else {
-          setPerfil({ rol: "tecnico", email: sesion.user.email || null, nombre: null, apellido: null });
+          } satisfies NonNullable<PerfilActual>;
+          window.localStorage.setItem(clavePerfil(uid), JSON.stringify({ uid, perfil: nuevoPerfil }));
+          setPerfil(nuevoPerfil);
+        } else if (!cache) {
+          setPerfil(null);
         }
       } catch {
         if (!activo) return;
-        setPerfil({ rol: "tecnico", email: sesion.user.email || null, nombre: null, apellido: null });
+        if (cache) setPerfil(cache);
       } finally {
         if (activo) setCargando(false);
       }
