@@ -1,5 +1,5 @@
 [build]
-  command = "npm run build"
+  command = "env -u GEMINI_API_KEY -u OPENROUTER_API_KEY -u SUPABASE_SERVICE_ROLE_KEY npm run build"
 
 [build.environment]
   # Supabase anon keys are intentionally public and are required by the

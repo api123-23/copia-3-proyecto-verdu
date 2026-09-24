@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { serverEnv } from "@/lib/server-env";
 
 export async function GET(req: Request) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key = serverEnv("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !key) {
     return NextResponse.json({ error: "Configuración incompleta." }, { status: 500 });
   }

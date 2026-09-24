@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { serverEnv } from "@/lib/server-env";
 
 function sinClave(metodo: string): NextResponse {
   return NextResponse.json(
@@ -40,7 +41,7 @@ function crearAdmin(url: string, key: string) {
 
 export async function GET(req: Request) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key = serverEnv("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !key) return sinClave("GET");
   const admin = crearAdmin(url, key);
   if (!(await esAdminAutenticado(req, admin))) {
@@ -74,7 +75,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key = serverEnv("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !key) return sinClave("POST");
   const admin = crearAdmin(url, key);
   if (!(await esAdminAutenticado(req, admin))) {
@@ -125,7 +126,7 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key = serverEnv("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !key) return sinClave("DELETE");
   const admin = crearAdmin(url, key);
   if (!(await esAdminAutenticado(req, admin))) {
