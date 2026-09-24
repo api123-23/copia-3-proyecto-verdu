@@ -429,6 +429,10 @@ export function construirAnexa(
   if (tipo === "grupo_electrogeno") return null;
   const out: Record<string, unknown> = { informe_id };
   for (const campo of CAMPOS_POR_TIPO[tipo]) out[campo] = v[campo];
+  if (tipo === "compresor") {
+    out.perdida_aceite_unidad = out.perdida_aceite_motor;
+    delete out.perdida_aceite_motor;
+  }
   normalizarValores(tipo, out);
   return out;
 }

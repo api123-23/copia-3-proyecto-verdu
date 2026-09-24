@@ -137,10 +137,11 @@ function BloqueFirma({
   children?: React.ReactNode;
 }) {
   const [abierto, setAbierto] = useState(false);
-  const existente = useLiveQuery(async () => {
-    const filas = await db.archivos.where({ informe_id: informeId, tipo }).toArray();
-    return filas[0];
-  }, [informeId, tipo]);
+  const existentes = useLiveQuery(
+    () => db.archivos.where({ informe_id: informeId, tipo }).toArray(),
+    [informeId, tipo]
+  );
+  const existente = existentes?.slice().sort((a, b) => b.creado_en.localeCompare(a.creado_en))[0];
   const registro = useLiveQuery(
     () => (existente ? db.blobs.get(existente.id) : undefined),
     [existente]
@@ -176,9 +177,9 @@ function BloqueFirma({
   async function guardar(blob: Blob) {
     const id = crypto.randomUUID();
     await db.transaction("rw", [db.archivos, db.blobs], async () => {
-      if (existente) {
-        await db.archivos.delete(existente.id);
-        await db.blobs.delete(existente.id);
+      for (const anterior of existentes ?? []) {
+        await db.archivos.delete(anterior.id);
+        await db.blobs.delete(anterior.id);
       }
       await db.blobs.put({ id, blob });
       await db.archivos.put({

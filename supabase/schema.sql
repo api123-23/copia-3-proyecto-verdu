@@ -825,6 +825,21 @@ begin
     raise exception 'Un archivo no pertenece al informe sincronizado' using errcode = '22023';
   end if;
 
+  delete from public.informe_archivos a
+  where a.informe_id = (p_informe->>'id')::uuid
+    and a.tipo in ('firma_tecnico', 'firma_cliente')
+    and not exists (
+      select 1
+      from jsonb_to_recordset(coalesce(p_archivos, '[]'::jsonb)) as f(
+        id uuid,
+        informe_id uuid,
+        tipo text,
+        categoria text,
+        url text
+      )
+      where f.id = a.id
+    );
+
   if jsonb_array_length(coalesce(p_archivos, '[]'::jsonb)) > 0 then
     insert into public.informe_archivos (id, informe_id, tipo, categoria, url)
       select x.id, x.informe_id, x.tipo, x.categoria, x.url
