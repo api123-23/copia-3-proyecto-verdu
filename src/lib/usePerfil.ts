@@ -33,7 +33,7 @@ export function usePerfil(): {
 } {
   const { sesion } = useSesion(false);
   const [perfil, setPerfil] = useState<PerfilActual>(null);
-  const [cargando, setCargando] = useState<boolean>(() => !sesion?.user?.id);
+  const [cargando, setCargando] = useState(true);
   const [intento, setIntento] = useState(0);
 
   useEffect(() => {
