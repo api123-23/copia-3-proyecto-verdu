@@ -431,7 +431,7 @@ export function ListaInformes() {
   return (
     <div className="mx-4 md:mx-0 space-y-sm">
       {descargandoId ? (
-        <div id={`pdf-download-${descargandoId}`} className="pdf-download-host" aria-hidden="true">
+        <div id={`pdf-download-${descargandoId}`} className="pdf-download-host pdf-download-mode" aria-hidden="true">
           <VistaPdfInforme
             id={descargandoId}
             modoDescarga
