@@ -270,9 +270,27 @@
 .pdf-download-mode .pdf-hoja { box-sizing: border-box; width: 210mm; min-height: 297mm; padding: 12mm; background: white; }
 .pdf-download-mode .pdf-bloque { break-inside: avoid; page-break-inside: avoid; }
 .pdf-download-mode .pdf-fotos { break-before: page; page-break-before: always; break-inside: avoid; page-break-inside: avoid; }
-.pdf-download-mode .pdf-fotos-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; padding-top: 0.8rem; }
-.pdf-download-mode .pdf-foto { box-sizing: border-box; height: 78mm; padding: 0 2mm 5mm; break-inside: avoid; page-break-inside: avoid; margin: 0; }
-.pdf-download-mode .pdf-foto img { height: 68mm; }
+.pdf-download-mode .pdf-fotos-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; padding-top: 0.8rem; }
+.pdf-download-mode .pdf-foto {
+  box-sizing: border-box;
+  display: flex;
+  height: 100mm;
+  width: 100%;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0 1mm 3mm;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  margin: 0;
+}
+.pdf-download-mode .pdf-foto:nth-child(4n) { break-after: page; page-break-after: always; }
+.pdf-download-mode .pdf-foto img {
+  display: block;
+  width: 100%;
+  height: 86mm;
+  aspect-ratio: 4 / 3;
+  object-fit: contain;
+}
 
 .theme-toggle {
   display: inline-flex;

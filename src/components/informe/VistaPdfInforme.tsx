@@ -334,6 +334,14 @@ export function VistaPdfInforme({
     void (async () => {
       try {
         const { default: html2pdf } = await import("html2pdf.js");
+        const imagenes = Array.from(hoja.querySelectorAll<HTMLImageElement>("[data-pdf-image='true']"));
+        await Promise.all(imagenes.map((imagen) => {
+          if (imagen.complete && imagen.naturalWidth > 0) return Promise.resolve();
+          return new Promise<void>((resolve) => {
+            imagen.addEventListener("load", () => resolve(), { once: true });
+            imagen.addEventListener("error", () => resolve(), { once: true });
+          });
+        }));
         const equipo = nombreEquipo(informe.tipo_equipo).replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
         const cliente = (informe.cliente_nombre || "informe").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
         await html2pdf()
@@ -346,7 +354,8 @@ export function VistaPdfInforme({
             pagebreak: {
               mode: ["css", "legacy"],
               before: [".pdf-fotos"],
-              avoid: [".pdf-bloque", ".pdf-foto"],
+              after: [".pdf-foto:nth-child(4n)"],
+              avoid: [".pdf-bloque"],
             },
           })
           .from(hoja)
