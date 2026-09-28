@@ -44,9 +44,12 @@ export function MenuPerfil({ sesion }: { sesion: Session | null }) {
 
   async function cerrarSesion() {
     if (!window.confirm("¿Seguro que querés cerrar sesión?")) return;
-    await supabase().auth.signOut();
-    limpiarSesionCache();
-    router.replace("/login");
+    try {
+      await supabase().auth.signOut();
+    } finally {
+      limpiarSesionCache();
+      router.replace("/login");
+    }
   }
 
   function alternarTema() {

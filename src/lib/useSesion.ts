@@ -32,16 +32,13 @@ export function useSesion(requiere: boolean) {
       if (data.session) {
         window.localStorage.setItem(SESION_CACHE_KEY, JSON.stringify(data.session));
         setSesion(data.session);
-      } else if (!navigator.onLine) {
-        setSesion(leerSesionCache());
       } else {
-        limpiarSesionCache();
-        setSesion(null);
+        setSesion(leerSesionCache());
       }
       setCargando(false);
     }).catch(() => {
       if (!activo) return;
-      setSesion(!navigator.onLine ? leerSesionCache() : null);
+      setSesion(leerSesionCache());
       setCargando(false);
     });
     const { data: sub } = supabase().auth.onAuthStateChange((_evento, s) => {
@@ -49,9 +46,6 @@ export function useSesion(requiere: boolean) {
       if (s) {
         window.localStorage.setItem(SESION_CACHE_KEY, JSON.stringify(s));
         setSesion(s);
-      } else if (navigator.onLine) {
-        limpiarSesionCache();
-        setSesion(null);
       } else {
         setSesion(leerSesionCache());
       }
