@@ -19,7 +19,7 @@ function leerPerfilCache(uid: string): PerfilActual {
 }
 
 export type PerfilActual = {
-  rol: "tecnico" | "admin";
+  rol: "tecnico" | "admin" | "master";
   email: string | null;
   nombre: string | null;
   apellido: string | null;
@@ -29,6 +29,8 @@ export function usePerfil(): {
   perfil: PerfilActual;
   cargando: boolean;
   esAdmin: boolean;
+  esMaster: boolean;
+  esObservador: boolean;
   refrescar: () => void;
 } {
   const { sesion } = useSesion(false);
@@ -63,7 +65,7 @@ export function usePerfil(): {
         if (!activo) return;
         if (data) {
           const nuevoPerfil = {
-            rol: data.rol === "admin" ? "admin" : "tecnico",
+            rol: data.rol === "master" ? "master" : data.rol === "admin" ? "admin" : "tecnico",
             email: data.email || sesion.user.email || null,
             nombre: data.nombre ?? null,
             apellido: data.apellido ?? null,
@@ -89,6 +91,8 @@ export function usePerfil(): {
     perfil,
     cargando,
     esAdmin: perfil?.rol === "admin",
+    esMaster: perfil?.rol === "master",
+    esObservador: perfil?.rol === "admin",
     refrescar: () => setIntento((i) => i + 1),
   };
 }

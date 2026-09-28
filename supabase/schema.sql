@@ -1,6 +1,6 @@
 create table if not exists perfiles (
   id uuid primary key references auth.users (id) on delete cascade,
-  rol text not null default 'tecnico' check (rol in ('tecnico', 'admin')),
+  rol text not null default 'tecnico' check (rol in ('tecnico', 'admin', 'master')),
   email text,
   nombre text,
   apellido text,
@@ -12,6 +12,11 @@ create table if not exists perfiles (
 alter table perfiles add column if not exists email text;
 alter table perfiles add column if not exists nombre text;
 alter table perfiles add column if not exists apellido text;
+
+-- El rol administrador histórico pasa a master. El nuevo admin es observador.
+alter table perfiles drop constraint if exists perfiles_rol_check;
+update perfiles set rol = 'master' where rol = 'admin';
+alter table perfiles add constraint perfiles_rol_check check (rol in ('tecnico', 'admin', 'master'));
 
 -- (opcional) backfill email de perfiles existentes
 update perfiles p
@@ -590,7 +595,7 @@ stable
 security definer
 set search_path = public
 as $$
-  select public.rol_actual() = 'admin';
+  select public.rol_actual() = 'master';
 $$;
 
 create or replace function public.puede_editar_informe(informe uuid)
@@ -600,11 +605,12 @@ stable
 security definer
 set search_path = public
 as $$
-  select public.es_admin()
+    select public.es_admin()
     or exists (
       select 1
       from public.informes_generales g
       where g.id = informe
+        and public.rol_actual() = 'tecnico'
         and g.tecnico_id = auth.uid()
     );
 $$;
@@ -973,7 +979,7 @@ stable
 security definer
 set search_path = public
 as $$
-  select public.es_admin()
+  select public.rol_actual() in ('admin', 'master')
     or exists (
       select 1
       from public.informes_generales g
@@ -1023,10 +1029,10 @@ create policy clientes_delete_admin on clientes for delete to authenticated
 
 drop policy if exists informes_select on informes_generales;
 create policy informes_select on informes_generales for select to authenticated
-  using (public.es_admin() or (tecnico_id = auth.uid() and estado_firma <> 'firmado'));
+  using (public.rol_actual() in ('admin', 'master') or (tecnico_id = auth.uid() and estado_firma <> 'firmado'));
 drop policy if exists informes_insert on informes_generales;
 create policy informes_insert on informes_generales for insert to authenticated
-  with check (public.es_admin() or tecnico_id = auth.uid());
+  with check (public.es_admin() or (public.rol_actual() = 'tecnico' and tecnico_id = auth.uid()));
 drop policy if exists informes_update on informes_generales;
 create policy informes_update on informes_generales for update to authenticated
   using (public.puede_editar_informe(id))

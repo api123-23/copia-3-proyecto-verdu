@@ -29,7 +29,7 @@ async function esAdminAutenticado(
       .select("rol")
       .eq("id", userData.user.id)
       .maybeSingle();
-    return perfil?.rol === "admin";
+    return perfil?.rol === "master";
   } catch {
     return false;
   }
@@ -91,7 +91,7 @@ export async function POST(req: Request) {
 
   const email = String(body.email ?? "").trim().toLowerCase();
   const password = String(body.password ?? "");
-  const rol = body.rol === "admin" ? "admin" : "tecnico";
+  const rol = body.rol === "master" ? "master" : body.rol === "admin" ? "admin" : "tecnico";
   const nombre = String(body.nombre ?? "").trim() || null;
   const apellido = String(body.apellido ?? "").trim() || null;
 

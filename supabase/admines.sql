@@ -1,5 +1,5 @@
 update public.perfiles
-set rol = 'admin'
+set rol = 'master'
 where id in (
   select id
   from auth.users

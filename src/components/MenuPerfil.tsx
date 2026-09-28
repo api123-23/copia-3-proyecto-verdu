@@ -11,7 +11,7 @@ import type { Session } from "@supabase/supabase-js";
 type Modo = null | "clave" | "datos";
 
 export function MenuPerfil({ sesion }: { sesion: Session | null }) {
-  const { perfil, esAdmin, refrescar } = usePerfil();
+  const { perfil, esMaster, refrescar } = usePerfil();
   const [abierto, setAbierto] = useState(false);
   const [modo, setModo] = useState<Modo>(null);
   const [modoOscuro, setModoOscuro] = useState(() => {
@@ -87,7 +87,7 @@ export function MenuPerfil({ sesion }: { sesion: Session | null }) {
             </p>
             <p className="text-[12px] text-on-surface-variant break-all">{email}</p>
             <p className="text-[12px] text-on-surface-variant">
-              Rol: {esAdmin ? "Administrador" : "Técnico"}
+               Rol: {perfil?.rol === "master" ? "Master" : perfil?.rol === "admin" ? "Administrador" : "Técnico"}
             </p>
           </div>
 
@@ -112,7 +112,7 @@ export function MenuPerfil({ sesion }: { sesion: Session | null }) {
                 >
                   Cambiar contraseña
                 </button>
-                {esAdmin ? (
+                {esMaster ? (
                   <>
                     <a
                       href="#/clientes"

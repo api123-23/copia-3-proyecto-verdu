@@ -16,14 +16,14 @@ type Usuario = {
 };
 
 export function PanelAdmin() {
-  const { cargando, esAdmin } = usePerfil();
+  const { cargando, esMaster } = usePerfil();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [cargandoLista, setCargandoLista] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nombreNuevo, setNombreNuevo] = useState("");
   const [apellidoNuevo, setApellidoNuevo] = useState("");
-  const [rol, setRol] = useState<"tecnico" | "admin">("tecnico");
+  const [rol, setRol] = useState<"tecnico" | "admin" | "master">("tecnico");
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [creando, setCreando] = useState(false);
@@ -57,15 +57,15 @@ export function PanelAdmin() {
   }
 
   useEffect(() => {
-    if (!cargando && esAdmin) {
+    if (!cargando && esMaster) {
       const t = window.setTimeout(() => void cargar(), 0);
       return () => window.clearTimeout(t);
     }
-  }, [cargando, esAdmin]);
+  }, [cargando, esMaster]);
 
   if (cargando) return <Cargando />;
 
-  if (!esAdmin) {
+  if (!esMaster) {
     return (
       <div className="px-margin py-xl text-center">
         <p className="text-body-lg text-on-surface-variant">
@@ -205,7 +205,7 @@ export function PanelAdmin() {
           </div>
           <div className="flex items-center gap-sm">
             <span className="text-[13px] text-on-surface-variant">Rol:</span>
-            <div className="dual-option w-48">
+            <div className="dual-option w-64">
               <button
                 type="button"
                 className={rol === "tecnico" ? "selected-ok" : ""}
@@ -219,6 +219,13 @@ export function PanelAdmin() {
                 onClick={() => setRol("admin")}
               >
                 Admin
+              </button>
+              <button
+                type="button"
+                className={rol === "master" ? "selected-ok" : ""}
+                onClick={() => setRol("master")}
+              >
+                Master
               </button>
             </div>
           </div>
@@ -274,7 +281,7 @@ export function PanelAdmin() {
                   </p>
                   <p className="text-[11px] text-on-surface-variant truncate">{u.email}</p>
                   <p className="text-[11px] text-on-surface-variant">
-                    {u.rol === "admin" ? "Administrador" : "Técnico"} ·{" "}
+                    {u.rol === "master" ? "Master" : u.rol === "admin" ? "Administrador" : "Técnico"} ·{" "}
                     {new Date(u.creado_en).toLocaleDateString("es-AR")}
                   </p>
                 </div>

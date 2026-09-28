@@ -106,7 +106,7 @@ function Barras({ datos, etiqueta }: { datos: Barra[]; etiqueta: (dato: Barra) =
 }
 
 export function Estadisticas() {
-  const { esAdmin, cargando: cargandoPerfil } = usePerfil();
+  const { esMaster, cargando: cargandoPerfil } = usePerfil();
   const [mes, setMes] = useState(() => {
     const ahora = new Date();
     return `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, "0")}`;
@@ -129,7 +129,7 @@ export function Estadisticas() {
 
   useEffect(() => {
     if (cargandoPerfil) return;
-    if (!esAdmin) {
+    if (!esMaster) {
       navegar("#/");
       return;
     }
@@ -155,10 +155,10 @@ export function Estadisticas() {
       setCargando(false);
     })();
     return () => { activo = false; };
-  }, [esAdmin, cargandoPerfil, mes]);
+  }, [esMaster, cargandoPerfil, mes]);
 
   if (cargandoPerfil || (!datos && cargando)) return <PantallaCarga mensaje="Cargando estadísticas..." />;
-  if (!esAdmin) return null;
+  if (!esMaster) return null;
 
   return (
     <div className="min-h-screen bg-background pb-xl" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 3rem)", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 3rem)" }}>

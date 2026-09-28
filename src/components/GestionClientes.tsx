@@ -27,7 +27,7 @@ function useEsPc() {
 }
 
 export function GestionClientes() {
-  const { cargando, esAdmin } = usePerfil();
+  const { cargando, esMaster } = usePerfil();
   const esPc = useEsPc();
 
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -79,7 +79,7 @@ export function GestionClientes() {
     );
   }
 
-  if (!esAdmin) {
+  if (!esMaster) {
     return (
       <div className="px-margin py-xl text-center">
         <p className="text-body-lg text-on-surface-variant">

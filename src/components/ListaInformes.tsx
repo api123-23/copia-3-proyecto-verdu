@@ -36,7 +36,7 @@ function formatoFecha(iso: string): string {
 
 export function ListaInformes() {
   const { cargando, sesion } = useSesion(true);
-  const { esAdmin } = usePerfil();
+  const { esMaster, esObservador } = usePerfil();
   const locales = useLiveQuery(
     () => db.informes.where("estado_sync").notEqual("sincronizado").toArray(),
     []
@@ -230,7 +230,7 @@ export function ListaInformes() {
     return <PantallaCarga mensaje="Cargando informes..." />;
 
   const pendientesLocales = locales.filter((l) =>
-    l.estado_sync !== "sincronizado" && (esAdmin || l.estado_firma !== "firmado")
+    l.estado_sync !== "sincronizado" && (esMaster || esObservador || l.estado_firma !== "firmado")
   );
 
   const informesMap = new Map<string, InformeGeneral>();
@@ -518,7 +518,7 @@ export function ListaInformes() {
                   key={inf.id}
                     className={`${resaltadoId === inf.id ? "animate-[reportHighlight_2.8s_ease-out]" : "hover:bg-surface-container-low active:bg-surface-container-high"} list-item-in transition-all duration-300 cursor-pointer`}
                   style={{ "--item-delay": `${Math.min(index, 8) * 55}ms` } as React.CSSProperties}
-                  onClick={() => { window.location.hash = `#/informe/${encodeURIComponent(inf.id)}`; }}
+                  onClick={() => { window.location.hash = esObservador ? `#/informe/${encodeURIComponent(inf.id)}/pdf` : `#/informe/${encodeURIComponent(inf.id)}`; }}
                 >
                   <td className="px-3 py-2 text-primary font-bold whitespace-nowrap">
                     {formatNumero(inf.numero_registro)}
@@ -583,11 +583,11 @@ export function ListaInformes() {
                key={inf.id}
                role="link"
                tabIndex={0}
-               onClick={() => { window.location.hash = `#/informe/${encodeURIComponent(inf.id)}`; }}
+               onClick={() => { window.location.hash = esObservador ? `#/informe/${encodeURIComponent(inf.id)}/pdf` : `#/informe/${encodeURIComponent(inf.id)}`; }}
                onKeyDown={(e) => {
                  if (e.key === "Enter" || e.key === " ") {
                    e.preventDefault();
-                   window.location.hash = `#/informe/${encodeURIComponent(inf.id)}`;
+                    window.location.hash = esObservador ? `#/informe/${encodeURIComponent(inf.id)}/pdf` : `#/informe/${encodeURIComponent(inf.id)}`;
                  }
                }}
                   className={`block bg-white border border-outline-variant rounded-lg p-md shadow-sm hover:-translate-y-1 hover:bg-surface-container-low hover:shadow-md active:scale-[0.99] transition-all duration-300 list-item-in ${inf.estado_sync === "error" ? "report-card-error" : inf.estado_sync !== "sincronizado" ? "report-card-pending" : ""} ${resaltadoId === inf.id ? "animate-[reportHighlight_2.8s_ease-out]" : ""}`}
