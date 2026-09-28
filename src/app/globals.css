@@ -283,7 +283,6 @@
   page-break-inside: avoid;
   margin: 0;
 }
-.pdf-download-mode .pdf-foto:nth-child(4n) { break-after: page; page-break-after: always; }
 .pdf-download-mode .pdf-foto img {
   display: block;
   width: 100%;

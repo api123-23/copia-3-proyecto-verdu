@@ -195,7 +195,7 @@ function Firmas({ informe, archivos, urls }: { informe: InformeGeneral; archivos
   );
 }
 
-function Fotos({ archivos, urls }: { archivos: ArchivoLocal[]; urls: Record<string, string | null> }) {
+function Fotos({ archivos, urls, modoDescarga = false }: { archivos: ArchivoLocal[]; urls: Record<string, string | null>; modoDescarga?: boolean }) {
   const fotos = archivos
     .filter((x) => x.tipo === "foto")
     .sort((a, b) => {
@@ -206,11 +206,12 @@ function Fotos({ archivos, urls }: { archivos: ArchivoLocal[]; urls: Record<stri
     });
   if (fotos.length === 0) return null;
   const paginas: ArchivoLocal[][] = [];
-  for (let i = 0; i < fotos.length; i += 6) paginas.push(fotos.slice(i, i + 6));
+  const fotosPorPagina = modoDescarga ? 4 : 6;
+  for (let i = 0; i < fotos.length; i += fotosPorPagina) paginas.push(fotos.slice(i, i + fotosPorPagina));
   return (
     <>
       {paginas.map((pagina, paginaIndex) => (
-        <section key={paginaIndex} className={`pdf-fotos ${paginaIndex === 0 ? "pdf-fotos-primera" : ""}`}>
+         <section key={paginaIndex} className={`pdf-fotos ${paginaIndex === 0 ? "pdf-fotos-primera" : ""}`}>
           <h2>Registro fotográfico{paginaIndex > 0 ? " (continuación)" : ""}</h2>
           <div className="pdf-fotos-grid">
             {pagina.map((foto, index) => (
@@ -363,7 +364,6 @@ export function VistaPdfInforme({
             pagebreak: {
               mode: ["css", "legacy"],
               before: [".pdf-fotos"],
-              after: [".pdf-foto:nth-child(4n)"],
               avoid: [".pdf-bloque"],
             },
           })
@@ -409,7 +409,7 @@ export function VistaPdfInforme({
           <Cierre informe={informe} />
           <Firmas informe={informe} archivos={archivos} urls={archivosPdf} />
         </div>
-        <Fotos archivos={archivos} urls={archivosPdf} />
+         <Fotos archivos={archivos} urls={archivosPdf} modoDescarga={modoDescarga} />
       </main>
     </div>
   );
