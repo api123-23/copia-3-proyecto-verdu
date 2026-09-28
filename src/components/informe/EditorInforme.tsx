@@ -334,7 +334,7 @@ export function EditorInforme({ id }: { id: string }) {
     setGenerandoInforme(true);
     try {
       const texto = await gemini(
-        `Sos un redactor técnico de informes de mantenimiento. Reescribí el texto de abajo de forma más formal y prolija, SIN cambiar su significado ni agregar información. Reglas estrictas: NO inventes trabajos, procesos, pasos ni detalles que no estén escritos; NO menciones procedimientos, herramientas ni tareas que no figuren en el texto original; NO agregues ni quites datos (clientes, equipos, horas, observaciones); mantené el mismo contenido, solo mejorá la redacción. Escribí en español, en primera persona, en un solo párrafo, sin títulos ni markdown:\n\n${fuente}`
+          `Reformulá el texto proporcionado con una redacción más formal, clara y prolija. Tu única función es formalizar lo que ya está escrito. No actúes como técnico ni completes el informe. No inventes, supongas, interpretes ni agregues trabajos, procesos, pasos, herramientas, diagnósticos, causas, resultados o detalles. No cambies, elimines ni agregues información. Conservá exactamente los datos y el significado del texto original. Si el texto es breve o incompleto, mantenelo breve e incompleto; no lo completes. Respondé en español, en un solo párrafo, sin títulos, introducciones, conclusiones ni markdown:\n\n${fuente}`
       );
       patchInforme({
         observaciones: texto.trim(),
@@ -362,7 +362,7 @@ export function EditorInforme({ id }: { id: string }) {
     setRedactandoIA(true);
     try {
       const texto = await gemini(
-        `Identificá únicamente los repuestos, elementos, trabajos o servicios que deben cotizarse a partir del texto proporcionado. Respondé solo con una lista simple y objetiva, usando un elemento por línea con formato de viñeta. No agregues introducciones, explicaciones, conclusiones, recomendaciones, precios ni texto de relleno. No uses frases como "se recomienda", "sería necesario" o "a continuación". Conservá únicamente la información necesaria para identificar cada elemento. No inventes elementos ni incluyas nada que no esté indicado o que no pueda deducirse claramente del texto. Si no hay ningún elemento concreto para cotizar, respondé únicamente: - Sin elementos para cotizar.\n\nTexto proporcionado:\n${fuente}`
+          `Ordená exclusivamente los elementos, repuestos, trabajos o servicios que aparecen explícitamente en el texto y que deben cotizarse. Tu única función es ordenar la información existente, no actuar como cotizador ni completar datos. No inventes, supongas, interpretes ni asumas cantidades, modelos, marcas, precios, medidas, trabajos o servicios. No agregues elementos que no estén escritos de forma clara. Respondé únicamente con una lista simple y objetiva, un elemento por línea con formato de viñeta. No incluyas introducciones, explicaciones, conclusiones, recomendaciones, precios ni texto de relleno. Si el texto no contiene ningún elemento concreto para cotizar, respondé únicamente: - Sin elementos para cotizar.\n\nTexto proporcionado:\n${fuente}`
       );
       patchInforme({
         cotizacion_notas: texto.trim(),
