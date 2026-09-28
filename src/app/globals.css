@@ -387,7 +387,7 @@ html.dark .signature-placeholder { background: #243747 !important; border-color:
 html.dark .signature-placeholder:hover { background: #31516a !important; color: #ffffff !important; }
 html.dark .signature-pad-surface { border-color: #71899d; background: #162430; }
 html.dark .signature-canvas { filter: invert(1); }
-html.dark .signature-image { filter: invert(1); }
+html.dark .signature-image { background: white !important; filter: invert(1); }
 
 .report-card-error { border-color: #e89999 !important; box-shadow: inset 4px 0 0 #c43d3d; }
 .report-card-pending { border-color: #e8c878 !important; box-shadow: inset 4px 0 0 #d19a21; }
