@@ -28,6 +28,8 @@ const CATEGORIAS: Record<string, string> = {
   horometro: "Horómetro",
 };
 
+const ORDEN_FOTOS = ["inicial", "desarrollo", "repuestos", "falla", "horometro", "final"];
+
 function texto(valor: unknown): string {
   if (valor === null || valor === undefined || valor === "") return "—";
   if (valor === true) return "Sí";
@@ -194,7 +196,14 @@ function Firmas({ informe, archivos, urls }: { informe: InformeGeneral; archivos
 }
 
 function Fotos({ archivos, urls }: { archivos: ArchivoLocal[]; urls: Record<string, string | null> }) {
-  const fotos = archivos.filter((x) => x.tipo === "foto");
+  const fotos = archivos
+    .filter((x) => x.tipo === "foto")
+    .sort((a, b) => {
+      const categoriaA = ORDEN_FOTOS.indexOf(a.categoria ?? "inicial");
+      const categoriaB = ORDEN_FOTOS.indexOf(b.categoria ?? "inicial");
+      return (categoriaA === -1 ? ORDEN_FOTOS.length : categoriaA) - (categoriaB === -1 ? ORDEN_FOTOS.length : categoriaB)
+        || a.creado_en.localeCompare(b.creado_en);
+    });
   if (fotos.length === 0) return null;
   const paginas: ArchivoLocal[][] = [];
   for (let i = 0; i < fotos.length; i += 6) paginas.push(fotos.slice(i, i + 6));

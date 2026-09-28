@@ -1,4 +1,4 @@
-const CACHE = "verdu-shell-L4WXr4qOHNjzY64KYe4PZ";
+const CACHE = "verdu-shell-yZpZFF8WwG1n4iSxHy-v9";
 const PRECACHE = [
   "/",
   "/login",
@@ -6,9 +6,6 @@ const PRECACHE = [
   "/icons/icon-180.png",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
-  "/_next/static/L4WXr4qOHNjzY64KYe4PZ/_buildManifest.js",
-  "/_next/static/L4WXr4qOHNjzY64KYe4PZ/_clientMiddlewareManifest.js",
-  "/_next/static/L4WXr4qOHNjzY64KYe4PZ/_ssgManifest.js",
   "/_next/static/chunks/02fh7_m5mrih8.js",
   "/_next/static/chunks/07nldpx3i6mc_.js",
   "/_next/static/chunks/0cckkhk67vicz.js",
@@ -19,9 +16,9 @@ const PRECACHE = [
   "/_next/static/chunks/1kq508tkz284e.js",
   "/_next/static/chunks/1vmuvg71dkxre.js",
   "/_next/static/chunks/2-cytfxc_rgaj.js",
-  "/_next/static/chunks/2_dqkgp157a_2.js",
   "/_next/static/chunks/2i51e627rllld.js",
   "/_next/static/chunks/349vn9ffgj4ot.js",
+  "/_next/static/chunks/35mw3wekrs7yj.js",
   "/_next/static/chunks/3cmkghsm4ffyf.js",
   "/_next/static/chunks/3fntmmi971322.js",
   "/_next/static/chunks/3rk59zss97drv.css",
@@ -39,7 +36,10 @@ const PRECACHE = [
   "/_next/static/media/9c72aa0f40e4eef8-s.1y4-pdgsjb-pw.woff2",
   "/_next/static/media/ad66f9afd8947f86-s.3lvt2whj97whp.woff2",
   "/_next/static/media/e1750518007a189a-s.p.29e6ydd6osd72.woff2",
-  "/_next/static/media/favicon.2vob68tjqpejf.ico"
+  "/_next/static/media/favicon.2vob68tjqpejf.ico",
+  "/_next/static/yZpZFF8WwG1n4iSxHy-v9/_buildManifest.js",
+  "/_next/static/yZpZFF8WwG1n4iSxHy-v9/_clientMiddlewareManifest.js",
+  "/_next/static/yZpZFF8WwG1n4iSxHy-v9/_ssgManifest.js"
 ];
 
 self.addEventListener("install", (event) => {

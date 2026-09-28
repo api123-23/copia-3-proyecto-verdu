@@ -14,10 +14,12 @@ const CATEGORIAS: { value: CategoriaFoto; label: string }[] = [
   { value: "inicial", label: "Estado Inicial" },
   { value: "desarrollo", label: "Desarrollo" },
   { value: "repuestos", label: "Repuestos" },
-  { value: "final", label: "Estado Final" },
   { value: "falla", label: "Falla" },
   { value: "horometro", label: "Horómetro" },
+  { value: "final", label: "Estado Final" },
 ];
+
+const ORDEN_FOTOS: CategoriaFoto[] = ["inicial", "desarrollo", "repuestos", "falla", "horometro", "final"];
 
 function generarId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -161,6 +163,12 @@ export default function SeccionFotos({
     () => db.archivos.where({ informe_id: informeId, tipo: "foto" }).toArray(),
     [informeId]
   );
+  const fotosOrdenadas = fotos?.slice().sort((a, b) => {
+    const categoriaA = ORDEN_FOTOS.indexOf(a.categoria ?? "inicial");
+    const categoriaB = ORDEN_FOTOS.indexOf(b.categoria ?? "inicial");
+    return (categoriaA === -1 ? ORDEN_FOTOS.length : categoriaA) - (categoriaB === -1 ? ORDEN_FOTOS.length : categoriaB)
+      || a.creado_en.localeCompare(b.creado_en);
+  });
 
   async function onFile(file: File) {
     setSubiendo(true);
@@ -259,9 +267,9 @@ export default function SeccionFotos({
               if (f) void onFile(f);
             }}
           />
-          {fotos && fotos.length > 0 ? (
+          {fotosOrdenadas && fotosOrdenadas.length > 0 ? (
             <div className="flex flex-wrap gap-sm justify-center">
-              {fotos.map((f) => (
+              {fotosOrdenadas.map((f) => (
                 <FotoItem key={f.id} archivo={f} cerrado={cerrado} />
               ))}
             </div>
