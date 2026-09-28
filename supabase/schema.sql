@@ -206,7 +206,7 @@ create index if not exists idx_informes_fecha on informes_generales (fecha_hora)
 create index if not exists idx_informes_cliente on informes_generales (cliente_id);
 create index if not exists idx_archivos_informe on informe_archivos (informe_id);
 
--- INTEGRIDAD: garantiza ON DELETE CASCADE en las tablas dependientes.
+-- INTEGRIDAD: garantiza ON DELETE CASCADE en las tablas dependientes..
 -- create table if not exists NO agrega/repara la FK en tablas ya creadas por
 -- versiones viejas del esquema (borrar informes_generales dejaba huérfanos).
 -- Limpia huérfanos, dropea cualquier FK a informes_generales y la re-crea con cascade.
