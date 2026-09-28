@@ -84,11 +84,13 @@ function ModalFirma({
         <h3 className="text-title-md font-title-md font-bold text-primary uppercase tracking-wider">
           {titulo}
         </h3>
-        <canvas
-          ref={canvasRef}
-          className="signature-canvas w-full h-64 bg-white rounded-lg border border-outline-variant"
-          style={{ touchAction: "none" }}
-        />
+        <div className="signature-pad-surface">
+          <canvas
+            ref={canvasRef}
+            className="signature-canvas"
+            style={{ touchAction: "none" }}
+          />
+        </div>
         <div className="flex items-center justify-between gap-sm">
           <button
             type="button"

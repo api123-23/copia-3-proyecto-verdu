@@ -266,6 +266,8 @@
 .modal-backdrop-in { animation: modalIn 300ms ease-out both; }
 .modal-panel-in { animation: modalPanelIn 420ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 .photo-thumb-in { animation: listItemIn 450ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.signature-pad-surface { width: 100%; height: 16rem; overflow: hidden; border: 1px solid #c2c6d3; border-radius: 0.5rem; background: white; }
+.signature-canvas { display: block; width: 100%; height: 100%; background: transparent; }
 .pdf-download-host { position: fixed; top: 0; left: -10000px; z-index: -1; width: 210mm; background: white; }
 .pdf-download-mode .pdf-hoja { box-sizing: border-box; width: 210mm; min-height: 297mm; padding: 12mm; background: white; }
 .pdf-download-mode .pdf-bloque { break-inside: avoid; page-break-inside: avoid; }
@@ -383,7 +385,8 @@ html.dark .modal-panel-in { background-color: #17232e; }
 html.dark .action-light-button { color: #071522 !important; }
 html.dark .signature-placeholder { background: #243747 !important; border-color: #71899d !important; color: #e3edf5 !important; opacity: 1 !important; }
 html.dark .signature-placeholder:hover { background: #31516a !important; color: #ffffff !important; }
-html.dark .signature-canvas { background: white !important; border-color: #71899d !important; filter: invert(1); }
+html.dark .signature-pad-surface { border-color: #71899d; background: #162430; }
+html.dark .signature-canvas { filter: invert(1); }
 html.dark .signature-image { filter: invert(1); }
 
 .report-card-error { border-color: #e89999 !important; box-shadow: inset 4px 0 0 #c43d3d; }
