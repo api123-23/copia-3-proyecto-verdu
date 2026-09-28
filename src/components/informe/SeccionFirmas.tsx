@@ -45,7 +45,9 @@ function ModalFirma({
     const pad = new SignaturePad(canvas, {
       minWidth: 1.2,
       maxWidth: 2.6,
-           penColor: document.documentElement.classList.contains("dark") ? "#ffffff" : "#191c1e",
+           // La firma se almacena siempre en negro para que PDF e impresión
+           // sean consistentes aunque se haya dibujado con tema oscuro.
+           penColor: "#191c1e",
     });
     pad.addEventListener("beginStroke", () => setPuedeConfirmar(true));
     pad.addEventListener("endStroke", () => setPuedeConfirmar(!pad.isEmpty()));
