@@ -114,8 +114,10 @@ export function ListaInformes() {
           try {
             const { data } = await supabase()
               .from("perfiles")
-              .select("id, nombre, apellido, rol");
-            for (const t of (data ?? []) as Tecnico[]) porId.set(t.id, t);
+              .select("id, email, nombre, apellido, rol");
+            for (const t of (data ?? []) as (Tecnico & { email?: string | null })[]) {
+              porId.set(t.id, { ...t, nombre: t.nombre ?? t.email ?? null });
+            }
           } catch {
             /* ignorar */
           }

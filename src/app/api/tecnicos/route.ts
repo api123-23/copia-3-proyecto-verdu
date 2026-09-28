@@ -25,10 +25,10 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   }
 
-  const { data } = await admin.from("perfiles").select("id, nombre, apellido");
+  const { data } = await admin.from("perfiles").select("id, email, nombre, apellido");
   const tecnicos = (data ?? []).map((p) => ({
     id: p.id,
-    nombre: p.nombre ?? null,
+    nombre: p.nombre ?? p.email ?? null,
     apellido: p.apellido ?? null,
   }));
 
