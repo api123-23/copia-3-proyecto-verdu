@@ -218,7 +218,7 @@ function BloqueFirma({
           <img
             src={url}
             alt={titulo}
-            className="h-20 flex-1 object-contain bg-white rounded border border-outline-variant"
+            className="signature-image h-20 flex-1 object-contain bg-white rounded border border-outline-variant"
           />
           <button
             type="button"
