@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { supabase } from "./supabase";
 import { CAMPOS_GE, cargarAnexa, cargarAnexaGE, construirAnexa, normalizarValores } from "./informes";
+import { estadoSesionActual, pedirVerificacionSesion } from "./reautenticacion";
 import type { ArchivoLocal, InformeGeneral, TipoEquipo, ValoresBase } from "./types";
 
 const BUCKET = "informe-archivos";
@@ -121,6 +122,9 @@ export function intentarSync(): Promise<boolean> {
   if (syncEnCurso) return syncEnCurso;
   syncEnCurso = (async () => {
     if (corriendo) return true;
+    // Con la sesión vencida no se intenta subir: los informes esperan al
+    // re-ingreso en lugar de quedar marcados con error.
+    if (estadoSesionActual() === "vencida") return false;
     if (!(await conSesion())) return false;
     if (!(await hayConexion())) {
       programarReintento();
@@ -338,6 +342,9 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
   } catch (e) {
     const mensaje = mensajeDe(e);
     console.error(`Sync ${informe.id}:`, mensaje);
+    if (/jwt|token|not authorized|unauthorized|401|permission denied|row-level security/i.test(mensaje)) {
+      pedirVerificacionSesion();
+    }
     if (rutasIntento.length > 0) {
       await supabase().storage.from(BUCKET).remove(rutasIntento).catch(() => undefined);
     }

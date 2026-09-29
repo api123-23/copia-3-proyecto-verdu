@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { usePerfil } from "@/lib/usePerfil";
 import { limpiarSesionCache } from "@/lib/useSesion";
+import { contarPendientes } from "@/lib/reautenticacion";
 import { Icono } from "@/components/Icono";
 import type { Session } from "@supabase/supabase-js";
 
@@ -43,7 +44,11 @@ export function MenuPerfil({ sesion }: { sesion: Session | null }) {
     : null;
 
   async function cerrarSesion() {
-    if (!window.confirm("¿Seguro que querés cerrar sesión?")) return;
+    const pendientes = await contarPendientes();
+    const aviso = pendientes > 0
+      ? `Tenés ${pendientes} informe${pendientes === 1 ? "" : "s"} sin subir. Van a quedar guardados en este celular y se suben cuando vuelvas a ingresar con esta cuenta.\n\n¿Cerrar sesión igual?`
+      : "¿Seguro que querés cerrar sesión?";
+    if (!window.confirm(aviso)) return;
     try {
       await supabase().auth.signOut();
     } finally {

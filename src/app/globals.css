@@ -270,7 +270,10 @@
 .signature-pad-surface { width: 100%; height: 16rem; overflow: hidden; border: 1px solid #c2c6d3; border-radius: 0.5rem; background: white; }
 .signature-canvas { display: block; width: 100%; height: 100%; background: transparent; }
 .pdf-download-host { position: fixed; top: 0; left: -10000px; z-index: -1; width: 210mm; background: white; }
-.pdf-download-mode .pdf-hoja { box-sizing: border-box; width: 210mm; min-height: 297mm; padding: 12mm; background: white; }
+.pdf-download-mode .pdf-hoja { box-sizing: border-box; width: 210mm; min-height: 0; padding: 0; background: white; box-shadow: none; }
+/* Cada hoja del PDF se dibuja por separado con su margen de 12 mm. */
+.pdf-download-mode .pdf-contenido-principal,
+.pdf-download-mode .pdf-fotos { box-sizing: border-box; width: 210mm; min-height: 297mm; padding: 12mm; margin: 0; background: white; }
 .pdf-download-mode .pdf-bloque { break-inside: avoid; page-break-inside: avoid; }
 .pdf-download-mode .pdf-fotos { break-before: page; page-break-before: always; break-inside: avoid; page-break-inside: avoid; }
 .pdf-download-mode .pdf-fotos-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; padding-top: 0.8rem; }
@@ -293,6 +296,9 @@
   aspect-ratio: 4 / 3;
   object-fit: contain;
 }
+/* Las firmas usan el mismo componente que las fotos, pero conservan su tamaño. */
+.pdf-download-mode .pdf-firmas .pdf-foto { height: auto; padding: 0; display: block; }
+.pdf-download-mode .pdf-firmas .pdf-foto img { height: 3rem; aspect-ratio: auto; }
 
 .theme-toggle {
   display: inline-flex;
@@ -807,27 +813,28 @@ html.dark .signature-image { background: white !important; filter: invert(1); }
 }
 
 @media (max-width: 700px) {
-  .pdf-shell {
+  /* Solo la vista en pantalla: la descarga siempre se arma con formato A4. */
+  .pdf-shell.pdf-shell-pantalla {
     min-height: 100dvh;
     padding: calc(env(safe-area-inset-top, 0px) + 0.75rem)
       max(1rem, env(safe-area-inset-right, 0px))
       calc(env(safe-area-inset-bottom, 0px) + 1rem)
       max(1rem, env(safe-area-inset-left, 0px));
   }
-  .pdf-acciones { padding: 0.75rem; margin: 0; }
-  .pdf-hoja { min-height: 0; padding: 1rem; box-shadow: none; }
-  .pdf-cabecera { grid-template-columns: 1fr 1fr; }
-  .pdf-titulo { grid-column: 1 / -1; grid-row: 1; }
-  .pdf-marca { grid-row: 2; }
-  .pdf-fecha { grid-row: 2; }
-  .pdf-datos-grid,
-  .pdf-tabla-valores,
-  .pdf-dos-columnas,
-  .pdf-textos,
-  .pdf-ge-grid,
-  .pdf-fotos-grid { grid-template-columns: 1fr; }
-  .pdf-firmas-grid { grid-template-columns: 1fr; gap: 1.25rem; }
-  .pdf-firmas-grid > div { min-height: 4rem; }
+  .pdf-shell-pantalla .pdf-acciones { padding: 0.75rem; margin: 0; }
+  .pdf-shell-pantalla .pdf-hoja { min-height: 0; padding: 1rem; box-shadow: none; }
+  .pdf-shell-pantalla .pdf-cabecera { grid-template-columns: 1fr 1fr; }
+  .pdf-shell-pantalla .pdf-titulo { grid-column: 1 / -1; grid-row: 1; }
+  .pdf-shell-pantalla .pdf-marca { grid-row: 2; }
+  .pdf-shell-pantalla .pdf-fecha { grid-row: 2; }
+  .pdf-shell-pantalla .pdf-datos-grid,
+  .pdf-shell-pantalla .pdf-tabla-valores,
+  .pdf-shell-pantalla .pdf-dos-columnas,
+  .pdf-shell-pantalla .pdf-textos,
+  .pdf-shell-pantalla .pdf-ge-grid,
+  .pdf-shell-pantalla .pdf-fotos-grid { grid-template-columns: 1fr; }
+  .pdf-shell-pantalla .pdf-firmas-grid { grid-template-columns: 1fr; gap: 1.25rem; }
+  .pdf-shell-pantalla .pdf-firmas-grid > div { min-height: 4rem; }
 }
 
 @media print {
@@ -980,3 +987,10 @@ html.dark .chart-point-halo { fill: #1b3a57; stroke: #9ecbff; }
 html.dark .chart-bar { background: linear-gradient(90deg, #4f8fd1, #9ecbff); }
 html.dark .chart-kpi .text-primary { color: #9ecbff !important; }
 html.dark .bg-surface-container-low\/30 { background-color: rgb(27 42 55 / 45%) !important; }
+
+/* Re-ingreso de contraseña */
+@keyframes reloginSheetIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes reloginPillIn { from { opacity: 0; transform: translate(-50%, 1rem); } to { opacity: 1; transform: translate(-50%, 0); } }
+.relogin-panel { animation: reloginSheetIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+@media (min-width: 640px) { .relogin-panel { animation: modalPanelIn 420ms cubic-bezier(0.22, 1, 0.36, 1) both; } }
+.relogin-pill { animation: reloginPillIn 320ms cubic-bezier(0.22, 1, 0.36, 1) both; }

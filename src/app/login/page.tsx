@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Label } from "@/components/ui";
 import { LogoTipo } from "@/components/LogoTipo";
+import { registrarIngreso } from "@/lib/reautenticacion";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -17,10 +18,16 @@ export default function LoginPage() {
     e.preventDefault();
     setCargando(true);
     setError(null);
-    const { error } = await supabase().auth.signInWithPassword({ email, password });
-    setCargando(false);
-    if (error) {
+    const { data, error } = await supabase().auth.signInWithPassword({ email, password });
+    if (error || !data.user) {
+      setCargando(false);
       setError("Credenciales inválidas o usuario inexistente.");
+      return;
+    }
+    const resultado = await registrarIngreso(data.user.id, data.user.email ?? email);
+    setCargando(false);
+    if (!resultado.ok) {
+      setError(`Este celular tiene ${resultado.pendientes} informe${resultado.pendientes === 1 ? "" : "s"} sin subir de ${resultado.emailCorrecto}. Ingresá con esa cuenta para subirlos.`);
       return;
     }
     router.push("/");

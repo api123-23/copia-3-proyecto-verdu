@@ -10,6 +10,7 @@ import { LogoTipo } from "@/components/LogoTipo";
 import { Icono } from "@/components/Icono";
 import { PantallaCarga } from "@/components/PantallaCarga";
 import { AvisoSyncActivo } from "@/components/AvisoSyncActivo";
+import { ReLogin } from "@/components/ReLogin";
 import { MenuPerfil } from "@/components/MenuPerfil";
 import { PanelAdmin } from "@/components/PanelAdmin";
 import { GestionClientes } from "@/components/GestionClientes";
@@ -35,6 +36,7 @@ export default function Home() {
   return (
     <>
       <AvisoSyncActivo />
+      <ReLogin sesion={sesion} />
       <div key={vistaKey} className="view-transition">
       {ruta.tipo === "admin" ? (
         <PanelAdmin />
