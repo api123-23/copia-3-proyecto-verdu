@@ -64,6 +64,7 @@ export function ListaInformes() {
     []
   );
   const [remotos, setRemotos] = useState<InformeGeneral[]>([]);
+  const [remotosCargados, setRemotosCargados] = useState(false);
   const [online, setOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
   const [actualizando, setActualizando] = useState(false);
   const [errorActualizacion, setErrorActualizacion] = useState<string | null>(null);
@@ -233,6 +234,8 @@ export function ListaInformes() {
         if (activo) setRemotos(r);
       }).catch((error) => {
         console.error("[lista] No se pudieron actualizar los informes:", error);
+      }).finally(() => {
+        if (activo) setRemotosCargados(true);
       });
     };
     refrescar();
@@ -332,6 +335,29 @@ export function ListaInformes() {
 
   const filtroBarClass = "filter-control bg-surface-container-low/60 border border-outline-variant rounded-lg px-2 py-1.5 text-[13px] h-[32px] w-full focus:outline-none focus:ring-2 focus:ring-primary";
 
+  // Con conexión, mientras llega la primera respuesta del servidor se muestran
+  // tarjetas de carga en vez de "sin informes" (evita el salto visual).
+  if (informes.length === 0 && !tieneFiltros && online && sesion && !remotosCargados) {
+    return (
+      <div className="mx-4 md:mx-0 mt-sm space-y-sm" role="status" aria-label="Cargando informes">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="esqueleto-tarjeta rounded-lg border border-outline-variant bg-white p-md shadow-sm" style={{ "--item-delay": `${i * 90}ms` } as React.CSSProperties}>
+            <div className="flex items-center justify-between">
+              <span className="esqueleto h-4 w-32 rounded" />
+              <span className="esqueleto h-3 w-16 rounded" />
+            </div>
+            <span className="esqueleto mt-3 block h-4 w-3/4 rounded" />
+            <span className="esqueleto mt-2 block h-3 w-1/2 rounded" />
+            <div className="mt-3 flex gap-2">
+              <span className="esqueleto h-4 w-20 rounded-full" />
+              <span className="esqueleto h-4 w-16 rounded-full" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   if (informes.length === 0 && !tieneFiltros) {
     return (
       <div>
@@ -344,12 +370,13 @@ export function ListaInformes() {
         ) : null}
          <div className="mx-4 md:mx-0 my-sm p-xl bg-white border border-outline-variant rounded-lg text-center">
         <div className="flex items-center justify-center mb-md">
-          <LogoTipo className="w-14 h-14 rounded-2xl opacity-90" />
+          <LogoTipo className="estado-vacio-logo w-14 h-14 rounded-2xl opacity-90" />
         </div>
-        <div className="flex items-center justify-center gap-sm">
+        <p className="mb-md text-body-md text-on-surface-variant">Todavía no hay informes cargados.</p>
+        <div className="flex flex-wrap items-center justify-center gap-sm">
           <a
             href="#/informe/nuevo"
-            className="inline-flex items-center gap-1.5 bg-gradient-to-b from-primary to-primary-container text-on-primary rounded-lg px-5 py-2.5 text-title-md font-title-md font-bold uppercase tracking-wider shadow-lg shadow-primary/40 hover:brightness-110 hover:scale-[1.03] active:scale-95 transition-all"
+            className="inline-flex items-center gap-1.5 whitespace-nowrap bg-gradient-to-b from-primary to-primary-container text-on-primary rounded-lg px-5 py-2.5 text-title-md font-title-md font-bold uppercase tracking-wider shadow-lg shadow-primary/40 hover:brightness-110 hover:scale-[1.03] active:scale-95 transition-all"
           >
             <Icono nombre="add" className="w-[18px] h-[18px]" />
             Crear informe
@@ -562,13 +589,13 @@ export function ListaInformes() {
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">{tipo}</td>
                    <td className="px-3 py-2 whitespace-nowrap">
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase ${estadoFirmaClase(inf)}`}>
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase transition-colors duration-500 ${estadoFirmaClase(inf)}`}>
                       {inf.estado_firma === "firmado" ? "Firmado" : "Sin firma"}
                     </span>
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">
                     {sync ? (
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase ${sync.clase}`}>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase transition-colors duration-500 ${sync.clase}`}>
                         {sync.label}
                       </span>
                     ) : (
@@ -654,11 +681,11 @@ export function ListaInformes() {
                 Técnico: {nombreTecnico(inf.tecnico_id)}
               </p>
               <div className="flex gap-xs mt-sm">
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase ${estadoFirmaClase(inf)}`}>
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase transition-colors duration-500 ${estadoFirmaClase(inf)}`}>
                   {inf.estado_firma === "firmado" ? "Firmado por cliente" : "Sin firma de cliente"}
                 </span>
                 {sync ? (
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase ${sync.clase}`}>
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase transition-colors duration-500 ${sync.clase}`}>
                     {sync.label}
                   </span>
                 ) : null}

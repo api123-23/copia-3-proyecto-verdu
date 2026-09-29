@@ -121,6 +121,8 @@ export function EditorInforme({ id }: { id: string }) {
   const esNuevoRef = useRef(false);
   const guardadoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const colaGuardadoRef = useRef<Promise<void>>(Promise.resolve());
+  const [estadoGuardado, setEstadoGuardado] = useState<"guardando" | "guardado" | null>(null);
+  const ocultarGuardadoRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const estadoRef = useRef<{
     informe: InformeGeneral | null;
     valores: ValoresBase;
@@ -193,6 +195,7 @@ export function EditorInforme({ id }: { id: string }) {
       const { informe: inf, valores: val, valoresGE: ge } = estadoRef.current;
       if (!inf) return;
       pendienteGuardarRef.current = false;
+      setEstadoGuardado("guardando");
       try {
         // Borrador: no se sube hasta que se toque "Enviar".
         await guardarBorrador(
@@ -201,8 +204,12 @@ export function EditorInforme({ id }: { id: string }) {
           inf.tipo_equipo === "grupo_electrogeno" ? ge : undefined
         );
         esNuevoRef.current = false;
+        setEstadoGuardado("guardado");
+        if (ocultarGuardadoRef.current) clearTimeout(ocultarGuardadoRef.current);
+        ocultarGuardadoRef.current = setTimeout(() => setEstadoGuardado(null), 2200);
       } catch (error) {
         pendienteGuardarRef.current = true;
+        setEstadoGuardado(null);
         console.error("[editor] No se pudo guardar el borrador:", error);
       }
     });
@@ -230,15 +237,26 @@ export function EditorInforme({ id }: { id: string }) {
     };
   }, [guardarAhora]);
 
-  // Un informe nuevo se guarda apenas recibe su primera foto o firma, para que
-  // los archivos nunca queden sueltos.
-  const cantidadArchivos = useLiveQuery(() => db.archivos.where("informe_id").equals(id).count(), [id]);
+  // Cuando se agrega una foto o firma nueva, el informe se guarda como borrador
+  // al instante: así el archivo nunca queda suelto ni se pierde con
+  // "Actualizar". Abrir un informe sin tocar nada no lo modifica.
+  const archivosSinSubir = useLiveQuery(
+    () => db.archivos.where("informe_id").equals(id).filter((a) => a.estado_sync !== "sincronizado").count(),
+    [id]
+  );
+  const archivosSinSubirInicialRef = useRef<number | null>(null);
   useEffect(() => {
-    if (esNuevoRef.current && cantidadArchivos && cantidadArchivos > 0) {
+    if (archivosSinSubir === undefined || !informe) return;
+    if (archivosSinSubirInicialRef.current === null) {
+      archivosSinSubirInicialRef.current = archivosSinSubir;
+      if (!esNuevoRef.current || archivosSinSubir === 0) return;
+    }
+    if (archivosSinSubir > archivosSinSubirInicialRef.current || (esNuevoRef.current && archivosSinSubir > 0)) {
+      archivosSinSubirInicialRef.current = archivosSinSubir;
       pendienteGuardarRef.current = true;
       void guardarAhora();
     }
-  }, [cantidadArchivos, guardarAhora]);
+  }, [archivosSinSubir, informe, guardarAhora]);
 
   function patchInforme(p: Partial<InformeGeneral>) {
     sucioRef.current = true;
@@ -467,6 +485,17 @@ export function EditorInforme({ id }: { id: string }) {
           <h1 className="text-title-md font-title-md font-bold tracking-tight">
             Informe Técnico № {formatNumero(informe.numero_registro)}
           </h1>
+          <span
+            className={`indicador-guardado ml-1 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-on-primary/80 ${estadoGuardado ? "visible" : ""}`}
+            aria-live="polite"
+          >
+            {estadoGuardado === "guardando" ? (
+              <span className="h-2.5 w-2.5 animate-spin rounded-full border-[1.5px] border-current border-t-transparent" aria-hidden="true" />
+            ) : (
+              <svg viewBox="0 0 16 16" className="h-3 w-3" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            )}
+            <span className="hidden sm:inline">{estadoGuardado === "guardando" ? "Guardando" : "Guardado"}</span>
+          </span>
         </div>
         <button
           type="button"

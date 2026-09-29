@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { MotorSync } from "@/components/MotorSync";
 import { RegistrarSW } from "@/components/RegistrarSW";
+import { EfectoScroll } from "@/components/EfectoScroll";
 import "./globals.css";
 
 const inter = Inter({
@@ -55,6 +56,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="bg-background font-body-md text-on-surface antialiased">
         <MotorSync />
         <RegistrarSW />
+        <EfectoScroll />
         {children}
       </body>
     </html>

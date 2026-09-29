@@ -87,6 +87,8 @@ function TablaValores({ valores, tipo }: { valores: ValoresBase; tipo: TipoEquip
       {campos.map((campo) => (
         <Fila key={campo} etiqueta={CAMPO_LABELS[campo]} valor={valores[campo]} />
       ))}
+      {/* Con cantidad impar, una celda vacía cierra el recuadro de la tabla. */}
+      {campos.length % 2 === 1 ? <div className="pdf-fila" aria-hidden="true" /> : null}
     </div>
   );
 }
@@ -196,7 +198,7 @@ function Firmas({ informe, archivos, urls }: { informe: InformeGeneral; archivos
   );
 }
 
-function Fotos({ archivos, urls, modoDescarga = false }: { archivos: ArchivoLocal[]; urls: Record<string, string | null>; modoDescarga?: boolean }) {
+function Fotos({ archivos, urls }: { archivos: ArchivoLocal[]; urls: Record<string, string | null> }) {
   const fotos = archivos
     .filter((x) => x.tipo === "foto")
     .sort((a, b) => {
@@ -207,7 +209,8 @@ function Fotos({ archivos, urls, modoDescarga = false }: { archivos: ArchivoLoca
     });
   if (fotos.length === 0) return null;
   const paginas: ArchivoLocal[][] = [];
-  const fotosPorPagina = modoDescarga ? 4 : 6;
+  // Igual que al imprimir: 6 fotos por hoja (3 filas de 2).
+  const fotosPorPagina = 6;
   for (let i = 0; i < fotos.length; i += fotosPorPagina) paginas.push(fotos.slice(i, i + fotosPorPagina));
   return (
     <>
@@ -262,10 +265,6 @@ const A4_ANCHO_MM = 210;
 const A4_ALTO_MM = 297;
 // Ancho de una hoja A4 en px CSS: el PDF se arma igual en celular y en PC.
 const A4_ANCHO_PX = 794;
-
-function esCelular(): boolean {
-  return typeof window !== "undefined" && (window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768);
-}
 
 export function VistaPdfInforme({
   id,
@@ -410,7 +409,9 @@ export function VistaPdfInforme({
         const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
         // Cada hoja se dibuja por separado: una sola imagen gigante de todo el
         // informe supera el límite de memoria de los navegadores del celular.
-        const escala = esCelular() ? 1.5 : 2;
+        // Cada hoja se dibuja sola, así que 2x entra en memoria también en el
+        // celular y evita que las líneas finas de los recuadros desaparezcan.
+        const escala = 2;
         const paginas = Array.from(hoja.querySelectorAll<HTMLElement>(".pdf-contenido-principal, .pdf-fotos"));
         const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
         let primera = true;
@@ -486,7 +487,7 @@ export function VistaPdfInforme({
           <Cierre informe={informe} />
           <Firmas informe={informe} archivos={archivos} urls={archivosPdf} />
         </div>
-         <Fotos archivos={archivos} urls={archivosPdf} modoDescarga={modoDescarga} />
+         <Fotos archivos={archivos} urls={archivosPdf} />
       </main>
     </div>
   );
