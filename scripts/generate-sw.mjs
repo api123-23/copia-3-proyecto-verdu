@@ -32,7 +32,11 @@ const shell = [
   "/icons/icon-192.png",
   "/icons/icon-512.png",
 ];
-const precache = [...new Set([...shell, ...assets])];
+// Los archivos de la app NO se listan acá: Vercel los publica con otras rutas y
+// nombres ("/_next/static/immutable/...") que no coinciden con el build local.
+// El service worker los descubre al instalarse leyendo lo realmente publicado.
+void assets;
+const precache = [...new Set(shell)];
 
 const buildIdPath = join(distDir, "BUILD_ID");
 const buildId = existsSync(buildIdPath)
@@ -46,6 +50,53 @@ const PRECACHE = ${JSON.stringify(precache, null, 2)};
 // abre la versión guardada.
 const TIMEOUT_NAVEGACION_MS = 4000;
 
+// Rutas de archivos de la app dentro de HTML/JS/CSS publicados, con o sin
+// el prefijo "/_next/" (en JS aparecen como "static/immutable/chunks/x.js").
+const RE_ASSET = /(?:\\/_next\\/)?(static\\/(?:immutable|chunks|media|css)\\/[A-Za-z0-9_.\\/~-]+?\\.(?:js|css|woff2?|png|svg|jpg|webp))/g;
+const MAX_ASSETS = 500;
+
+async function guardar(cache, url) {
+  const req = new Request(url, { cache: "reload" });
+  const res = await fetch(req);
+  if (!res || !res.ok) return null;
+  await cache.put(req, res.clone());
+  return res;
+}
+
+// Recorre lo publicado: HTML de las pantallas -> sus archivos -> los archivos
+// que esos cargan bajo demanda (PDF, etc.). Así la caché siempre coincide con
+// la versión desplegada, sin depender de nombres del build.
+async function precargarApp(cache) {
+  const vistos = new Set();
+  const cola = [];
+  const buscar = (texto) => {
+    for (const m of texto.matchAll(RE_ASSET)) {
+      const url = "/_next/" + m[1];
+      if (!vistos.has(url) && vistos.size < MAX_ASSETS) {
+        vistos.add(url);
+        cola.push(url);
+      }
+    }
+  };
+  for (const pagina of ["/", "/login"]) {
+    try {
+      const res = await guardar(cache, pagina);
+      if (res) buscar(await res.text());
+    } catch {
+      /* sin red: se reintenta en la próxima instalación */
+    }
+  }
+  while (cola.length > 0) {
+    const lote = cola.splice(0, 8);
+    await Promise.allSettled(
+      lote.map(async (url) => {
+        const res = await guardar(cache, url);
+        if (res && /\\.(js|css)$/.test(url)) buscar(await res.text());
+      })
+    );
+  }
+}
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
@@ -53,14 +104,13 @@ self.addEventListener("install", (event) => {
       await Promise.allSettled(
         PRECACHE.map(async (url) => {
           try {
-            const req = new Request(url, { cache: "reload" });
-            const res = await fetch(req);
-            if (res && res.ok) await cache.put(req, res);
+            await guardar(cache, url);
           } catch {
-            /* un asset que falle no debe romper la instalación */
+            /* un recurso que falle no debe romper la instalación */
           }
         })
       );
+      await precargarApp(cache).catch(() => undefined);
       await self.skipWaiting();
     })()
   );
