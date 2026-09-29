@@ -1,4 +1,5 @@
-const CACHE = "verdu-shell-a2-pLN1dnhhz1rIaHVP51";
+const CACHE = "verdu-shell-kpKeC6O1BO3QnRVGFoRyx";
+const PREFIJO = "verdu-shell-";
 const PRECACHE = [
   "/",
   "/login",
@@ -6,29 +7,29 @@ const PRECACHE = [
   "/icons/icon-180.png",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
-  "/_next/static/a2-pLN1dnhhz1rIaHVP51/_buildManifest.js",
-  "/_next/static/a2-pLN1dnhhz1rIaHVP51/_clientMiddlewareManifest.js",
-  "/_next/static/a2-pLN1dnhhz1rIaHVP51/_ssgManifest.js",
   "/_next/static/chunks/02fh7_m5mrih8.js",
   "/_next/static/chunks/07nldpx3i6mc_.js",
   "/_next/static/chunks/0cz1d0mv5g_q7.js",
   "/_next/static/chunks/0k16m1c57o-qb.js",
+  "/_next/static/chunks/0p9xrzb6zme1o.js",
   "/_next/static/chunks/0pc_0m2y0bzma.js",
   "/_next/static/chunks/1-b2ubvwkmsdh.js",
   "/_next/static/chunks/1cwczo7gh-yho.js",
   "/_next/static/chunks/1kden681vlcis.js",
-  "/_next/static/chunks/1u798cx7tl_ib.js",
-  "/_next/static/chunks/23iijgrai4q2q.js",
-  "/_next/static/chunks/27dvz-ehqsaw2.js",
   "/_next/static/chunks/2aixyffv6iw_4.js",
   "/_next/static/chunks/2bfbkmb5pwdvf.js",
+  "/_next/static/chunks/2h38j4f2oa0ld.js",
   "/_next/static/chunks/2i51e627rllld.js",
+  "/_next/static/chunks/2mt2zk0dve3rc.js",
   "/_next/static/chunks/2q2xxe4pzckye.js",
-  "/_next/static/chunks/2xxdbawjb9rz9.css",
+  "/_next/static/chunks/3b3ytbrvm7vqy.css",
   "/_next/static/chunks/3fntmmi971322.js",
   "/_next/static/chunks/3gti1qdk5epqn.js",
-  "/_next/static/chunks/3u6kvdapes6ul.js",
+  "/_next/static/chunks/3trko5_u69ctr.js",
   "/_next/static/chunks/turbopack-0uq7hdybijnu_.js",
+  "/_next/static/kpKeC6O1BO3QnRVGFoRyx/_buildManifest.js",
+  "/_next/static/kpKeC6O1BO3QnRVGFoRyx/_clientMiddlewareManifest.js",
+  "/_next/static/kpKeC6O1BO3QnRVGFoRyx/_ssgManifest.js",
   "/_next/static/media/1317291d1835f011-s.1ocfy-u58n01e.woff2",
   "/_next/static/media/1bffadaabf893a1e-s.3-6t-g6q0vh0a.woff2",
   "/_next/static/media/2bbe8d2671613f1f-s.0k62hbripvv8p.woff2",
@@ -44,6 +45,9 @@ const PRECACHE = [
   "/_next/static/media/e1750518007a189a-s.p.29e6ydd6osd72.woff2",
   "/_next/static/media/favicon.2vob68tjqpejf.ico"
 ];
+// Con señal débil no se espera eternamente a la red: pasado este tiempo se
+// abre la versión guardada.
+const TIMEOUT_NAVEGACION_MS = 4000;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -54,7 +58,7 @@ self.addEventListener("install", (event) => {
           try {
             const req = new Request(url, { cache: "reload" });
             const res = await fetch(req);
-            if (res && (res.ok || res.type === "opaque")) await cache.put(req, res);
+            if (res && res.ok) await cache.put(req, res);
           } catch {
             /* un asset que falle no debe romper la instalación */
           }
@@ -67,30 +71,59 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim())
+    (async () => {
+      // Se conserva la versión anterior además de la actual: una pantalla que
+      // quedó abierta puede seguir pidiendo sus archivos sin fallar.
+      const claves = (await caches.keys()).filter((k) => k.startsWith(PREFIJO) && k !== CACHE);
+      const anteriores = claves.slice(0, Math.max(0, claves.length - 1));
+      await Promise.all(anteriores.map((k) => caches.delete(k)));
+      await self.clients.claim();
+    })()
   );
 });
+
+function conTimeout(promesa, ms) {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error("timeout")), ms);
+    promesa.then(
+      (v) => { clearTimeout(t); resolve(v); },
+      (e) => { clearTimeout(t); reject(e); }
+    );
+  });
+}
 
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith("/api/") || url.pathname === "/sw.js") return;
 
   if (req.mode === "navigate") {
     event.respondWith(
-      fetch(req)
-        .then((res) => {
-          const copia = res.clone();
-          caches.open(CACHE).then((cache) => cache.put(req, copia));
+      (async () => {
+        const cache = await caches.open(CACHE);
+        const red = fetch(req).then((res) => {
+          if (res.ok && res.type === "basic") {
+            const copia = res.clone();
+            event.waitUntil(cache.put(req, copia).catch(() => undefined));
+          }
           return res;
-        })
-        .catch(() =>
-          caches.match(req).then((match) => match || caches.match("/"))
-        )
+        });
+        try {
+          return await conTimeout(red, TIMEOUT_NAVEGACION_MS);
+        } catch {
+          // Primero la versión actual; caches.match recorre las cachés de la más vieja a la más nueva.
+          const guardada =
+            (await cache.match(req, { ignoreSearch: true })) ||
+            (await cache.match("/")) ||
+            (await caches.match(req, { ignoreSearch: true })) ||
+            (await caches.match("/"));
+          if (guardada) return guardada;
+          // Sin copia guardada: se espera a la red lo que haga falta.
+          return red.catch(() => Response.error());
+        }
+      })()
     );
     return;
   }
@@ -98,24 +131,28 @@ self.addEventListener("fetch", (event) => {
   const esStatic =
     url.pathname.startsWith("/_next/static/") ||
     url.pathname.startsWith("/icons/") ||
-    url.pathname.endsWith(".png") ||
-    url.pathname.endsWith(".svg") ||
-    url.pathname.endsWith(".woff2") ||
-    url.pathname.endsWith(".css") ||
-    url.pathname.endsWith(".js");
+    url.pathname === "/manifest.webmanifest" ||
+    /\.(png|svg|ico|woff2|css|js)$/.test(url.pathname);
 
   if (esStatic) {
     event.respondWith(
       (async () => {
-        const cache = await caches.open(CACHE);
-        const enCache = await cache.match(req);
-        const pedirRed = fetch(req)
-          .then((res) => {
-            if (res.ok || res.type === "opaque") cache.put(req, res.clone());
+        // Busca en todas las versiones guardadas (la actual y la anterior).
+        const enCache = await caches.match(req);
+        const red = fetch(req)
+          .then(async (res) => {
+            if (res.ok) {
+              const cache = await caches.open(CACHE);
+              await cache.put(req, res.clone());
+            }
             return res;
-          })
-          .catch(() => enCache);
-        return enCache || pedirRed;
+          });
+        if (enCache) {
+          // Los archivos con hash nunca cambian: no hace falta revalidarlos.
+          if (!url.pathname.startsWith("/_next/static/")) event.waitUntil(red.catch(() => undefined));
+          return enCache;
+        }
+        return red.catch(() => Response.error());
       })()
     );
   }
