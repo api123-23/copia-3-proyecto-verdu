@@ -2,6 +2,9 @@ import type { Config } from "tailwindcss";
 
 const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],
+  // En celulares el :hover queda "pegado" después de tocar: los efectos hover
+  // solo se aplican en dispositivos con mouse.
+  future: { hoverOnlyWhenSupported: true },
   darkMode: "class",
   theme: {
     extend: {

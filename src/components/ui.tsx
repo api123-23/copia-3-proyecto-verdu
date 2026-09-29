@@ -286,10 +286,20 @@ export function Toast({
     info: "bg-primary text-on-primary",
   };
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[90] animate-[slideDown_0.3s_ease-out]">
-      <div className={`flex items-center gap-2 px-md py-2 rounded-lg shadow-lg ${colores[tipo]}`}>
-        <span className="text-body-md font-body-md">{mensaje}</span>
-        <button type="button" onClick={onCerrar} className="text-white/80 hover:text-white text-lg leading-none">
+    <div
+      className="pointer-events-none fixed inset-x-0 z-[90] flex justify-center px-4"
+      style={{ top: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
+      role={tipo === "error" ? "alert" : "status"}
+      aria-live={tipo === "error" ? "assertive" : "polite"}
+    >
+      <div className={`toast-in pointer-events-auto flex max-w-md items-center gap-3 rounded-xl px-4 py-2.5 shadow-xl shadow-black/20 ${colores[tipo]}`}>
+        <span className="text-body-md font-body-md leading-snug">{mensaje}</span>
+        <button
+          type="button"
+          onClick={onCerrar}
+          aria-label="Cerrar aviso"
+          className="-mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-lg leading-none text-white/80 transition-colors hover:bg-white/15 hover:text-white"
+        >
           &times;
         </button>
       </div>
