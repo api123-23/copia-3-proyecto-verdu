@@ -547,13 +547,15 @@ export function ListaInformes() {
                       <div className="flex justify-end gap-1">
                         <button
                           type="button"
-                          className="inline-flex items-center rounded border border-primary px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-primary hover:bg-primary hover:text-white active:scale-95 transition-all"
+                          disabled={descargandoId !== null}
+                          className="inline-flex items-center gap-1 rounded border border-primary px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-primary hover:bg-primary hover:text-white active:scale-95 transition-all disabled:cursor-wait disabled:opacity-60"
                           onClick={(e) => {
                             e.stopPropagation();
                             setDescargandoId(inf.id);
                           }}
                         >
-                          Descargar
+                          {descargandoId === inf.id ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true" /> : null}
+                          {descargandoId === inf.id ? "Generando…" : "Descargar"}
                         </button>
                         <a
                           href={`#/informe/${encodeURIComponent(inf.id)}/pdf`}
@@ -635,13 +637,15 @@ export function ListaInformes() {
                 <div className="mt-sm flex justify-end gap-1">
                   <button
                     type="button"
-                    className="inline-flex items-center rounded border border-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-primary active:scale-95 transition-all"
+                    disabled={descargandoId !== null}
+                    className="inline-flex items-center gap-1 rounded border border-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-primary active:scale-95 transition-all disabled:cursor-wait disabled:opacity-60"
                     onClick={(e) => {
                       e.stopPropagation();
-                       setDescargandoId(inf.id);
+                      setDescargandoId(inf.id);
                     }}
                   >
-                    Descargar
+                    {descargandoId === inf.id ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true" /> : null}
+                    {descargandoId === inf.id ? "Generando…" : "Descargar"}
                   </button>
                   <button
                     type="button"

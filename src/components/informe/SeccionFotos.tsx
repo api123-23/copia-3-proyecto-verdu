@@ -156,11 +156,13 @@ export default function SeccionFotos({
   obligatoria?: boolean;
 }) {
   const [categoria, setCategoria] = useState<CategoriaFoto>("inicial");
-  const [subiendo, setSubiendo] = useState(false);
+  const [progreso, setProgreso] = useState<{ hecho: number; total: number } | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const subiendo = progreso !== null;
   const camaraRef = useRef<HTMLInputElement>(null);
   const galeriaRef = useRef<HTMLInputElement>(null);
   const fotos = useLiveQuery(
-    () => db.archivos.where({ informe_id: informeId, tipo: "foto" }).toArray(),
+    () => db.archivos.where("informe_id").equals(informeId).filter((a) => a.tipo === "foto").toArray(),
     [informeId]
   );
   const fotosOrdenadas = fotos?.slice().sort((a, b) => {
@@ -170,39 +172,60 @@ export default function SeccionFotos({
       || a.creado_en.localeCompare(b.creado_en);
   });
 
-  async function onFile(file: File) {
-    setSubiendo(true);
-    try {
-      let blob: Blob;
+  // Procesa las fotos de a una (comprimir varias a la vez satura la memoria
+  // del celular). Todas quedan con la categoría elegida y en el orden elegido.
+  async function onFiles(lista: FileList | null, input: HTMLInputElement | null) {
+    const archivos = Array.from(lista ?? []).filter((f) => f.type.startsWith("image/") || f.type === "" || /\.(heic|heif)$/i.test(f.name));
+    if (input) input.value = "";
+    if (archivos.length === 0) return;
+    const categoriaElegida = categoria;
+    const base = Date.now();
+    let fallidas = 0;
+    setAviso(null);
+    setProgreso({ hecho: 0, total: archivos.length });
+    for (let i = 0; i < archivos.length; i++) {
+      const file = archivos[i];
       try {
-        blob = await comprimirImagenWebp(file);
-      } catch (e) {
-        // Si la compresión falla (p. ej. HEIC no decodificable), se usa el
-        // archivo original para no perder la foto.
-        console.warn("[fotos] Falló la compresión, se usa el original:", e);
-        blob = file;
-      }
-      const id = generarId();
-      await db.transaction("rw", [db.archivos, db.blobs], async () => {
-        await db.blobs.put({ id, blob });
-        await db.archivos.put({
-          id,
-          informe_id: informeId,
-          tipo: "foto",
-          categoria,
-          url: null,
-          estado_sync: "pendiente",
-          creado_en: new Date().toISOString(),
+        let blob: Blob;
+        try {
+          blob = await comprimirImagenWebp(file);
+        } catch (e) {
+          // Si la compresión falla (p. ej. HEIC no decodificable), se usa el
+          // archivo original para no perder la foto.
+          console.warn("[fotos] Falló la compresión, se usa el original:", e);
+          blob = file;
+        }
+        const id = generarId();
+        await db.transaction("rw", [db.archivos, db.blobs], async () => {
+          await db.blobs.put({ id, blob });
+          await db.archivos.put({
+            id,
+            informe_id: informeId,
+            tipo: "foto",
+            categoria: categoriaElegida,
+            url: null,
+            estado_sync: "pendiente",
+            creado_en: new Date(base + i).toISOString(),
+          });
         });
-      });
-    } catch (e) {
-      console.error("[fotos] Error al guardar la foto:", e);
-    } finally {
-      setSubiendo(false);
-      if (camaraRef.current) camaraRef.current.value = "";
-      if (galeriaRef.current) galeriaRef.current.value = "";
+      } catch (e) {
+        fallidas++;
+        console.error("[fotos] Error al guardar la foto:", e);
+      }
+      setProgreso({ hecho: i + 1, total: archivos.length });
+    }
+    setProgreso(null);
+    if (fallidas > 0) {
+      setAviso(fallidas === archivos.length
+        ? "No se pudo guardar la foto. Intentá nuevamente."
+        : `No se pudieron guardar ${fallidas} de ${archivos.length} fotos. Intentá agregarlas nuevamente.`);
     }
   }
+
+  const textoProcesando = progreso
+    ? progreso.total > 1 ? `Procesando ${Math.min(progreso.hecho + 1, progreso.total)}/${progreso.total}...` : "Procesando..."
+    : null;
+  const etiquetaCategoria = CATEGORIAS.find((c) => c.value === categoria)?.label ?? "";
 
   return (
     <Seccion titulo="Registro Fotográfico" badge={obligatoria ? "Obligatorio" : "Opcional"}>
@@ -231,7 +254,7 @@ export default function SeccionFotos({
             >
               <Icono nombre="add_a_photo" className="w-[28px] h-[28px] text-primary mb-2" />
               <span className="text-title-md font-bold text-primary uppercase tracking-wider text-center leading-tight">
-                {subiendo ? "Procesando..." : "Tomar Foto"}
+                {textoProcesando ?? "Tomar Foto"}
               </span>
             </button>
             <button
@@ -242,8 +265,9 @@ export default function SeccionFotos({
             >
               <Icono nombre="add_a_photo" className="w-[28px] h-[28px] text-primary mb-2" />
               <span className="text-title-md font-bold text-primary uppercase tracking-wider text-center leading-tight">
-                {subiendo ? "Procesando..." : "De la Galería"}
+                {textoProcesando ?? "De la Galería"}
               </span>
+              {!subiendo ? <span className="mt-1 text-[10px] text-on-surface-variant normal-case">Podés elegir varias</span> : null}
             </button>
           </div>
           <input
@@ -252,21 +276,25 @@ export default function SeccionFotos({
             accept="image/*"
             capture="environment"
             className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void onFile(f);
-            }}
+            onChange={(e) => void onFiles(e.target.files, e.target)}
           />
           <input
             ref={galeriaRef}
             type="file"
             accept="image/*"
+            multiple
             className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void onFile(f);
-            }}
+            onChange={(e) => void onFiles(e.target.files, e.target)}
           />
+          {subiendo ? (
+            <div className="space-y-1" aria-live="polite">
+              <div className="h-1.5 overflow-hidden rounded-full bg-surface-container-high">
+                <div className="h-full rounded-full bg-primary transition-all duration-300" style={{ width: `${progreso ? (progreso.hecho / progreso.total) * 100 : 0}%` }} />
+              </div>
+              <p className="text-center text-[11px] text-on-surface-variant">Guardando en “{etiquetaCategoria}”</p>
+            </div>
+          ) : null}
+          {aviso ? <p className="rounded border border-error bg-error-container px-2 py-1 text-center text-[12px] text-error" role="alert">{aviso}</p> : null}
           {fotosOrdenadas && fotosOrdenadas.length > 0 ? (
             <div className="flex flex-wrap gap-sm justify-center">
               {fotosOrdenadas.map((f) => (

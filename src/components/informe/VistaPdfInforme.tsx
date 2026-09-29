@@ -219,7 +219,7 @@ function Fotos({ archivos, urls, modoDescarga = false }: { archivos: ArchivoLoca
               <ArchivoVisual
                 key={foto.id}
                 url={urls[foto.id] ?? null}
-                titulo={CATEGORIAS[foto.categoria ?? ""] || `Fotografía ${paginaIndex * 6 + index + 1}`}
+                titulo={CATEGORIAS[foto.categoria ?? ""] || `Fotografía ${paginaIndex * fotosPorPagina + index + 1}`}
               />
             ))}
           </div>
@@ -227,6 +227,44 @@ function Fotos({ archivos, urls, modoDescarga = false }: { archivos: ArchivoLoca
       ))}
     </>
   );
+}
+
+// html2canvas no soporta object-fit: dibuja cada imagen estirada a su caja.
+// Se calcula el tamaño proporcional y se centra con padding (html2canvas pinta
+// la imagen en el content-box), así se conserva el recuadro sin deformar.
+function ajustarImagenesSinDeformar(raiz: HTMLElement): void {
+  for (const img of Array.from(raiz.querySelectorAll<HTMLImageElement>("[data-pdf-image='true']"))) {
+    if (!img.naturalWidth || !img.naturalHeight) continue;
+    const estilo = getComputedStyle(img);
+    const bordeX = parseFloat(estilo.borderLeftWidth) + parseFloat(estilo.borderRightWidth);
+    const bordeY = parseFloat(estilo.borderTopWidth) + parseFloat(estilo.borderBottomWidth);
+    const ancho = img.offsetWidth;
+    const alto = img.offsetHeight;
+    const cajaAncho = ancho - bordeX;
+    const cajaAlto = alto - bordeY;
+    if (cajaAncho <= 0 || cajaAlto <= 0) continue;
+    const proporcion = img.naturalWidth / img.naturalHeight;
+    let ajusteAncho = cajaAncho;
+    let ajusteAlto = cajaAncho / proporcion;
+    if (ajusteAlto > cajaAlto) {
+      ajusteAlto = cajaAlto;
+      ajusteAncho = cajaAlto * proporcion;
+    }
+    img.style.boxSizing = "border-box";
+    img.style.width = `${ancho}px`;
+    img.style.height = `${alto}px`;
+    img.style.objectFit = "fill";
+    img.style.padding = `${(cajaAlto - ajusteAlto) / 2}px ${(cajaAncho - ajusteAncho) / 2}px`;
+  }
+}
+
+const A4_ANCHO_MM = 210;
+const A4_ALTO_MM = 297;
+// Ancho de una hoja A4 en px CSS: el PDF se arma igual en celular y en PC.
+const A4_ANCHO_PX = 794;
+
+function esCelular(): boolean {
+  return typeof window !== "undefined" && (window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768);
 }
 
 export function VistaPdfInforme({
@@ -337,6 +375,20 @@ export function VistaPdfInforme({
   }, [cargandoArchivos, erroresArchivos.length]);
 
   useEffect(() => {
+    if (!modoDescarga || descargaIniciada.current || cargandoArchivos || erroresArchivos.length === 0) return;
+    descargaIniciada.current = true;
+    window.alert("No se pudieron cargar todas las fotos del informe. Revisá la conexión e intentá nuevamente.");
+    onDescargaTerminada?.();
+  }, [cargandoArchivos, erroresArchivos.length, modoDescarga, onDescargaTerminada]);
+
+  useEffect(() => {
+    if (!modoDescarga || !fallo || descargaIniciada.current) return;
+    descargaIniciada.current = true;
+    window.alert("No se pudo cargar el informe para descargarlo.");
+    onDescargaTerminada?.();
+  }, [fallo, modoDescarga, onDescargaTerminada]);
+
+  useEffect(() => {
     if (!modoDescarga || descargaIniciada.current || !informe || cargandoArchivos || erroresArchivos.length > 0) return;
     const root = downloadRootId ? document.getElementById(downloadRootId) : null;
     const hoja = root?.querySelector<HTMLElement>(".pdf-hoja");
@@ -344,7 +396,6 @@ export function VistaPdfInforme({
     descargaIniciada.current = true;
     void (async () => {
       try {
-        const { default: html2pdf } = await import("html2pdf.js");
         const imagenes = Array.from(hoja.querySelectorAll<HTMLImageElement>("[data-pdf-image='true']"));
         await Promise.all(imagenes.map((imagen) => {
           if (imagen.complete && imagen.naturalWidth > 0) return Promise.resolve();
@@ -355,21 +406,46 @@ export function VistaPdfInforme({
         }));
         const equipo = nombreEquipo(informe.tipo_equipo).replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
         const cliente = (informe.cliente_nombre || "informe").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
-        await html2pdf()
-          .set({
-            margin: 0,
-            filename: `Informe-${formatNumero(informe.numero_registro)}-${equipo}-${cliente}.pdf`,
-            image: { type: "jpeg", quality: 0.95 },
-            html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
-            jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-            pagebreak: {
-              mode: ["css", "legacy"],
-              before: [".pdf-fotos"],
-              avoid: [".pdf-bloque"],
-            },
-          })
-          .from(hoja)
-          .save();
+        ajustarImagenesSinDeformar(hoja);
+        const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
+        // Cada hoja se dibuja por separado: una sola imagen gigante de todo el
+        // informe supera el límite de memoria de los navegadores del celular.
+        const escala = esCelular() ? 1.5 : 2;
+        const paginas = Array.from(hoja.querySelectorAll<HTMLElement>(".pdf-contenido-principal, .pdf-fotos"));
+        const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+        let primera = true;
+        for (const pagina of paginas) {
+          const canvas = await html2canvas(pagina, {
+            scale: escala,
+            useCORS: true,
+            backgroundColor: "#ffffff",
+            windowWidth: A4_ANCHO_PX,
+            logging: false,
+          });
+          // Alto de una hoja A4 en px del canvas; si el contenido es más largo
+          // se reparte en varias hojas.
+          const altoHojaPx = Math.floor(canvas.width * (A4_ALTO_MM / A4_ANCHO_MM));
+          for (let desde = 0; desde < canvas.height; desde += altoHojaPx) {
+            const altoTramo = Math.min(altoHojaPx, canvas.height - desde);
+            if (desde > 0 && altoTramo < altoHojaPx * 0.02) break;
+            const tramo = document.createElement("canvas");
+            tramo.width = canvas.width;
+            tramo.height = altoTramo;
+            const ctx = tramo.getContext("2d");
+            if (!ctx) throw new Error("Canvas no soportado");
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, tramo.width, tramo.height);
+            ctx.drawImage(canvas, 0, desde, canvas.width, altoTramo, 0, 0, canvas.width, altoTramo);
+            if (!primera) pdf.addPage();
+            primera = false;
+            pdf.addImage(tramo.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, A4_ANCHO_MM, (altoTramo / canvas.width) * A4_ANCHO_MM);
+            tramo.width = 0;
+            tramo.height = 0;
+          }
+          canvas.width = 0;
+          canvas.height = 0;
+        }
+        pdf.save(`Informe-${formatNumero(informe.numero_registro)}-${equipo}-${cliente}.pdf`);
       } catch (error) {
         console.error("[pdf] No se pudo descargar el informe:", error);
         window.alert("No se pudo generar el PDF. Intentá nuevamente.");
@@ -385,7 +461,7 @@ export function VistaPdfInforme({
   const tieneValores = grupo || CAMPOS_POR_TIPO[informe.tipo_equipo].length > 0;
 
   return (
-    <div className="pdf-shell">
+    <div className={`pdf-shell ${modoDescarga ? "" : "pdf-shell-pantalla"}`}>
       <div className="pdf-acciones no-print">
         <a href="#/">Volver al listado</a>
         <button type="button" disabled={cargandoArchivos || erroresArchivos.length > 0} onClick={() => void imprimir()}>

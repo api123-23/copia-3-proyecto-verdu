@@ -147,7 +147,7 @@ function BloqueFirma({
 }) {
   const [abierto, setAbierto] = useState(false);
   const existentes = useLiveQuery(
-    () => db.archivos.where({ informe_id: informeId, tipo }).toArray(),
+    () => db.archivos.where("informe_id").equals(informeId).filter((a) => a.tipo === tipo).toArray(),
     [informeId, tipo]
   );
   const existente = existentes?.slice().sort((a, b) => b.creado_en.localeCompare(a.creado_en))[0];

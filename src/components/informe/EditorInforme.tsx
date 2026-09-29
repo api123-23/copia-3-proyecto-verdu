@@ -283,7 +283,7 @@ export function EditorInforme({ id }: { id: string }) {
           if (val[campo] == null) faltantes.push(CAMPO_LABELS[campo]);
         }
       }
-      const fotos = await db.archivos.where({ informe_id: inf.id, tipo: "foto" }).count();
+      const fotos = await db.archivos.where("informe_id").equals(inf.id).filter((a) => a.tipo === "foto").count();
       if (fotos < 3) faltantes.push("Registro Fotográfico (mínimo 3 fotos)");
     }
     if (faltantes.length > 0) {
