@@ -138,11 +138,6 @@ export function PanelAdmin() {
   const filtrados = texto
     ? usuarios.filter((u) => `${u.nombre ?? ""} ${u.apellido ?? ""} ${u.email ?? ""}`.toLowerCase().includes(texto))
     : usuarios;
-  const conteo = {
-    total: usuarios.length,
-    tecnicos: usuarios.filter((u) => u.rol !== "master" && u.rol !== "admin").length,
-    admins: usuarios.filter((u) => u.rol === "master" || u.rol === "admin").length,
-  };
 
   return (
     <div className="pb-xl px-margin max-w-3xl mx-auto md:px-margin"
@@ -169,27 +164,7 @@ export function PanelAdmin() {
         </div>
       </header>
 
-      <div className="admin-hero list-item-in mt-md mb-md overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-[#0a5aa6] p-md text-on-primary shadow-lg shadow-primary/25">
-        <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15"><IconoLinea nombre="usuarios" className="h-6 w-6" /></span>
-          <div>
-            <p className="text-[16px] font-bold leading-tight">Usuarios y permisos</p>
-            <p className="text-[12px] text-white/75">Creá técnicos y administrá quién accede a la app.</p>
-          </div>
-        </div>
-        <div className="mt-md grid grid-cols-3 gap-2">
-          {[
-            { etiqueta: "Total", valor: conteo.total },
-            { etiqueta: "Técnicos", valor: conteo.tecnicos },
-            { etiqueta: "Admin / Master", valor: conteo.admins },
-          ].map((item) => (
-            <div key={item.etiqueta} className="rounded-xl bg-white/12 px-3 py-2 ring-1 ring-white/15" style={{ backgroundColor: "rgb(255 255 255 / 12%)" }}>
-              <p className="text-[22px] font-extrabold leading-none tabular-nums">{cargandoLista && usuarios.length === 0 ? "–" : item.valor}</p>
-              <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/75">{item.etiqueta}</p>
-            </div>
-          ))}
-        </div>
-      </div>
+      <div className="h-md" aria-hidden="true" />
 
       {error ? (
         <div className="aviso-panel mb-md flex items-start gap-2 rounded-xl border border-error/40 bg-error-container/60 px-3 py-2 text-[13px] text-error" role="alert">

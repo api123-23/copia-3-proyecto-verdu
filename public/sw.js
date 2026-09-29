@@ -1,4 +1,4 @@
-const CACHE = "verdu-shell-SfNDs-fYKbqSJvww32X8O";
+const CACHE = "verdu-shell-FbNiKSTeWu_yJb0pttYV0";
 const PREFIJO = "verdu-shell-";
 const PRECACHE = [
   "/",
@@ -7,19 +7,19 @@ const PRECACHE = [
   "/icons/icon-180.png",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
-  "/_next/static/SfNDs-fYKbqSJvww32X8O/_buildManifest.js",
-  "/_next/static/SfNDs-fYKbqSJvww32X8O/_clientMiddlewareManifest.js",
-  "/_next/static/SfNDs-fYKbqSJvww32X8O/_ssgManifest.js",
+  "/_next/static/FbNiKSTeWu_yJb0pttYV0/_buildManifest.js",
+  "/_next/static/FbNiKSTeWu_yJb0pttYV0/_clientMiddlewareManifest.js",
+  "/_next/static/FbNiKSTeWu_yJb0pttYV0/_ssgManifest.js",
   "/_next/static/chunks/02fh7_m5mrih8.js",
   "/_next/static/chunks/07nldpx3i6mc_.js",
   "/_next/static/chunks/0cz1d0mv5g_q7.js",
-  "/_next/static/chunks/0jddkpsegfci2.css",
   "/_next/static/chunks/0k16m1c57o-qb.js",
   "/_next/static/chunks/0pc_0m2y0bzma.js",
+  "/_next/static/chunks/0pzy3do1unptj.js",
   "/_next/static/chunks/1-b2ubvwkmsdh.js",
-  "/_next/static/chunks/10qyz3oydkgqg.js",
   "/_next/static/chunks/14d_n26e-e1dg.js",
   "/_next/static/chunks/1cwczo7gh-yho.js",
+  "/_next/static/chunks/1cx21u_-_94mi.css",
   "/_next/static/chunks/1kden681vlcis.js",
   "/_next/static/chunks/2aixyffv6iw_4.js",
   "/_next/static/chunks/2bfbkmb5pwdvf.js",
