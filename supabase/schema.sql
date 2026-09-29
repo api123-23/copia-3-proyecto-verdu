@@ -107,7 +107,7 @@ create table if not exists informes_compresor (
   circuito_arranque text check (circuito_arranque in ('ok', 'mal')),
   circuito_seguridad text check (circuito_seguridad in ('ok', 'mal')),
   circuito_electr text check (circuito_electr in ('ok', 'mal')),
-  tiempo_y_delta text check (tiempo_y_delta in ('ok', 'bajo', 'alto')),
+  tiempo_y_delta text check (tiempo_y_delta in ('ok', 'bajo', 'alto', 'vsd')),
   diferencial text,
   perdida_aceite_unidad text check (perdida_aceite_unidad in ('si', 'no'))
 );
@@ -423,15 +423,17 @@ update informes_compresor set perdida_aceite_unidad = case
 alter table informes_compresor add constraint informes_compresor_perdida_aceite_unidad_check
   check (perdida_aceite_unidad in ('si', 'no'));
 
--- COMPRESOR: tiempo de conmutación Y-Δ pasa a ok/bajo/alto (legacy si/no/mal)
+-- COMPRESOR: tiempo de conmutación Y-Δ pasa a ok/bajo/alto/vsd (legacy si/no/mal).
+-- VSD = arranque por variador de velocidad. Se conserva en re-ejecuciones.
 select public.dropar_checks_de_columna('informes_compresor', 'tiempo_y_delta');
 update informes_compresor set tiempo_y_delta = case
-  when tiempo_y_delta = 'si' then 'ok'
-  when tiempo_y_delta in ('no', 'mal') then 'bajo'
-  when tiempo_y_delta in ('ok', 'bajo', 'alto') then tiempo_y_delta
-  else null end;
+  when lower(trim(tiempo_y_delta)) = 'si' then 'ok'
+  when lower(trim(tiempo_y_delta)) in ('no', 'mal') then 'bajo'
+  when lower(trim(tiempo_y_delta)) in ('ok', 'bajo', 'alto', 'vsd') then lower(trim(tiempo_y_delta))
+  else null end
+  where tiempo_y_delta is not null;
 alter table informes_compresor add constraint informes_compresor_tiempo_y_delta_check
-  check (tiempo_y_delta in ('ok', 'bajo', 'alto'));
+  check (tiempo_y_delta in ('ok', 'bajo', 'alto', 'vsd'));
 
 -- GE: elimino campos 12/13/14 de "verificar con motor detenido"
 alter table informes_grupo_electrogeno drop column if exists ge_motor_detenido_dca_anticongelante;

@@ -28,6 +28,9 @@ export type OptimoBajoAlto = "optimo" | "bajo" | "alto" | null;
 
 export type OkBajoAlto = "ok" | "bajo" | "alto" | null;
 
+// Compresor: VSD = arranque por variador (sin conmutación estrella-triángulo).
+export type TiempoYDelta = "ok" | "bajo" | "alto" | "vsd" | null;
+
 export type OkNo = "ok" | "no" | null;
 
 export type BajaAlta = "ok" | "baja" | "alta" | null;
@@ -118,7 +121,7 @@ export interface ValoresBase {
   circuito_arranque: OkMal;
   circuito_seguridad: OkMal;
   circuito_electr: OkMal;
-  tiempo_y_delta: OkBajoAlto;
+  tiempo_y_delta: TiempoYDelta;
   diferencial: OkNo;
   perdida_aceite_motor: SiNo;
   perdida_refrigerante: SiNo;

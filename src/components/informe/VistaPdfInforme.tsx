@@ -44,6 +44,7 @@ function texto(valor: unknown): string {
     alto: "Alto",
     baja: "Baja",
     optimo: "Óptimo",
+    vsd: "VSD",
   };
   return etiquetas[String(valor)] ?? String(valor);
 }

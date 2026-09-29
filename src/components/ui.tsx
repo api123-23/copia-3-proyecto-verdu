@@ -184,6 +184,13 @@ export const OPCIONES_OK_BAJO = [
   { value: "bajo", label: "Bajo" },
 ];
 
+export const OPCIONES_TIEMPO_Y_DELTA = [
+  { value: "ok", label: "Ok" },
+  { value: "bajo", label: "Bajo" },
+  { value: "alto", label: "Alto" },
+  { value: "vsd", label: "VSD" },
+];
+
 export const OPCIONES_OK_BAJO_ALTO = [
   { value: "ok", label: "Ok" },
   { value: "bajo", label: "Bajo" },

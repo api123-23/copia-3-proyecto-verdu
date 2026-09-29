@@ -17,6 +17,7 @@ import {
   OPCIONES_OK_NO,
   OPCIONES_OPTIMO_BAJO_ALTO,
   OPCIONES_SI_NO,
+  OPCIONES_TIEMPO_Y_DELTA,
   Seccion,
   SubTitulo,
 } from "@/components/ui";
@@ -337,7 +338,7 @@ export default function SeccionValores({
                    {aplica(tipo, "circuito_arranque") ? <ItemSelect etiqueta="Arranque" opciones={OPCIONES_OK_MAL} valor={valores.circuito_arranque} onChange={set("circuito_arranque")} /> : null}
                     {aplica(tipo, "circuito_seguridad") ? <ItemSelect etiqueta="Seguridad" opciones={OPCIONES_OK_MAL} valor={valores.circuito_seguridad} onChange={set("circuito_seguridad")} /> : null}
                     {aplica(tipo, "circuito_electr") ? <ItemSelect etiqueta="Eléctrico" opciones={OPCIONES_OK_MAL} valor={valores.circuito_electr} onChange={set("circuito_electr")} /> : null}
-                   {aplica(tipo, "tiempo_y_delta") ? <ItemSelect etiqueta="Tiempo Y-Δ" opciones={OPCIONES_NIVEL} valor={valores.tiempo_y_delta} onChange={set("tiempo_y_delta")} /> : null}
+                   {aplica(tipo, "tiempo_y_delta") ? <ItemSelect etiqueta="Tiempo Y-Δ" opciones={OPCIONES_TIEMPO_Y_DELTA} valor={valores.tiempo_y_delta} onChange={set("tiempo_y_delta")} /> : null}
                    {aplica(tipo, "diferencial") ? <ItemSelect etiqueta="Diferencial" opciones={OPCIONES_OK_NO} valor={valores.diferencial} onChange={set("diferencial")} /> : null}
                 </div>
               </div>
