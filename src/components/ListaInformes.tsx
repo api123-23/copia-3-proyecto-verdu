@@ -85,7 +85,7 @@ export function ListaInformes() {
     return () => {
       activo = false;
     };
-  }, [online, remotos]);
+  }, [online]);
 
   useEffect(() => {
     if (!online) return;
@@ -121,21 +121,6 @@ export function ListaInformes() {
           } catch {
             /* ignorar */
           }
-        }
-
-        try {
-          const { data: filas } = await supabase()
-            .from("informes_generales")
-            .select("tecnico_id")
-            .not("tecnico_id", "is", null);
-          for (const f of filas ?? []) {
-            const id = (f as { tecnico_id: string }).tecnico_id;
-            if (id && !porId.has(id)) {
-              porId.set(id, { id, nombre: null, apellido: null, rol: "tecnico" });
-            }
-          }
-        } catch {
-          /* ignorar */
         }
 
         if (!activo) return;
@@ -208,7 +193,11 @@ export function ListaInformes() {
   useEffect(() => {
     if (cargando || !sesion || !online) return;
     let activo = true;
+    let ultimo = 0;
     const refrescar = () => {
+      const ahora = Date.now();
+      if (ahora - ultimo < 2000) return;
+      ultimo = ahora;
       void listarRemotos().then((r) => {
         if (activo) setRemotos(r);
       }).catch((error) => {
@@ -228,8 +217,7 @@ export function ListaInformes() {
     };
   }, [cargando, sesion, online]);
 
-  if (cargando || !locales || (online && cargandoTecnicos))
-    return <PantallaCarga mensaje="Cargando informes..." />;
+  if (cargando || !locales) return <PantallaCarga mensaje="Cargando informes..." />;
 
   const pendientesLocales = locales.filter((l) =>
     l.estado_sync !== "sincronizado" && (esMaster || esObservador || l.estado_firma !== "firmado")
@@ -251,11 +239,21 @@ export function ListaInformes() {
   for (const t of tecnicos) {
     tecnicoNombre.set(t.id, t.nombre || t.apellido ? `${t.nombre ?? ""} ${t.apellido ?? ""}`.trim() : t.id.slice(0, 8));
   }
+  // Técnicos que figuran en informes pero no tienen perfil: igual se pueden filtrar.
+  const opcionesTecnico = [...tecnicos];
+  for (const inf of informes) {
+    if (inf.tecnico_id && !tecnicoNombre.has(inf.tecnico_id) && !opcionesTecnico.some((t) => t.id === inf.tecnico_id)) {
+      opcionesTecnico.push({ id: inf.tecnico_id, nombre: null, apellido: null, rol: "tecnico" });
+    }
+  }
 
   function nombreTecnico(id: string | null): string {
     if (!id) return "—";
-    return tecnicoNombre.get(id) ?? id.slice(0, 8);
+    return tecnicoNombre.get(id) ?? (online && cargandoTecnicos ? "…" : id.slice(0, 8));
   }
+
+  const idsLocales = new Set(pendientesLocales.map((l) => l.id));
+  const etiquetaTipo = new Map(TIPOS_EQUIPO.map((t) => [t.value as string, t.label]));
 
   const filtroNumeroTrim = filtroNumero.trim().toLowerCase();
   const filtroClienteTrim = filtroCliente.trim().toLowerCase();
@@ -404,7 +402,7 @@ export function ListaInformes() {
               className={filtroBarClass}
             >
               <option value="">Todos</option>
-              {tecnicos.map((t) => (
+              {opcionesTecnico.map((t) => (
                 <option key={t.id} value={t.id}>
                   {tecnicoNombre.get(t.id) ?? t.id.slice(0, 8)}
                 </option>
@@ -512,8 +510,8 @@ export function ListaInformes() {
           </thead>
           <tbody className="divide-y divide-outline-variant">
              {informes.map((inf, index) => {
-              const tipo = TIPOS_EQUIPO.find((t) => t.value === inf.tipo_equipo)?.label ?? inf.tipo_equipo;
-              const esLocal = pendientesLocales.some((l) => l.id === inf.id);
+              const tipo = etiquetaTipo.get(inf.tipo_equipo) ?? inf.tipo_equipo;
+              const esLocal = idsLocales.has(inf.id);
               const sync = esLocal ? BADGE_SYNC[inf.estado_sync] ?? BADGE_SYNC.pendiente : null;
               return (
                 <tr
@@ -576,8 +574,8 @@ export function ListaInformes() {
       {/* Vista móvil: tarjetas */}
       <div className="space-y-sm md:hidden">
          {informes.map((inf, index) => {
-          const tipo = TIPOS_EQUIPO.find((t) => t.value === inf.tipo_equipo)?.label ?? inf.tipo_equipo;
-          const esLocal = pendientesLocales.some((l) => l.id === inf.id);
+          const tipo = etiquetaTipo.get(inf.tipo_equipo) ?? inf.tipo_equipo;
+          const esLocal = idsLocales.has(inf.id);
           const sync = esLocal ? BADGE_SYNC[inf.estado_sync] ?? BADGE_SYNC.pendiente : null;
           const fecha = formatoFecha(inf.fecha_hora);
           return (

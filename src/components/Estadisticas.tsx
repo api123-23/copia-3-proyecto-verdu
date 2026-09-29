@@ -22,19 +22,44 @@ function etiquetaMes(mes: string, corto = false): string {
     .replace(/^./, (x) => x.toUpperCase());
 }
 
+function Resumen({ datos }: { datos: Mensual[] }) {
+  const total = datos.reduce((suma, dato) => suma + dato.cantidad, 0);
+  const conDatos = datos.filter((dato) => dato.cantidad > 0);
+  const promedio = datos.length > 0 ? total / datos.length : 0;
+  const pico = conDatos.reduce<Mensual | null>((mejor, dato) => (!mejor || dato.cantidad > mejor.cantidad ? dato : mejor), null);
+  const tarjetas = [
+    { titulo: "Total del período", valor: String(total), detalle: `${datos.length} mes${datos.length === 1 ? "" : "es"}` },
+    { titulo: "Promedio mensual", valor: promedio.toLocaleString("es-AR", { maximumFractionDigits: 1 }), detalle: "informes por mes" },
+    { titulo: "Mes con más informes", valor: pico ? String(pico.cantidad) : "—", detalle: pico ? etiquetaMes(pico.mes) : "Sin datos" },
+  ];
+  return (
+    <div className="grid grid-cols-3 gap-2 sm:gap-sm">
+      {tarjetas.map((tarjeta, index) => (
+        <div key={tarjeta.titulo} className="chart-kpi list-item-in min-w-0 rounded-lg border border-outline-variant bg-white p-2.5 shadow-sm sm:p-md" style={{ "--item-delay": `${index * 70}ms` } as React.CSSProperties}>
+          <p className="text-[9px] font-bold uppercase leading-tight tracking-wider text-on-surface-variant sm:text-[11px]">{tarjeta.titulo}</p>
+          <p className="mt-1 text-[22px] font-bold leading-none text-primary tabular-nums sm:text-[28px]">{tarjeta.valor}</p>
+          <p className="mt-1 truncate text-[11px] text-on-surface-variant sm:text-[12px]" title={tarjeta.detalle}>{tarjeta.detalle}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function LineaMensual({ datos }: { datos: Mensual[] }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [seleccionado, setSeleccionado] = useState<number | null>(null);
+  const [seleccionado, setSeleccionado] = useState<number | null>(datos.length > 0 ? datos.length - 1 : null);
   const ancho = Math.max(720, datos.length * 64);
   const alto = 250;
+  const base = alto - 45;
   const max = Math.max(1, ...datos.map((x) => x.cantidad));
   const referencias = [1, 0.75, 0.5, 0.25, 0].map((fraccion) => Math.round(max * fraccion));
   const puntos = datos.map((dato, i) => {
-    const x = 10 + i * ((ancho - 30) / Math.max(1, datos.length - 1));
+    const x = 36 + i * ((ancho - 72) / Math.max(1, datos.length - 1));
     const y = 25 + (alto - 70) * (1 - dato.cantidad / max);
     return { ...dato, x, y };
   });
   const linea = puntos.map((p) => `${p.x},${p.y}`).join(" ");
+  const area = puntos.length > 1 ? `${puntos[0].x},${base} ${linea} ${puntos[puntos.length - 1].x},${base}` : "";
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
@@ -43,36 +68,56 @@ function LineaMensual({ datos }: { datos: Mensual[] }) {
   return (
     <div className="rounded-lg border border-outline-variant bg-surface-container-low/30">
       <div className="flex h-[250px] min-w-0">
-        <div className="flex w-10 shrink-0 flex-col justify-between pb-[48px] pl-1 pt-[17px] text-right text-[11px] text-on-surface-variant" aria-hidden="true">
+        <div className="flex w-10 shrink-0 flex-col justify-between pb-[48px] pl-1 pt-[17px] text-right text-[11px] text-on-surface-variant tabular-nums" aria-hidden="true">
           {referencias.map((valor, index) => <span key={`${valor}-${index}`}>{valor}</span>)}
         </div>
-        <div ref={scrollRef} className="min-w-0 flex-1 overflow-x-auto">
+        <div ref={scrollRef} className="min-w-0 flex-1 overflow-x-auto overflow-y-hidden">
           <svg width={ancho} height={alto} role="img" aria-label="Informes realizados por mes" className="block min-w-full">
+            <defs>
+              <linearGradient id="chart-area-gradiente" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" className="chart-area-stop-top" />
+                <stop offset="100%" className="chart-area-stop-bottom" />
+              </linearGradient>
+            </defs>
             {[0, 0.25, 0.5, 0.75, 1].map((fraccion) => {
               const y = 25 + (alto - 70) * fraccion;
-              return <line key={fraccion} x1="0" x2={ancho - 10} y1={y} y2={y} stroke="#cbd5e1" strokeDasharray="3 4" />;
+              return <line key={fraccion} x1="0" x2={ancho - 10} y1={y} y2={y} className="chart-grid" strokeDasharray="3 4" />;
             })}
-            <polyline points={linea} fill="none" stroke="#003e7a" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
-            {puntos.map((p, index) => (
-              <g
-                key={p.mes}
-                role="button"
-                tabIndex={0}
-                aria-label={`${etiquetaMes(p.mes)}: ${p.cantidad} informes`}
-                onClick={() => setSeleccionado(index)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    setSeleccionado(index);
-                  }
-                }}
-                className="cursor-pointer"
-              >
-                {seleccionado === index ? <circle cx={p.x} cy={p.y} r="9" fill="#dbeafe" stroke="#003e7a" strokeWidth="2" /> : null}
-                <circle cx={p.x} cy={p.y} r={seleccionado === index ? "5" : "4"} fill="#003e7a" />
-                <text x={p.x} y={alto - 22} textAnchor="middle" fontSize="11" fill="#334155">{etiquetaMes(p.mes, true)}</text>
-              </g>
-            ))}
+            {area ? <polygon points={area} fill="url(#chart-area-gradiente)" className="chart-area" /> : null}
+            <polyline points={linea} pathLength={1} fill="none" className="chart-line" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+            {seleccionado !== null && puntos[seleccionado] ? (
+              <line x1={puntos[seleccionado].x} x2={puntos[seleccionado].x} y1={puntos[seleccionado].y} y2={base} className="chart-guide" strokeDasharray="2 3" />
+            ) : null}
+            {puntos.map((p, index) => {
+              const activo = seleccionado === index;
+              return (
+                <g
+                  key={p.mes}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${etiquetaMes(p.mes)}: ${p.cantidad} informes`}
+                  aria-pressed={activo}
+                  onClick={() => setSeleccionado(index)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSeleccionado(index);
+                    }
+                  }}
+                  className="chart-point cursor-pointer outline-none"
+                  style={{ "--item-delay": `${Math.min(index, 12) * 40}ms` } as React.CSSProperties}
+                >
+                  {/* Área táctil amplia para el celular */}
+                  <circle cx={p.x} cy={p.y} r="18" fill="transparent" />
+                  {activo ? <circle cx={p.x} cy={p.y} r="10" className="chart-point-halo" strokeWidth="2" /> : null}
+                  <circle cx={p.x} cy={p.y} r={activo ? 5.5 : 4} className="chart-point-dot" />
+                  {p.cantidad > 0 || activo ? (
+                    <text x={p.x} y={p.y - 12} textAnchor="middle" fontSize="11" fontWeight={activo ? 700 : 500} className={activo ? "chart-value-active" : "chart-value"}>{p.cantidad}</text>
+                  ) : null}
+                  <text x={p.x} y={alto - 22} textAnchor="middle" fontSize="11" fontWeight={activo ? 700 : 400} className="chart-axis-text">{etiquetaMes(p.mes, true)}</text>
+                </g>
+              );
+            })}
           </svg>
         </div>
       </div>
@@ -89,16 +134,23 @@ function LineaMensual({ datos }: { datos: Mensual[] }) {
 
 function Barras({ datos, etiqueta }: { datos: Barra[]; etiqueta: (dato: Barra) => string }) {
   const max = Math.max(1, ...datos.map((x) => x.cantidad));
+  const total = datos.reduce((suma, dato) => suma + dato.cantidad, 0);
   if (datos.length === 0) return <p className="rounded-lg border border-outline-variant p-md text-body-md text-on-surface-variant">No hay informes para este período.</p>;
   return (
     <div className="space-y-sm">
       {datos.map((dato, i) => (
-        <div key={`${dato.id ?? dato.tipo ?? i}`} className="grid grid-cols-[minmax(7rem,12rem)_1fr_auto] items-center gap-sm text-[13px]">
+        <div key={`${dato.id ?? dato.tipo ?? i}`} className="grid grid-cols-[minmax(4.5rem,8rem)_1fr_auto] items-center gap-2 text-[13px] sm:grid-cols-[minmax(7rem,12rem)_1fr_auto] sm:gap-sm">
           <span className="truncate" title={etiqueta(dato)}>{etiqueta(dato)}</span>
           <div className="h-6 overflow-hidden rounded bg-surface-container-low">
-            <div className="h-full rounded bg-primary transition-all" style={{ width: `${Math.max(4, (dato.cantidad / max) * 100)}%` }} />
+            <div
+              className="chart-bar h-full rounded"
+              style={{ width: `${Math.max(4, (dato.cantidad / max) * 100)}%`, "--item-delay": `${Math.min(i, 10) * 60}ms` } as React.CSSProperties}
+            />
           </div>
-          <strong className="w-8 text-right text-primary">{dato.cantidad}</strong>
+          <span className="whitespace-nowrap text-right tabular-nums">
+            <strong className="text-primary">{dato.cantidad}</strong>
+            <span className="ml-1 text-[11px] text-on-surface-variant">{total > 0 ? `${Math.round((dato.cantidad / total) * 100)}%` : ""}</span>
+          </span>
         </div>
       ))}
     </div>
@@ -170,24 +222,25 @@ export function Estadisticas() {
         {error ? <p className="rounded-lg border border-error bg-error-container p-md text-error">No se pudieron cargar las estadísticas: {error}</p> : null}
         {datos ? (
           <>
+            <Resumen datos={datos.mensuales} />
             <section className="rounded-lg border border-outline-variant bg-white p-md shadow-sm">
               <div className="mb-md flex items-center justify-between gap-sm">
                 <div><h2 className="section-title">Informes por mes</h2><p className="text-[12px] text-on-surface-variant">Últimos 12 meses visibles; deslizá para consultar meses anteriores.</p></div>
               </div>
               <LineaMensual datos={datos.mensuales} />
             </section>
-            <section className="rounded-lg border border-outline-variant bg-white p-md shadow-sm">
+            <section className={`rounded-lg border border-outline-variant bg-white p-md shadow-sm transition-opacity duration-300 ${cargando ? "opacity-60" : ""}`} aria-busy={cargando}>
               <div className="mb-md flex flex-wrap items-end justify-between gap-sm">
-                <h2 className="section-title">Informes por técnico</h2>
+                <h2 className="section-title flex items-center gap-2">Informes por técnico{cargando ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-label="Actualizando" /> : null}</h2>
                 <label className="text-[12px] font-bold text-on-surface-variant">Mes
-                  <select className="ml-2 rounded border border-outline-variant bg-white px-2 py-1 text-[13px]" value={mes} onChange={(e) => setMes(e.target.value)}>
+                  <select className="filter-control ml-2 rounded border border-outline-variant bg-white px-2 py-1 text-[13px]" value={mes} onChange={(e) => setMes(e.target.value)}>
                     {meses.slice().reverse().map((item) => <option key={item} value={item}>{etiquetaMes(item)}</option>)}
                   </select>
                 </label>
               </div>
               <Barras datos={datos.tecnicos} etiqueta={(dato) => dato.nombre ?? "Sin técnico"} />
             </section>
-            <section className="rounded-lg border border-outline-variant bg-white p-md shadow-sm">
+            <section className={`rounded-lg border border-outline-variant bg-white p-md shadow-sm transition-opacity duration-300 ${cargando ? "opacity-60" : ""}`} aria-busy={cargando}>
               <h2 className="section-title mb-md">Informes por tipo de equipo</h2>
               <Barras datos={datos.equipos} etiqueta={(dato) => TIPOS_EQUIPO.find((tipo) => tipo.value === dato.tipo)?.label ?? dato.tipo ?? "Sin tipo"} />
             </section>
