@@ -45,9 +45,10 @@ function ModalFirma({
     const pad = new SignaturePad(canvas, {
       minWidth: 1.2,
       maxWidth: 2.6,
-           // La firma se almacena siempre en negro para que PDF e impresión
-           // sean consistentes aunque se haya dibujado con tema oscuro.
-           penColor: "#191c1e",
+      // La firma se almacena siempre en negro sobre fondo blanco opaco: así se
+      // ve igual en el PDF y aunque el navegador fuerce un modo oscuro.
+      penColor: "#191c1e",
+      backgroundColor: "#ffffff",
     });
     pad.addEventListener("beginStroke", () => setPuedeConfirmar(true));
     pad.addEventListener("endStroke", () => setPuedeConfirmar(!pad.isEmpty()));
@@ -56,7 +57,11 @@ function ModalFirma({
     // En pantallas táctiles el layout puede terminar después del primer paint,
     // lo que cambiaría offsetWidth. Se vuelve a medir con un frame de margen.
     const id = window.requestAnimationFrame(() => {
-      if (padRef.current === pad) medir();
+      if (padRef.current === pad) {
+        medir();
+        // Redimensionar el canvas lo deja transparente: se repinta el fondo.
+        if (pad.isEmpty()) pad.clear();
+      }
     });
     return () => {
       window.cancelAnimationFrame(id);

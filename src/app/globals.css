@@ -327,6 +327,8 @@
 html.dark .theme-toggle-track { background: #0055a4; }
 html.dark .theme-toggle-thumb { transform: translateX(1.05rem); background: #d5e3ff; }
 
+:root { color-scheme: only light; }
+
 html.dark {
   color-scheme: dark;
   background: #0e1720;

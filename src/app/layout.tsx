@@ -21,6 +21,10 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: "#003e7a",
+  // Evita que Chrome/Samsung Internet oscurezcan la app por su cuenta cuando el
+  // celular está en modo oscuro (dejaba la firma negra sobre fondo negro).
+  // El modo oscuro propio de la app (html.dark) sigue funcionando.
+  colorScheme: "only light",
 };
 
 export const metadata: Metadata = {
