@@ -1,4 +1,4 @@
-import { db } from "./db";
+import { db, prepararBlob } from "./db";
 import { supabase } from "./supabase";
 import { normalizarValores } from "./informes";
 import { tablaAnexa } from "./sync";
@@ -136,7 +136,7 @@ export async function traerInformeRemoto(id: string): Promise<boolean> {
     if (tieneBlob) continue;
     try {
       const { data: descargado } = await supabase().storage.from(BUCKET).download(String(a.url));
-      if (descargado) await db.blobs.put({ id: idArchivo, blob: descargado });
+      if (descargado) await db.blobs.put(await prepararBlob(idArchivo, descargado));
     } catch {
       /* FotoItem usa signed URL como fallback */
     }

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import SignaturePad from "signature_pad";
-import { db } from "@/lib/db";
+import { db, prepararBlob } from "@/lib/db";
 import { supabase } from "@/lib/supabase";
 import type { InformeGeneral, TipoArchivo } from "@/lib/types";
 import { Seccion } from "@/components/ui";
@@ -185,12 +185,13 @@ function BloqueFirma({
 
   async function guardar(blob: Blob) {
     const id = crypto.randomUUID();
+    const registroBlob = await prepararBlob(id, blob);
     await db.transaction("rw", [db.archivos, db.blobs], async () => {
       for (const anterior of existentes ?? []) {
         await db.archivos.delete(anterior.id);
         await db.blobs.delete(anterior.id);
       }
-      await db.blobs.put({ id, blob });
+      await db.blobs.put(registroBlob);
       await db.archivos.put({
         id,
         informe_id: informeId,

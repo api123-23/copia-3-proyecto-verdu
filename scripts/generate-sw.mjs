@@ -69,12 +69,24 @@ async function guardar(cache, url) {
 async function precargarApp(cache) {
   const vistos = new Set();
   const cola = [];
-  const buscar = (texto) => {
-    for (const m of texto.matchAll(RE_ASSET)) {
-      const url = "/_next/" + m[1];
-      if (!vistos.has(url) && vistos.size < MAX_ASSETS) {
-        vistos.add(url);
-        cola.push(url);
+  const agregar = (url) => {
+    if (!vistos.has(url) && vistos.size < MAX_ASSETS) {
+      vistos.add(url);
+      cola.push(url);
+    }
+  };
+  const buscar = (texto, base) => {
+    for (const m of texto.matchAll(RE_ASSET)) agregar("/_next/" + m[1]);
+    // En CSS las fuentes van con rutas relativas: url(../media/x.woff2)
+    if (base) {
+      for (const m of texto.matchAll(/url\\(\\s*["']?([^"')]+)["']?\\s*\\)/g)) {
+        if (m[1].startsWith("data:")) continue;
+        try {
+          const u = new URL(m[1], self.location.origin + base);
+          if (u.origin === self.location.origin && u.pathname.startsWith("/_next/static/")) agregar(u.pathname);
+        } catch {
+          /* ruta inválida: se ignora */
+        }
       }
     }
   };
@@ -91,7 +103,7 @@ async function precargarApp(cache) {
     await Promise.allSettled(
       lote.map(async (url) => {
         const res = await guardar(cache, url);
-        if (res && /\\.(js|css)$/.test(url)) buscar(await res.text());
+        if (res && /\\.(js|css)$/.test(url)) buscar(await res.text(), url.endsWith(".css") ? url : null);
       })
     );
   }

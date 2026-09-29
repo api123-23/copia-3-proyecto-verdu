@@ -81,3 +81,36 @@ class AppDB extends Dexie {
 }
 
 export const db = new AppDB();
+
+// Safari en modo privado no permite guardar imágenes (Blob) en IndexedDB. En
+// ese caso se guardan sus bytes y al leerlas se reconstruye el Blob, así el
+// resto de la app no nota la diferencia.
+db.blobs.hook("reading", (registro: BlobArchivo) => {
+  if (registro && !(registro.blob instanceof Blob) && registro.datos) {
+    return { ...registro, blob: new Blob([registro.datos], { type: registro.tipo || "application/octet-stream" }) };
+  }
+  return registro;
+});
+
+let blobSoportado: Promise<boolean> | null = null;
+
+function soportaBlobs(): Promise<boolean> {
+  if (!blobSoportado) {
+    const id = "__prueba-blob__";
+    blobSoportado = db.blobs
+      .put({ id, blob: new Blob(["x"], { type: "text/plain" }) })
+      .then(() => db.blobs.delete(id).catch(() => undefined))
+      .then(() => true)
+      .catch(() => false);
+  }
+  return blobSoportado;
+}
+
+/**
+ * Prepara el registro de una imagen para guardarlo. Llamar ANTES de abrir una
+ * transacción de Dexie (convertir a bytes es asíncrono y no puede ir dentro).
+ */
+export async function prepararBlob(id: string, blob: Blob): Promise<BlobArchivo> {
+  if (await soportaBlobs()) return { id, blob };
+  return { id, datos: await blob.arrayBuffer(), tipo: blob.type } as BlobArchivo;
+}

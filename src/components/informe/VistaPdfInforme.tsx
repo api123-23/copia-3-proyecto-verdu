@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/lib/db";
+import { db, prepararBlob } from "@/lib/db";
 import { supabase } from "@/lib/supabase";
 import {
   CAMPO_LABELS,
@@ -334,7 +334,7 @@ export function VistaPdfInforme({
           try {
             const descargado = await supabase().storage.from("informe-archivos").download(archivo.url);
             if (descargado.data) {
-              await db.blobs.put({ id: archivo.id, blob: descargado.data }).catch(() => undefined);
+              await prepararBlob(archivo.id, descargado.data).then((r) => db.blobs.put(r)).catch(() => undefined);
               url = URL.createObjectURL(descargado.data);
               urlsTemporales.push(url);
             } else {

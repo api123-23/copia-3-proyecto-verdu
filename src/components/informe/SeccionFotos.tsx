@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/lib/db";
+import { db, prepararBlob } from "@/lib/db";
 import { supabase } from "@/lib/supabase";
 import { comprimirImagenWebp } from "@/lib/imagen";
 import type { ArchivoLocal, CategoriaFoto } from "@/lib/types";
@@ -196,8 +196,9 @@ export default function SeccionFotos({
           blob = file;
         }
         const id = generarId();
+        const registroBlob = await prepararBlob(id, blob);
         await db.transaction("rw", [db.archivos, db.blobs], async () => {
-          await db.blobs.put({ id, blob });
+          await db.blobs.put(registroBlob);
           await db.archivos.put({
             id,
             informe_id: informeId,

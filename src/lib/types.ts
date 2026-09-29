@@ -310,4 +310,7 @@ export interface ArchivoLocal {
 export interface BlobArchivo {
   id: string;
   blob: Blob;
+  /** Respaldo para navegadores que no guardan Blobs (Safari en modo privado). */
+  datos?: ArrayBuffer;
+  tipo?: string;
 }
