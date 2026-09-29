@@ -298,7 +298,7 @@ export function VistaPdfInforme({
     let activo = true;
     (async () => {
       let inf = await db.informes.get(id).catch(() => undefined);
-      if (!inf) {
+      if (!inf && (typeof navigator === "undefined" || navigator.onLine)) {
         const { traerInformeRemoto } = await import("@/lib/remoto");
         if (await traerInformeRemoto(id).catch(() => false)) inf = await db.informes.get(id).catch(() => undefined);
       }

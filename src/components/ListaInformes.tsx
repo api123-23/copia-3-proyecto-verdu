@@ -23,6 +23,28 @@ const BADGE_SYNC: Record<string, { label: string; clase: string }> = {
   error: { label: "Error de sync", clase: "bg-red-100 text-red-700" },
 };
 
+const BADGE_BORRADOR = { label: "Borrador", clase: "bg-sky-100 text-sky-800" };
+
+/** Elimina un borrador local (nunca toca lo que ya está en el servidor). */
+async function descartarBorrador(id: string): Promise<void> {
+  await db.transaction(
+    "rw",
+    [db.informes, db.valores_motocompresor, db.valores_compresor, db.valores_vehiculos, db.valores_secadores, db.valores_grupo_electrogeno, db.archivos, db.blobs],
+    async () => {
+      const informe = await db.informes.get(id);
+      if (!informe || informe.listo_para_enviar) return;
+      const archivos = await db.archivos.where("informe_id").equals(id).primaryKeys();
+      // Fotos/firmas ya subidas pertenecen al informe del servidor: se conservan allá.
+      await db.blobs.bulkDelete(archivos);
+      await db.archivos.bulkDelete(archivos);
+      for (const tabla of [db.valores_motocompresor, db.valores_compresor, db.valores_vehiculos, db.valores_secadores, db.valores_grupo_electrogeno]) {
+        await tabla.delete(id);
+      }
+      await db.informes.delete(id);
+    }
+  );
+}
+
 type Tecnico = { id: string; nombre: string | null; apellido: string | null; rol: string };
 type ClienteL = { id: string; nombre: string };
 
@@ -156,14 +178,23 @@ export function ListaInformes() {
           db.blobs,
         ],
         async () => {
-          await db.informes.clear();
-          await db.valores_motocompresor.clear();
-          await db.valores_compresor.clear();
-          await db.valores_vehiculos.clear();
-          await db.valores_secadores.clear();
-          await db.valores_grupo_electrogeno.clear();
-          await db.archivos.clear();
-          await db.blobs.clear();
+          // Solo se descartan las copias locales de informes ya sincronizados
+          // (se vuelven a bajar del servidor). Borradores y pendientes NUNCA se
+          // borran acá.
+          const conservar = new Set(
+            (await db.informes.filter((i) => i.estado_sync !== "sincronizado").primaryKeys()).map(String)
+          );
+          const sincronizados = (await db.informes.toCollection().primaryKeys())
+            .map(String)
+            .filter((informeId) => !conservar.has(informeId));
+          await db.informes.bulkDelete(sincronizados);
+          for (const tabla of [db.valores_motocompresor, db.valores_compresor, db.valores_vehiculos, db.valores_secadores, db.valores_grupo_electrogeno]) {
+            const claves = (await tabla.toCollection().primaryKeys()).map(String);
+            await tabla.bulkDelete(claves.filter((clave) => !conservar.has(clave)));
+          }
+          const archivosDescartables = await db.archivos.filter((a) => !conservar.has(a.informe_id)).primaryKeys();
+          await db.archivos.bulkDelete(archivosDescartables);
+          await db.blobs.bulkDelete(archivosDescartables);
         }
       );
       setRemotos(lista);
@@ -220,7 +251,7 @@ export function ListaInformes() {
   if (cargando || !locales) return <PantallaCarga mensaje="Cargando informes..." />;
 
   const pendientesLocales = locales.filter((l) =>
-    l.estado_sync !== "sincronizado" && (esMaster || esObservador || l.estado_firma !== "firmado")
+    l.estado_sync !== "sincronizado" && (esMaster || esObservador || l.estado_firma !== "firmado" || !l.listo_para_enviar)
   );
 
   const informesMap = new Map<string, InformeGeneral>();
@@ -512,7 +543,8 @@ export function ListaInformes() {
              {informes.map((inf, index) => {
               const tipo = etiquetaTipo.get(inf.tipo_equipo) ?? inf.tipo_equipo;
               const esLocal = idsLocales.has(inf.id);
-              const sync = esLocal ? BADGE_SYNC[inf.estado_sync] ?? BADGE_SYNC.pendiente : null;
+              const sync = esLocal ? (!inf.listo_para_enviar ? BADGE_BORRADOR : BADGE_SYNC[inf.estado_sync] ?? BADGE_SYNC.pendiente) : null;
+              const esBorradorPc = esLocal && !inf.listo_para_enviar;
               return (
                 <tr
                   key={inf.id}
@@ -545,6 +577,20 @@ export function ListaInformes() {
                    </td>
                     <td className="px-3 py-2 text-right">
                       <div className="flex justify-end gap-1">
+                        {esBorradorPc ? (
+                          <button
+                            type="button"
+                            className="inline-flex items-center rounded px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-error hover:bg-error-container active:scale-95 transition-all"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm("¿Descartar este borrador? Se borran los datos y fotos cargados en este equipo que no se enviaron.")) {
+                                void descartarBorrador(inf.id);
+                              }
+                            }}
+                          >
+                            Descartar
+                          </button>
+                        ) : null}
                         <button
                           type="button"
                           disabled={descargandoId !== null}
@@ -578,7 +624,8 @@ export function ListaInformes() {
          {informes.map((inf, index) => {
           const tipo = etiquetaTipo.get(inf.tipo_equipo) ?? inf.tipo_equipo;
           const esLocal = idsLocales.has(inf.id);
-          const sync = esLocal ? BADGE_SYNC[inf.estado_sync] ?? BADGE_SYNC.pendiente : null;
+          const sync = esLocal ? (!inf.listo_para_enviar ? BADGE_BORRADOR : BADGE_SYNC[inf.estado_sync] ?? BADGE_SYNC.pendiente) : null;
+          const esBorrador = esLocal && !inf.listo_para_enviar;
           const fecha = formatoFecha(inf.fecha_hora);
           return (
              <div
@@ -635,6 +682,20 @@ export function ListaInformes() {
                 </div>
                ) : null}
                 <div className="mt-sm flex justify-end gap-1">
+                  {esBorrador ? (
+                    <button
+                      type="button"
+                      className="mr-auto inline-flex items-center rounded px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider text-error active:scale-95 transition-all"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm("¿Descartar este borrador? Se borran los datos y fotos cargados en este celular que no se enviaron.")) {
+                          void descartarBorrador(inf.id);
+                        }
+                      }}
+                    >
+                      Descartar
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     disabled={descargandoId !== null}

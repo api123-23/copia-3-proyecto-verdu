@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 import { useSesion } from "@/lib/useSesion";
 import { db } from "@/lib/db";
 import {
@@ -43,63 +44,6 @@ function textoComparable(texto: string): string {
     .toLowerCase()
     .replace(/\s+/g, " ")
     .trim();
-}
-
-function BeforeUnloadGuard({ permitirSalida, proteger, onConfirmarSalida }: { permitirSalida: { current: boolean }; proteger: boolean; onConfirmarSalida: () => void }) {
-  useEffect(() => {
-    if (!proteger) return;
-    const editorHash = window.location.hash;
-    let hashAnterior = editorHash;
-    const salir = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = "¿Realmente quieres salir? Se perderán todos los datos cargados en este informe.";
-    };
-    const cambioDeHash = () => {
-      const nuevoHash = window.location.hash;
-      if (permitirSalida.current) {
-        permitirSalida.current = false;
-        hashAnterior = nuevoHash;
-        return;
-      }
-      if (nuevoHash === hashAnterior) return;
-      if (window.confirm("¿Realmente quieres salir? Se perderán todos los datos cargados en este informe.")) {
-        onConfirmarSalida();
-        hashAnterior = nuevoHash;
-        return;
-      }
-      window.location.hash = hashAnterior;
-    };
-    const navegacionAtras = () => {
-      const nuevoHash = window.location.hash;
-      if (permitirSalida.current) {
-        permitirSalida.current = false;
-        hashAnterior = nuevoHash;
-        return;
-      }
-      if (window.confirm("¿Realmente quieres salir? Se perderán todos los datos cargados en este informe.")) {
-        onConfirmarSalida();
-        permitirSalida.current = true;
-        if (nuevoHash === editorHash) window.history.back();
-        else hashAnterior = nuevoHash;
-        return;
-      }
-      window.history.pushState(
-        { editorGuard: true },
-        "",
-        `${window.location.pathname}${window.location.search}${editorHash}`
-      );
-      hashAnterior = editorHash;
-    };
-    window.addEventListener("beforeunload", salir);
-    window.addEventListener("hashchange", cambioDeHash);
-    window.addEventListener("popstate", navegacionAtras);
-    return () => {
-      window.removeEventListener("beforeunload", salir);
-      window.removeEventListener("hashchange", cambioDeHash);
-      window.removeEventListener("popstate", navegacionAtras);
-    };
-  }, [onConfirmarSalida, permitirSalida, proteger]);
-  return null;
 }
 
 function encontrarControlFaltante(nombre: string): HTMLElement | null {
@@ -170,6 +114,13 @@ export function EditorInforme({ id }: { id: string }) {
     }, 5000);
   }
   const sucioRef = useRef(false);
+  // Guardado automático: todo cambio queda en el celular aunque se cierre la
+  // app. Las escrituras van en cola para que un autoguardado nunca pise a
+  // "Enviar".
+  const pendienteGuardarRef = useRef(false);
+  const esNuevoRef = useRef(false);
+  const guardadoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const colaGuardadoRef = useRef<Promise<void>>(Promise.resolve());
   const estadoRef = useRef<{
     informe: InformeGeneral | null;
     valores: ValoresBase;
@@ -184,22 +135,25 @@ export function EditorInforme({ id }: { id: string }) {
     let activo = true;
     (async () => {
       let inf = await db.informes.get(id).catch(() => undefined);
-      if (!inf) {
-        const traido = await traerInformeRemoto(id).catch(() => false);
-        if (traido) {
-          inf = await db.informes.get(id).catch(() => undefined);
-        }
-      }
+      // Informe recién creado: está en memoria de la sesión, no hace falta
+      // consultar el servidor (sin señal eso demoraba la apertura).
       if (!inf) {
         const crudo = sessionStorage.getItem("verdu-nuevo");
         if (crudo) {
           try {
             const candidato = JSON.parse(crudo) as InformeGeneral;
-            if (candidato.id === id) inf = candidato;
+            if (candidato.id === id) {
+              inf = candidato;
+              esNuevoRef.current = true;
+            }
           } catch {
             /* sesión corrupta; se ignora */
           }
         }
+      }
+      if (!inf && (typeof navigator === "undefined" || navigator.onLine)) {
+        const traido = await traerInformeRemoto(id).catch(() => false);
+        if (traido) inf = await db.informes.get(id).catch(() => undefined);
       }
       if (!inf) {
         if (activo) setFallo(true);
@@ -229,8 +183,66 @@ export function EditorInforme({ id }: { id: string }) {
     };
   }, [id, cargando, intento]);
 
+  const guardarAhora = useCallback((): Promise<void> => {
+    if (guardadoTimerRef.current) {
+      clearTimeout(guardadoTimerRef.current);
+      guardadoTimerRef.current = null;
+    }
+    colaGuardadoRef.current = colaGuardadoRef.current.then(async () => {
+      if (!pendienteGuardarRef.current) return;
+      const { informe: inf, valores: val, valoresGE: ge } = estadoRef.current;
+      if (!inf) return;
+      pendienteGuardarRef.current = false;
+      try {
+        // Borrador: no se sube hasta que se toque "Enviar".
+        await guardarBorrador(
+          { ...inf, estado_sync: "pendiente", listo_para_enviar: false },
+          val,
+          inf.tipo_equipo === "grupo_electrogeno" ? ge : undefined
+        );
+        esNuevoRef.current = false;
+      } catch (error) {
+        pendienteGuardarRef.current = true;
+        console.error("[editor] No se pudo guardar el borrador:", error);
+      }
+    });
+    return colaGuardadoRef.current;
+  }, []);
+
+  function programarGuardado() {
+    pendienteGuardarRef.current = true;
+    if (guardadoTimerRef.current) clearTimeout(guardadoTimerRef.current);
+    guardadoTimerRef.current = setTimeout(() => void guardarAhora(), 800);
+  }
+
+  // Al pasar a segundo plano, cerrar la app o salir del editor se guarda ya.
+  useEffect(() => {
+    const alOcultar = () => {
+      if (document.visibilityState === "hidden") void guardarAhora();
+    };
+    const alSalir = () => void guardarAhora();
+    document.addEventListener("visibilitychange", alOcultar);
+    window.addEventListener("pagehide", alSalir);
+    return () => {
+      document.removeEventListener("visibilitychange", alOcultar);
+      window.removeEventListener("pagehide", alSalir);
+      void guardarAhora();
+    };
+  }, [guardarAhora]);
+
+  // Un informe nuevo se guarda apenas recibe su primera foto o firma, para que
+  // los archivos nunca queden sueltos.
+  const cantidadArchivos = useLiveQuery(() => db.archivos.where("informe_id").equals(id).count(), [id]);
+  useEffect(() => {
+    if (esNuevoRef.current && cantidadArchivos && cantidadArchivos > 0) {
+      pendienteGuardarRef.current = true;
+      void guardarAhora();
+    }
+  }, [cantidadArchivos, guardarAhora]);
+
   function patchInforme(p: Partial<InformeGeneral>) {
     sucioRef.current = true;
+    programarGuardado();
     setInforme((prev) => {
       if (!prev) return prev;
       const next = { ...prev, ...p };
@@ -241,6 +253,7 @@ export function EditorInforme({ id }: { id: string }) {
 
   function patchValores(p: Partial<ValoresBase>) {
     sucioRef.current = true;
+    programarGuardado();
     setValores((prev) => {
       const next = { ...prev, ...p };
       estadoRef.current.valores = next;
@@ -250,6 +263,7 @@ export function EditorInforme({ id }: { id: string }) {
 
   function patchValoresGE(p: Partial<InformeGrupoElectrogeno>) {
     sucioRef.current = true;
+    programarGuardado();
     setValoresGE((prev) => {
       const next = { ...prev, ...p };
       estadoRef.current.valoresGE = next;
@@ -293,6 +307,12 @@ export function EditorInforme({ id }: { id: string }) {
     }
     setEnviando(true);
     try {
+      if (guardadoTimerRef.current) {
+        clearTimeout(guardadoTimerRef.current);
+        guardadoTimerRef.current = null;
+      }
+      pendienteGuardarRef.current = false;
+      await colaGuardadoRef.current;
       const cerrado = inf.estado_firma === "firmado";
       const yaSincronizado = inf.estado_sync === "sincronizado";
       const archivosPendientes = await db.archivos
@@ -414,12 +434,9 @@ export function EditorInforme({ id }: { id: string }) {
     year: "numeric",
   });
 
-  function salirSinGuardar(e: React.MouseEvent<HTMLAnchorElement>) {
+  function volverAlListado(e: React.MouseEvent<HTMLAnchorElement>) {
     e.preventDefault();
-    if (window.confirm("¿Realmente quieres salir? Se perderán todos los datos cargados en este informe.")) {
-      permitirSalida.current = true;
-      navegar("#/");
-    }
+    void guardarAhora().finally(() => navegar("#/"));
   }
 
   return (
@@ -430,7 +447,6 @@ export function EditorInforme({ id }: { id: string }) {
         paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 3rem)",
       }}
     >
-      <BeforeUnloadGuard permitirSalida={permitirSalida} proteger={true} onConfirmarSalida={() => undefined} />
       <header
         className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin bg-primary text-on-primary border-b border-primary-container shadow-sm"
         style={{
@@ -443,7 +459,7 @@ export function EditorInforme({ id }: { id: string }) {
             href="#/"
             className="hover:bg-primary-container active:scale-95 transition-all px-2 py-1 rounded"
             aria-label="Volver al listado"
-            onClick={salirSinGuardar}
+            onClick={volverAlListado}
           >
             <Icono nombre="arrow_back" className="w-[16px] h-[16px]" />
           </a>
