@@ -45,26 +45,12 @@ async function conSesion(): Promise<boolean> {
   return Boolean(data.session);
 }
 
-async function resolverNumeroInforme(informe: InformeGeneral): Promise<number> {
-  if (informe.numero_registro !== null && informe.numero_registro !== undefined) {
-    return informe.numero_registro;
-  }
-
-  const existente = await supabase()
-    .from("informes_generales")
-    .select("numero_registro")
-    .eq("id", informe.id)
-    .maybeSingle();
-  if (existente.error) throw existente.error;
-  if (existente.data?.numero_registro !== null && existente.data?.numero_registro !== undefined) {
-    return Number(existente.data.numero_registro);
-  }
-
-  const siguiente = await supabase().rpc("siguiente_numero_informe");
-  if (siguiente.error || siguiente.data === null || siguiente.data === undefined) {
-    throw siguiente.error ?? new Error("No se pudo asignar el número del informe.");
-  }
-  return Number(siguiente.data);
+// El número de un informe NUEVO no se pide por adelantado: lo asigna el servidor
+// dentro de la misma transacción que lo guarda (sincronizar_informe_completo),
+// así un fallo en el medio nunca deja un número salteado. Acá solo se conserva
+// el número si el informe ya lo tenía.
+function numeroExistente(informe: InformeGeneral): number | null {
+  return informe.numero_registro ?? null;
 }
 
 async function hayConexion(): Promise<boolean> {
@@ -191,9 +177,7 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       informe = { ...informe, tecnico_id: uid };
       await db.informes.update(informe.id, { tecnico_id: uid });
     }
-    const numero = await resolverNumeroInforme(informe);
-    informe = { ...informe, numero_registro: numero };
-    await db.informes.update(informe.id, { numero_registro: numero });
+    informe = { ...informe, numero_registro: numeroExistente(informe) };
     await db.informes.update(informe.id, { estado_sync: "subiendo_imagenes", error_sync: null });
     const archivos = await db.archivos.where("informe_id").equals(informe.id).toArray();
     archivosIniciales = archivos;

@@ -538,13 +538,75 @@ create sequence if not exists public.numero_informe_seq;
 -- NOTA: la RPC debe ser VOLATILE (no STABLE/IMMUTABLE). Si es STABLE, PostgREST
 -- la ejecuta en una transacción de SOLO LECTURA y nextval() fallaría con
 -- "cannot execute nextval() in a read-only transaction".
+-- NUMERACIÓN SIN SALTOS (reemplaza a la secuencia).
+-- Una secuencia de PostgreSQL nunca devuelve un número aunque la operación
+-- falle, y la app pedía el número ANTES de guardar el informe: si algo fallaba
+-- en el medio, ese número quedaba salteado para siempre.
+-- Ahora el número sale de este contador DENTRO de la misma transacción que
+-- guarda el informe: si el guardado falla, el contador también se deshace.
+-- La fila queda bloqueada durante la transacción, así dos informes que llegan
+-- a la vez reciben números distintos y consecutivos.
+create table if not exists public.numeracion_informes (
+  id boolean primary key default true check (id),
+  ultimo integer not null
+);
+alter table public.numeracion_informes enable row level security;
+-- Sin políticas: solo las funciones del servidor pueden tocar el contador.
+
+-- Punto de partida: el mayor número ya usado o ya reservado por la secuencia
+-- anterior (así no choca con informes que un celular ya numeró y todavía no
+-- subió). Nunca baja. Si no quedan informes, reinicia en 0 (el próximo es 1).
+do $$
+declare
+  maximo integer;
+  reservado integer := 0;
+begin
+  select coalesce(max(numero_registro), 0) into maximo from public.informes_generales;
+  if exists (select 1 from pg_class where relname = 'numero_informe_seq' and relkind = 'S') then
+    select case when is_called then last_value else last_value - 1 end into reservado
+    from public.numero_informe_seq;
+  end if;
+  insert into public.numeracion_informes (id, ultimo)
+    values (true, case when maximo = 0 then 0 else greatest(maximo, reservado) end)
+  on conflict (id) do update
+    set ultimo = case
+      when excluded.ultimo = 0 then 0
+      else greatest(public.numeracion_informes.ultimo, excluded.ultimo)
+    end;
+end $$;
+
+-- Uso interno: la llaman las funciones que guardan el informe.
+create or replace function public.tomar_numero_informe()
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  n integer;
+begin
+  update public.numeracion_informes set ultimo = ultimo + 1 where id returning ultimo into n;
+  if n is null then
+    insert into public.numeracion_informes (id, ultimo)
+      values (true, coalesce((select max(numero_registro) from public.informes_generales), 0) + 1)
+    on conflict (id) do update set ultimo = public.numeracion_informes.ultimo + 1
+    returning ultimo into n;
+  end if;
+  return n;
+end;
+$$;
+revoke all on function public.tomar_numero_informe() from public, anon, authenticated;
+
+-- Compatibilidad con versiones viejas de la app que todavía piden el número
+-- por adelantado. Las versiones nuevas ya no la usan.
 create or replace function public.siguiente_numero_informe()
 returns bigint
 language sql
 volatile
+security definer
 set search_path = public
 as $$
-  select nextval('public.numero_informe_seq');
+  select public.tomar_numero_informe()::bigint;
 $$;
 
 grant execute on function public.siguiente_numero_informe() to authenticated;
@@ -575,6 +637,7 @@ alter table informes_generales
   alter column numero_registro drop default;
 
 -- Se retira el mecanismo anterior (tabla contador + trigger viejo)
+-- (la tabla vieja se llamaba contador_informes; el contador nuevo es numeracion_informes)
 drop table if exists public.contador_informes;
 
 create or replace function public.rol_actual()
@@ -646,7 +709,8 @@ begin
       raise exception 'El técnico no puede editar este informe' using errcode = '42501';
     end if;
     tecnico := existente.tecnico_id;
-    numero := coalesce(nullif(p_payload->>'numero_registro', '')::integer, existente.numero_registro);
+    -- Un informe ya numerado conserva SIEMPRE su número.
+    numero := coalesce(existente.numero_registro, public.tomar_numero_informe());
 
     update public.informes_generales set
       numero_registro = numero,
@@ -683,8 +747,8 @@ begin
       raise exception 'El técnico no puede crear un informe para otro usuario' using errcode = '42501';
     end if;
     numero := nullif(p_payload->>'numero_registro', '')::integer;
-    if numero is null then
-      numero := nextval('public.numero_informe_seq');
+    if numero is null or exists (select 1 from public.informes_generales where numero_registro = numero) then
+      numero := public.tomar_numero_informe();
     end if;
 
     insert into public.informes_generales (
@@ -747,6 +811,10 @@ begin
     raise exception 'Sesión no autenticada' using errcode = '42501';
   end if;
 
+  -- Si el mismo informe llega dos veces a la vez, se procesan en fila: el
+  -- segundo ya lo ve creado y no consume otro número.
+  perform pg_advisory_xact_lock(hashtext(informe_id::text));
+
   select * into existente
   from public.informes_generales
   where id = informe_id;
@@ -756,15 +824,22 @@ begin
       raise exception 'El usuario no puede editar este informe' using errcode = '42501';
     end if;
     tecnico := existente.tecnico_id;
-    numero := coalesce(nullif(p_informe->>'numero_registro', '')::integer, existente.numero_registro);
+    -- Un informe ya numerado conserva SIEMPRE su número.
+    numero := existente.numero_registro;
+    if numero is null then
+      numero := public.tomar_numero_informe();
+    end if;
   else
     tecnico := coalesce(nullif(p_informe->>'tecnico_id', '')::uuid, uid);
     if not public.es_admin() and tecnico <> uid then
       raise exception 'El técnico no puede crear un informe para otro usuario' using errcode = '42501';
     end if;
+    -- Versiones viejas de la app traen un número ya reservado: se respeta si
+    -- está libre. Las nuevas no mandan número y se asigna acá, en la misma
+    -- transacción que guarda el informe (si algo falla, no se pierde).
     numero := nullif(p_informe->>'numero_registro', '')::integer;
-    if numero is null then
-      numero := nextval('public.numero_informe_seq');
+    if numero is null or exists (select 1 from public.informes_generales where numero_registro = numero) then
+      numero := public.tomar_numero_informe();
     end if;
   end if;
 

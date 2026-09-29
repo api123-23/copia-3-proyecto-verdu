@@ -68,7 +68,7 @@ export default function Home() {
         <div className="flex min-w-0 items-center gap-2">
           <LogoTipo className="w-7 h-7 rounded-lg" />
           <h1 className="truncate text-[13px] sm:text-title-md font-title-md font-bold tracking-tight">
-            Air Power S.A.
+            VERDU Y CIA
           </h1>
         </div>
         <div className="flex shrink-0 items-center gap-1">
