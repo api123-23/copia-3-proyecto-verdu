@@ -1089,3 +1089,46 @@ html.dark .esqueleto { background-image: linear-gradient(90deg, #20313f 25%, #2a
 /* Indicador de guardado automático del editor */
 .indicador-guardado { opacity: 0; transform: translateY(2px); transition: opacity 300ms ease, transform 300ms ease; pointer-events: none; }
 .indicador-guardado.visible { opacity: 1; transform: translateY(0); }
+
+/* ---- Sin conexión: la app cambia levemente de tono ---- */
+header.fixed { transition: box-shadow 250ms ease, background-color 600ms ease; }
+html.sin-conexion header.fixed.bg-primary { background-color: #3e5068 !important; border-color: #4f6379 !important; }
+html.sin-conexion body { background-color: #eef1f4; transition: background-color 600ms ease; }
+html.sin-conexion.dark body { background-color: #111a22; }
+@keyframes avisoConexionIn {
+  from { opacity: 0; transform: translateY(1.25rem) scale(0.94); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.aviso-conexion { animation: avisoConexionIn 420ms cubic-bezier(0.22, 1, 0.36, 1) both; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+
+/* ---- Menú de perfil ---- */
+@keyframes menuPanelMovil {
+  from { opacity: 0; transform: translateY(-14px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes menuItemIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.menu-perfil-fondo { animation: modalIn 220ms ease-out both; }
+.menu-perfil-panel { transform-origin: top right; animation: menuPanelMovil 340ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.menu-perfil-item { animation: menuItemIn 320ms cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: var(--item-delay, 0ms); }
+@media (min-width: 640px) {
+  .menu-perfil-panel { top: auto !important; animation-name: profileMenuIn; }
+}
+html.dark .menu-perfil-panel { border-color: #405466; }
+html.dark .menu-perfil-item:hover { background-color: #20313f; }
+html.dark .menu-perfil-item > span:first-child { filter: brightness(0.82) saturate(0.9); }
+html.dark .menu-perfil-cabecera { background: linear-gradient(135deg, #0d2b4a, #173d63); }
+
+/* ---- Panel de administración y clientes ---- */
+@keyframes desplegar { from { opacity: 0; transform: translateY(-6px) scale(0.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.form-cliente, .aviso-panel { animation: desplegar 300ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+html.dark .aviso-panel.bg-green-50 { background-color: #12352a; color: #b7ebd0; border-color: #2c6b52; }
+html.dark .selector-rol button[aria-checked="true"] { background-color: #243747; color: #9ecbff; }
+html.dark .form-cliente { background-color: #182a39; border-color: #35536d; }
+html.dark .fila-usuario, html.dark .section-card li { border-color: #405466; }
+
+/* Si está la píldora de "Sesión vencida", el aviso de conexión va encima. */
+.aviso-conexion-contenedor { transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1); }
+html.relogin-pildora .aviso-conexion-contenedor { transform: translateY(-3.6rem); }

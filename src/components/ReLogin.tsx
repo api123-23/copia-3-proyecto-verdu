@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { isAuthRetryableFetchError, type Session } from "@supabase/supabase-js";
@@ -13,9 +13,19 @@ import { LogoTipo } from "@/components/LogoTipo";
 
 const INTERVALO_MINIMO_MS = 60_000;
 
+function suscribirConexion(aviso: () => void) {
+  window.addEventListener("online", aviso);
+  window.addEventListener("offline", aviso);
+  return () => {
+    window.removeEventListener("online", aviso);
+    window.removeEventListener("offline", aviso);
+  };
+}
+
 /** Vigila la sesión y, si venció estando con conexión, pide solo la contraseña. */
 export function ReLogin({ sesion }: { sesion: Session | null }) {
   const estado = useEstadoSesion();
+  const enLinea = useSyncExternalStore(suscribirConexion, () => navigator.onLine, () => true);
   const router = useRouter();
   const [oculto, setOculto] = useState(false);
   const [password, setPassword] = useState("");
@@ -71,7 +81,16 @@ export function ReLogin({ sesion }: { sesion: Session | null }) {
     }
   }
 
-  if (estado !== "vencida" || !sesion) return null;
+  // Marca en el documento cuando la píldora está visible para que el aviso de
+  // conexión se ubique encima y no se tapen.
+  const pildoraVisible = estado === "vencida" && Boolean(sesion) && enLinea && oculto;
+  useEffect(() => {
+    document.documentElement.classList.toggle("relogin-pildora", pildoraVisible);
+    return () => document.documentElement.classList.remove("relogin-pildora");
+  }, [pildoraVisible]);
+
+  // Sin conexión no se puede ingresar: el aviso "Sin conexión" ocupa su lugar.
+  if (estado !== "vencida" || !sesion || !enLinea) return null;
 
   async function continuar(e: React.FormEvent) {
     e.preventDefault();

@@ -5,6 +5,8 @@ import { usePerfil } from "@/lib/usePerfil";
 import { supabase } from "@/lib/supabase";
 import { LogoTipo } from "@/components/LogoTipo";
 import { Icono } from "@/components/Icono";
+import { IconoLinea } from "@/components/IconoLinea";
+import { PantallaCarga } from "@/components/PantallaCarga";
 import type { Cliente } from "@/lib/types";
 
 type ClienteForm = {
@@ -39,6 +41,7 @@ export function GestionClientes() {
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [form, setForm] = useState<ClienteForm>(VACIO);
   const [guardando, setGuardando] = useState(false);
+  const [busqueda, setBusqueda] = useState("");
 
   const cargar = useCallback(async () => {
     setCargandoLista(true);
@@ -64,7 +67,7 @@ export function GestionClientes() {
     }
   }, [cargando, esPc, cargar]);
 
-  if (cargando) return <Cargando />;
+  if (cargando) return <PantallaCarga mensaje="Cargando clientes..." />;
 
   if (!esPc) {
     return (
@@ -163,6 +166,11 @@ export function GestionClientes() {
     }
   }
 
+  const texto = busqueda.trim().toLowerCase();
+  const filtrados = texto
+    ? clientes.filter((c) => `${c.nombre} ${c.telefono ?? ""}`.toLowerCase().includes(texto))
+    : clientes;
+
   return (
     <div
       className="pb-xl px-margin max-w-4xl mx-auto md:px-margin"
@@ -179,7 +187,7 @@ export function GestionClientes() {
         }}
       >
         <div className="flex items-center gap-2">
-          <a href="#/" className="hover:bg-primary-container active:scale-95 transition-all px-2 py-1 rounded" aria-label="Volver">
+          <a href="#/" className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-white/15 active:scale-95 transition-all" aria-label="Volver">
             <Icono nombre="arrow_back" className="w-[16px] h-[16px]" />
           </a>
           <LogoTipo className="w-7 h-7 rounded-lg hidden sm:inline-flex" />
@@ -187,83 +195,109 @@ export function GestionClientes() {
         </div>
       </header>
 
-      <div className="bg-white border-b border-outline-variant px-md py-1 flex items-center justify-between mb-md shadow-sm">
-        <span className="flex items-center gap-2 text-title-md font-title-md font-bold text-primary">
-          <LogoTipo className="w-5 h-5 rounded" />
-          AIR POWER S.A.
-        </span>
+      <div className="list-item-in mt-md mb-md flex flex-wrap items-center justify-between gap-md rounded-2xl bg-gradient-to-br from-[#0f6b57] to-[#16806a] p-md text-white shadow-lg shadow-emerald-900/20">
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15"><IconoLinea nombre="edificio" className="h-6 w-6" /></span>
+          <div>
+            <p className="text-[16px] font-bold leading-tight">Cartera de clientes</p>
+            <p className="text-[12px] text-white/75">Los clientes cargados aparecen al crear un informe.</p>
+          </div>
+        </div>
+        <div className="rounded-xl px-4 py-2 text-center ring-1 ring-white/20" style={{ backgroundColor: "rgb(255 255 255 / 12%)" }}>
+          <p className="text-[24px] font-extrabold leading-none tabular-nums">{cargandoLista && clientes.length === 0 ? "–" : clientes.length}</p>
+          <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/75">Clientes</p>
+        </div>
       </div>
 
       {error ? (
-        <div className="mb-md bg-error-container/40 border border-error text-on-error-container rounded-lg px-md py-1.5 text-[13px]">
-          {error}
+        <div className="aviso-panel mb-md flex items-start gap-2 rounded-xl border border-error/40 bg-error-container/60 px-3 py-2 text-[13px] text-error" role="alert">
+          <IconoLinea nombre="alerta" className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{error}</span>
         </div>
       ) : null}
       {ok ? (
-        <div className="mb-md bg-green-100 border border-green-600 text-green-800 rounded-lg px-md py-1.5 text-[13px]">
-          {ok}
+        <div className="aviso-panel mb-md flex items-start gap-2 rounded-xl border border-green-600/30 bg-green-50 px-3 py-2 text-[13px] text-green-800" role="status">
+          <IconoLinea nombre="check" className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{ok}</span>
         </div>
       ) : null}
 
-      <section className="bg-white border border-outline-variant rounded-xl shadow-sm p-md mb-lg">
-        <div className="flex items-center justify-between mb-sm">
-          <h2 className="text-title-md font-title-md font-bold text-primary uppercase tracking-wider">
-            Clientes ({clientes.length})
-          </h2>
-          <div className="flex items-center gap-1">
+      <section className="section-card mb-lg rounded-2xl border border-outline-variant bg-white p-md shadow-sm">
+        <div className="mb-sm flex flex-wrap items-center gap-2">
+          <label className="relative min-w-[14rem] flex-1">
+            <IconoLinea nombre="buscar" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
+            <input
+              type="search"
+              className="input-technical h-[40px] w-full pl-9"
+              placeholder="Buscar por nombre o teléfono"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              aria-label="Buscar cliente"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={() => void cargar()}
+            disabled={cargandoLista}
+            className="inline-flex h-[40px] items-center gap-1.5 rounded-lg border border-outline-variant px-3 text-[12px] font-bold text-primary transition-all hover:bg-surface-container-low active:scale-95 disabled:opacity-50"
+          >
+            {cargandoLista ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-hidden="true" /> : null}
+            Actualizar
+          </button>
+          {modo === null ? (
             <button
               type="button"
-              onClick={() => void cargar()}
-              disabled={cargandoLista}
-              className="border border-outline-variant rounded-lg px-md py-1 text-[13px] active:scale-95 transition-all disabled:opacity-50"
+              onClick={abrirCrear}
+              className="inline-flex h-[40px] items-center gap-1.5 rounded-lg bg-gradient-to-b from-primary to-primary-container px-4 text-[12px] font-bold uppercase tracking-wider text-on-primary shadow-md shadow-primary/25 transition-all hover:brightness-110 active:scale-95"
             >
-              {cargandoLista ? "Cargando..." : "Actualizar"}
+              <Icono nombre="add" className="w-[15px] h-[15px]" />
+              Nuevo cliente
             </button>
-            {modo === null ? (
-              <button
-                type="button"
-                onClick={abrirCrear}
-                className="flex items-center gap-1 bg-primary text-on-primary rounded-lg px-md py-1 text-[13px] font-bold uppercase tracking-wider hover:bg-primary-container active:scale-95 transition-all"
-              >
-                <Icono nombre="add" className="w-[15px] h-[15px]" />
-                Nuevo
-              </button>
-            ) : null}
-          </div>
+          ) : null}
         </div>
 
         {modo !== null ? (
-          <form onSubmit={guardar} className="bg-surface-container-low/50 border border-outline-variant rounded-lg p-sm mb-md space-y-sm">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-sm">
-              <input
-                className="input-technical w-full h-[36px]"
-                type="text"
-                required
-                placeholder="Nombre / Empresa"
-                value={form.nombre}
-                onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
-                autoFocus
-              />
-              <input
-                className="input-technical w-full h-[36px]"
-                type="tel"
-                placeholder="Teléfono"
-                value={form.telefono}
-                onChange={(e) => setForm((f) => ({ ...f, telefono: e.target.value }))}
-              />
+          <form onSubmit={guardar} className="form-cliente mb-md space-y-sm rounded-xl border border-primary/25 bg-primary-fixed/40 p-md">
+            <p className="text-[12px] font-bold uppercase tracking-wider text-primary">
+              {modo === "editar" ? "Editar cliente" : "Nuevo cliente"}
+            </p>
+            <div className="grid grid-cols-1 gap-sm md:grid-cols-2">
+              <label className="block">
+                <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">Nombre / Empresa</span>
+                <input
+                  className="input-technical w-full h-[40px]"
+                  type="text"
+                  required
+                  placeholder="Ej: Transportes del Sur S.A."
+                  value={form.nombre}
+                  onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
+                  autoFocus
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">Teléfono</span>
+                <input
+                  className="input-technical w-full h-[40px]"
+                  type="tel"
+                  placeholder="Opcional"
+                  value={form.telefono}
+                  onChange={(e) => setForm((f) => ({ ...f, telefono: e.target.value }))}
+                />
+              </label>
             </div>
-            <div className="flex gap-1">
+            <div className="flex gap-2">
               <button
                 type="submit"
                 disabled={guardando}
-                className="flex-1 bg-primary text-on-primary rounded-lg px-md py-1.5 text-[13px] font-bold uppercase tracking-wider hover:bg-primary-container active:scale-[0.98] transition-all disabled:opacity-50"
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-md py-2 text-[13px] font-bold uppercase tracking-wider text-on-primary transition-all hover:bg-primary-container active:scale-[0.98] disabled:opacity-50"
               >
+                {guardando ? <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-on-primary border-t-transparent" aria-hidden="true" /> : <IconoLinea nombre="check" className="h-4 w-4" grosor={2.4} />}
                 {guardando ? "Guardando..." : modo === "editar" ? "Guardar cambios" : "Crear cliente"}
               </button>
               <button
                 type="button"
                 onClick={cancelar}
-                className="border border-outline-variant rounded-lg px-md py-1.5 text-[13px]"
+                className="rounded-lg border border-outline-variant bg-white px-md py-2 text-[13px] font-bold text-on-surface-variant transition-all hover:bg-surface-container-low active:scale-95"
               >
                 Cancelar
               </button>
@@ -271,34 +305,57 @@ export function GestionClientes() {
           </form>
         ) : null}
 
-        {cargandoLista ? (
-          <p className="text-on-surface-variant">Cargando clientes...</p>
-        ) : clientes.length === 0 ? (
-          <p className="text-on-surface-variant">No hay clientes cargados.</p>
+        {cargandoLista && clientes.length === 0 ? (
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-2" aria-label="Cargando clientes">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-3 rounded-xl border border-outline-variant p-3">
+                <span className="esqueleto h-10 w-10 rounded-xl" />
+                <span className="flex-1 space-y-1.5"><span className="esqueleto block h-3.5 w-2/3 rounded" /><span className="esqueleto block h-3 w-1/3 rounded" /></span>
+              </div>
+            ))}
+          </div>
+        ) : filtrados.length === 0 ? (
+          <p className="rounded-xl bg-surface-container-low px-3 py-8 text-center text-body-md text-on-surface-variant">
+            {clientes.length === 0 ? "No hay clientes cargados." : "No hay clientes que coincidan con la búsqueda."}
+          </p>
         ) : (
-          <ul className="divide-y divide-outline-variant">
-            {clientes.map((c) => (
-              <li key={c.id} className="py-2 flex items-center justify-between gap-sm">
-                <div className="min-w-0">
-                  <p className="text-body-md text-on-surface truncate font-bold">{c.nombre}</p>
+          <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
+            {filtrados.map((c, index) => (
+              <li
+                key={c.id}
+                className={`list-item-in group flex items-center gap-3 rounded-xl border p-3 transition-all duration-200 hover:border-primary/30 hover:shadow-md ${editandoId === c.id ? "border-primary ring-2 ring-primary/15" : "border-outline-variant"}`}
+                style={{ "--item-delay": `${Math.min(index, 10) * 35}ms` } as React.CSSProperties}
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-[15px] font-extrabold text-white shadow-sm">
+                  {(c.nombre.trim()[0] ?? "?").toUpperCase()}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-body-md font-bold text-on-surface" title={c.nombre}>{c.nombre}</p>
                   {c.telefono ? (
-                    <p className="text-[12px] text-on-surface-variant truncate">Tel: {c.telefono}</p>
-                  ) : null}
+                    <p className="flex items-center gap-1 truncate text-[12px] text-on-surface-variant">
+                      <IconoLinea nombre="telefono" className="h-3.5 w-3.5 shrink-0" />
+                      {c.telefono}
+                    </p>
+                  ) : (
+                    <p className="text-[12px] italic text-on-surface-variant/70">Sin teléfono</p>
+                  )}
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex shrink-0 items-center gap-0.5 opacity-80 transition-opacity group-hover:opacity-100">
                   <button
                     type="button"
                     title="Editar"
+                    aria-label={`Editar ${c.nombre}`}
                     onClick={() => abrirEditar(c)}
-                    className="p-1.5 rounded-lg hover:bg-surface-container-low active:scale-95 transition-all"
+                    className="flex h-9 w-9 items-center justify-center rounded-full transition-all hover:bg-primary-fixed active:scale-90"
                   >
                     <Icono nombre="edit" className="w-[18px] h-[18px] text-primary" />
                   </button>
                   <button
                     type="button"
                     title="Eliminar"
+                    aria-label={`Eliminar ${c.nombre}`}
                     onClick={() => void eliminar(c)}
-                    className="p-1.5 rounded-lg hover:bg-error-container/40 active:scale-95 transition-all"
+                    className="flex h-9 w-9 items-center justify-center rounded-full transition-all hover:bg-error-container/60 active:scale-90"
                   >
                     <Icono nombre="delete" className="w-[18px] h-[18px] text-error" />
                   </button>
@@ -308,20 +365,6 @@ export function GestionClientes() {
           </ul>
         )}
       </section>
-    </div>
-  );
-}
-
-function Cargando() {
-  return (
-    <div className="flex flex-col items-center justify-center gap-lg px-margin py-2xl min-h-[50dvh]">
-      <div className="animate-pulse">
-        <LogoTipo className="w-24 h-24 rounded-3xl shadow-lg" />
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="w-5 h-5 rounded-full border-[3px] border-primary border-t-transparent animate-spin" />
-        <span className="text-title-md text-primary font-bold">Cargando...</span>
-      </div>
     </div>
   );
 }

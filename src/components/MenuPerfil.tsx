@@ -7,6 +7,7 @@ import { usePerfil } from "@/lib/usePerfil";
 import { limpiarSesionCache } from "@/lib/useSesion";
 import { contarPendientes } from "@/lib/reautenticacion";
 import { Icono } from "@/components/Icono";
+import { IconoLinea } from "@/components/IconoLinea";
 import type { Session } from "@supabase/supabase-js";
 
 type Modo = null | "clave" | "datos";
@@ -30,8 +31,18 @@ export function MenuPerfil({ sesion }: { sesion: Session | null }) {
         setModo(null);
       }
     };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setAbierto(false);
+        setModo(null);
+      }
+    };
     window.addEventListener("mousedown", onClick);
-    return () => window.removeEventListener("mousedown", onClick);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("mousedown", onClick);
+      window.removeEventListener("keydown", onKey);
+    };
   }, []);
 
   useEffect(() => {
@@ -64,6 +75,21 @@ export function MenuPerfil({ sesion }: { sesion: Session | null }) {
     window.localStorage.setItem("air-power-tema", nuevoValor ? "oscuro" : "claro");
   }
 
+  const iniciales = (() => {
+    const base = nombreCompleto || email || "?";
+    const partes = base.replace(/@.*/, "").split(/[\s._-]+/).filter(Boolean);
+    return ((partes[0]?.[0] ?? "?") + (partes[1]?.[0] ?? "")).toUpperCase();
+  })();
+  const rolTexto = perfil?.rol === "master" ? "Master" : perfil?.rol === "admin" ? "Administrador" : "Técnico";
+
+  function cerrarMenu() {
+    setAbierto(false);
+    setModo(null);
+  }
+
+  const itemClase =
+    "menu-perfil-item group flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-left text-body-md transition-colors duration-200 hover:bg-surface-container-low active:bg-surface-container-high";
+
   return (
     <div className="relative" ref={ref}>
       <button
@@ -72,98 +98,105 @@ export function MenuPerfil({ sesion }: { sesion: Session | null }) {
           setAbierto((v) => !v);
           setModo(null);
         }}
-          className={`flex h-10 items-center gap-1.5 hover:bg-primary-container active:scale-95 transition-all duration-300 px-2 sm:px-4 rounded-lg text-on-primary shadow-sm hover:shadow-md ${
-            abierto ? "bg-primary-container/80" : ""
-          }`}
+        className={`menu-perfil-boton flex h-10 items-center gap-1.5 rounded-full py-1 pl-1 pr-2 text-on-primary transition-all duration-300 hover:bg-white/15 active:scale-95 sm:pr-3 ${
+          abierto ? "bg-white/20 ring-2 ring-white/40" : "bg-white/10"
+        }`}
         aria-label="Menú de cuenta"
+        aria-expanded={abierto}
       >
-        <Icono nombre="person" className="w-[18px] h-[18px]" />
-        <span className="hidden sm:inline text-[12px] font-bold max-w-[120px] truncate">
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-sky-200 to-white text-[12px] font-extrabold text-primary shadow-inner">
+          {iniciales}
+        </span>
+        <span className="hidden max-w-[120px] truncate text-[12px] font-bold sm:inline">
           {nombreCompleto || email || "Cuenta"}
         </span>
         <Icono
           nombre="arrow_drop_down"
-          className={`w-[16px] h-[16px] transition-transform duration-300 ${abierto ? "rotate-180" : ""}`}
+          className={`h-[16px] w-[16px] transition-transform duration-300 ${abierto ? "rotate-180" : ""}`}
         />
       </button>
 
       {abierto ? (
-        <div className="absolute right-0 top-full mt-1 w-72 bg-white border border-outline-variant rounded-xl shadow-xl p-md z-[60] text-on-surface animate-[profileMenuIn_320ms_cubic-bezier(0.22,1,0.36,1)]">
-          <div className="border-b border-outline-variant pb-sm mb-sm">
-            <p className="text-body-md font-bold text-on-surface break-all">
-              {nombreCompleto || email || "Sin nombre"}
-            </p>
-            <p className="text-[12px] text-on-surface-variant break-all">{email}</p>
-            <p className="text-[12px] text-on-surface-variant">
-               Rol: {perfil?.rol === "master" ? "Master" : perfil?.rol === "admin" ? "Administrador" : "Técnico"}
-            </p>
-          </div>
+        <>
+          {/* Fondo atenuado en celular: tocar afuera cierra el menú. */}
+          <div className="menu-perfil-fondo fixed inset-0 z-[55] bg-black/35 sm:bg-transparent" onClick={cerrarMenu} aria-hidden="true" />
+          <div
+            className="menu-perfil-panel fixed inset-x-3 z-[60] overflow-hidden rounded-3xl border border-outline-variant bg-white text-on-surface shadow-2xl shadow-black/25 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80 sm:rounded-2xl"
+            style={{ top: "calc(env(safe-area-inset-top, 0px) + 3.5rem)" }}
+            role="menu"
+          >
+            <div className="menu-perfil-cabecera relative flex items-center gap-3 bg-gradient-to-br from-primary to-[#0a5aa6] px-4 pb-4 pt-4 text-on-primary">
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/95 text-[20px] font-extrabold text-primary shadow-lg">
+                {iniciales}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-[15px] font-bold leading-tight">{nombreCompleto || email || "Sin nombre"}</p>
+                <p className="truncate text-[12px] text-white/80">{email}</p>
+                <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                  <IconoLinea nombre="escudo" className="h-3 w-3" grosor={2.2} />
+                  {rolTexto}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={cerrarMenu}
+                aria-label="Cerrar menú"
+                className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/15 hover:text-white sm:hidden"
+              >
+                <Icono nombre="close" className="h-4 w-4" />
+              </button>
+            </div>
 
-          {modo === "clave" ? (
-            <FormCambiarClave onListo={() => setModo(null)} />
-          ) : modo === "datos" ? (
-            <FormDatos onListo={() => { setModo(null); refrescar(); }} />
-          ) : (
-            <>
-              <div className="flex flex-col gap-1">
-                <button
-                  type="button"
-                  className="text-left px-2 py-2 rounded-lg hover:bg-surface-container-low hover:translate-x-1 text-body-md active:scale-[0.98] transition-all duration-300"
-                  onClick={() => setModo("datos")}
-                >
-                  Mis datos (nombre y apellido)
-                </button>
-                <button
-                  type="button"
-                  className="text-left px-2 py-2 rounded-lg hover:bg-surface-container-low hover:translate-x-1 text-body-md active:scale-[0.98] transition-all duration-300"
-                  onClick={() => setModo("clave")}
-                >
-                  Cambiar contraseña
-                </button>
-                {esMaster ? (
-                  <>
-                    <a
-                      href="#/clientes"
-                      className="hidden md:block text-left px-2 py-2 rounded-lg hover:bg-surface-container-low hover:translate-x-1 text-body-md active:scale-[0.98] transition-all duration-300"
-                      onClick={() => setAbierto(false)}
-                    >
-                      Gestionar clientes
-                    </a>
-                    <a
-                      href="#/admin"
-                      className="text-left px-2 py-2 rounded-lg hover:bg-surface-container-low hover:translate-x-1 text-body-md active:scale-[0.98] transition-all duration-300"
-                      onClick={() => setAbierto(false)}
-                    >
-                      Panel de administración
-                    </a>
-                  </>
-                ) : null}
-              </div>
-              <div className="border-t border-outline-variant mt-sm pt-sm">
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={cerrarSesion}
-                    className="flex-1 px-2 py-2 rounded-lg text-left text-error font-bold text-body-md hover:bg-error-container/40 hover:translate-x-1 active:scale-[0.98] transition-all duration-300"
-                  >
-                    Cerrar sesión
+            <div className="p-2">
+              {modo === "clave" ? (
+                <div className="p-2"><FormCambiarClave onListo={() => setModo(null)} /></div>
+              ) : modo === "datos" ? (
+                <div className="p-2"><FormDatos onListo={() => { setModo(null); refrescar(); }} /></div>
+              ) : (
+                <>
+                  <button type="button" role="menuitem" className={itemClase} style={{ "--item-delay": "40ms" } as React.CSSProperties} onClick={() => setModo("datos")}>
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-100 text-sky-700"><IconoLinea nombre="datos" /></span>
+                    <span className="flex-1">Mis datos</span>
+                    <IconoLinea nombre="chevron" className="h-4 w-4 text-on-surface-variant transition-transform duration-200 group-hover:translate-x-0.5" />
                   </button>
-                  <button
-                    type="button"
-                    onClick={alternarTema}
-                    className="theme-toggle"
-                    aria-label={modoOscuro ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-                    aria-pressed={modoOscuro}
-                    title={modoOscuro ? "Modo claro" : "Modo oscuro"}
-                  >
-                    <span className="theme-toggle-track"><span className="theme-toggle-thumb" /></span>
+                  <button type="button" role="menuitem" className={itemClase} style={{ "--item-delay": "80ms" } as React.CSSProperties} onClick={() => setModo("clave")}>
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-amber-700"><IconoLinea nombre="llave" /></span>
+                    <span className="flex-1">Cambiar contraseña</span>
+                    <IconoLinea nombre="chevron" className="h-4 w-4 text-on-surface-variant transition-transform duration-200 group-hover:translate-x-0.5" />
                   </button>
-                </div>
-                <p className="mt-1 text-right text-[10px] text-on-surface-variant">{modoOscuro ? "Modo oscuro" : "Modo claro"}</p>
-              </div>
-            </>
-          )}
-        </div>
+                  {esMaster ? (
+                    <>
+                      <a href="#/clientes" role="menuitem" className={`${itemClase} hidden md:flex`} style={{ "--item-delay": "120ms" } as React.CSSProperties} onClick={() => setAbierto(false)}>
+                        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700"><IconoLinea nombre="edificio" /></span>
+                        <span className="flex-1">Gestionar clientes</span>
+                        <IconoLinea nombre="chevron" className="h-4 w-4 text-on-surface-variant transition-transform duration-200 group-hover:translate-x-0.5" />
+                      </a>
+                      <a href="#/admin" role="menuitem" className={itemClase} style={{ "--item-delay": "160ms" } as React.CSSProperties} onClick={() => setAbierto(false)}>
+                        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-100 text-violet-700"><IconoLinea nombre="usuarios" /></span>
+                        <span className="flex-1">Panel de administración</span>
+                        <IconoLinea nombre="chevron" className="h-4 w-4 text-on-surface-variant transition-transform duration-200 group-hover:translate-x-0.5" />
+                      </a>
+                    </>
+                  ) : null}
+
+                  <div className="my-1.5 h-px bg-outline-variant/70" />
+
+                  <button type="button" className={itemClase} style={{ "--item-delay": "200ms" } as React.CSSProperties} onClick={alternarTema} aria-pressed={modoOscuro}>
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-200 text-slate-700"><IconoLinea nombre="luna" /></span>
+                    <span className="flex-1">Modo oscuro</span>
+                    <span className="theme-toggle pointer-events-none" aria-hidden="true">
+                      <span className="theme-toggle-track"><span className="theme-toggle-thumb" /></span>
+                    </span>
+                  </button>
+                  <button type="button" role="menuitem" className={`${itemClase} text-error hover:bg-error-container/50`} style={{ "--item-delay": "240ms" } as React.CSSProperties} onClick={cerrarSesion}>
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-100 text-red-700"><IconoLinea nombre="salir" /></span>
+                    <span className="flex-1 font-bold">Cerrar sesión</span>
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </>
       ) : null}
     </div>
   );

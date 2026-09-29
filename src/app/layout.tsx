@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import { MotorSync } from "@/components/MotorSync";
 import { RegistrarSW } from "@/components/RegistrarSW";
 import { EfectoScroll } from "@/components/EfectoScroll";
+import { EstadoConexion } from "@/components/EstadoConexion";
 import "./globals.css";
 
 const inter = Inter({
@@ -57,6 +58,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <MotorSync />
         <RegistrarSW />
         <EfectoScroll />
+        <EstadoConexion />
         {children}
       </body>
     </html>

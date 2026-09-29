@@ -262,7 +262,13 @@ export function ListaInformes() {
     for (const r of remotos) informesMap.set(r.id, r);
   }
   for (const l of pendientesLocales) informesMap.set(l.id, l);
+  const esBorradorLocal = (inf: InformeGeneral) => inf.estado_sync !== "sincronizado" && !inf.listo_para_enviar;
   let informes = [...informesMap.values()].sort((a, b) => {
+    // Los borradores van primero (el más reciente arriba).
+    const borradorA = esBorradorLocal(a);
+    const borradorB = esBorradorLocal(b);
+    if (borradorA !== borradorB) return borradorA ? -1 : 1;
+    if (borradorA && borradorB) return (b.actualizado_en ?? "").localeCompare(a.actualizado_en ?? "");
     const numeroA = a.numero_registro ?? -1;
     const numeroB = b.numero_registro ?? -1;
     if (numeroA !== numeroB) return numeroB - numeroA;
@@ -361,13 +367,6 @@ export function ListaInformes() {
   if (informes.length === 0 && !tieneFiltros) {
     return (
       <div>
-        {!online ? (
-          <div className="mx-4 md:mx-0 mb-sm flex items-center gap-2 rounded-lg bg-yellow-100 border border-yellow-300 px-3 py-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse shrink-0" />
-            <p className="text-[13px] font-bold text-yellow-800">Offline</p>
-            <p className="text-[12px] text-yellow-700 truncate">Mostrando informes locales. Sin conexión a internet.</p>
-          </div>
-        ) : null}
          <div className="mx-4 md:mx-0 my-sm p-xl bg-white border border-outline-variant rounded-lg text-center">
         <div className="flex items-center justify-center mb-md">
           <LogoTipo className="estado-vacio-logo w-14 h-14 rounded-2xl opacity-90" />
@@ -496,13 +495,6 @@ export function ListaInformes() {
             downloadRootId={`pdf-download-${descargandoId}`}
             onDescargaTerminada={() => setDescargandoId(null)}
           />
-        </div>
-      ) : null}
-      {!online ? (
-        <div className="flex items-center gap-2 rounded-lg bg-yellow-100 border border-yellow-300 px-3 py-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse shrink-0" />
-          <p className="text-[13px] font-bold text-yellow-800">Offline</p>
-          <p className="text-[12px] text-yellow-700 truncate">Mostrando informes locales. Sin conexión a internet.</p>
         </div>
       ) : null}
       {errorActualizacion ? (
