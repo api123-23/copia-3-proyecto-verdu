@@ -34,6 +34,9 @@ export default function Home() {
   const enLinea = useEnLinea();
   const [estuvoSinConexion, setEstuvoSinConexion] = useState(false);
   if (!enLinea && !estuvoSinConexion) setEstuvoSinConexion(true);
+  // La animación es solo para el momento en que vuelve la conexión: si en ese
+  // momento el botón no está a la vista, no queda pendiente para después.
+  if (enLinea && estuvoSinConexion && (ruta.tipo !== "lista" || !esMaster)) setEstuvoSinConexion(false);
 
   useEffect(() => {
     if (esObservador && ["admin", "clientes", "estadisticas", "nuevo"].includes(ruta.tipo)) navegar("#/");
@@ -107,6 +110,7 @@ export default function Home() {
               aria-disabled={!enLinea}
               title={enLinea ? undefined : "Requiere conexión a internet"}
               onClick={(e) => { if (!enLinea) e.preventDefault(); }}
+              onAnimationEnd={(e) => { if (enLinea && e.animationName === "botonReactivado") setEstuvoSinConexion(false); }}
               className={`flex h-10 items-center text-[10px] sm:text-label-caps font-label-caps font-bold tracking-wider px-2 sm:px-4 rounded-lg transition-all duration-300 ${
                 enLinea
                   ? `bg-white/10 text-on-primary shadow-sm hover:bg-white/20 hover:shadow-md hover:-translate-y-0.5 active:scale-95 ${estuvoSinConexion ? "boton-reactivado" : ""}`
