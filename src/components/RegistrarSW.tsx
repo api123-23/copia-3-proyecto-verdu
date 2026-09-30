@@ -1,11 +1,26 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+
+const INTERVALO_BUSQUEDA_MS = 30 * 60 * 1000;
 
 export function RegistrarSW() {
+  const [hayVersionNueva, setHayVersionNueva] = useState(false);
+  const [oculto, setOculto] = useState(false);
+
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
     let registro: ServiceWorkerRegistration | null = null;
+    // Si la página ya estaba controlada por un service worker y cambia de
+    // controlador, se instaló una versión nueva. (La primera instalación no avisa.)
+    const habiaVersion = Boolean(navigator.serviceWorker.controller);
+    const alCambiarVersion = () => {
+      if (habiaVersion) setHayVersionNueva(true);
+    };
+    navigator.serviceWorker.addEventListener("controllerchange", alCambiarVersion);
+    const intervalo = window.setInterval(() => {
+      if (document.visibilityState === "visible" && navigator.onLine) void registro?.update().catch(() => undefined);
+    }, INTERVALO_BUSQUEDA_MS);
     const registrar = () => {
       navigator.serviceWorker
         .register("/sw.js", { updateViaCache: "none" })
@@ -39,6 +54,8 @@ export function RegistrarSW() {
     window.addEventListener("load", limpiarMarca);
 
     return () => {
+      navigator.serviceWorker.removeEventListener("controllerchange", alCambiarVersion);
+      window.clearInterval(intervalo);
       window.removeEventListener("load", registrar);
       document.removeEventListener("visibilitychange", buscarActualizacion);
       window.removeEventListener("unhandledrejection", onRejection);
@@ -47,5 +64,36 @@ export function RegistrarSW() {
     };
   }, []);
 
-  return null;
+  if (!hayVersionNueva || oculto) return null;
+  return (
+    <div
+      className="pointer-events-none fixed inset-x-0 z-[95] flex justify-center px-3"
+      style={{ top: "calc(env(safe-area-inset-top, 0px) + 3.6rem)" }}
+      role="status"
+      aria-live="polite"
+    >
+      <div className="aviso-version pointer-events-auto flex max-w-md items-center gap-3 rounded-2xl bg-primary py-2 pl-3 pr-2 text-on-primary shadow-xl shadow-black/30">
+        <span className="relative flex h-2.5 w-2.5 shrink-0" aria-hidden="true">
+          <span className="absolute inset-0 animate-ping rounded-full bg-sky-300/70" />
+          <span className="relative h-2.5 w-2.5 rounded-full bg-sky-300" />
+        </span>
+        <span className="text-[12.5px] font-bold leading-tight">Hay una nueva versión de la app</span>
+        <button
+          type="button"
+          onClick={() => setOculto(true)}
+          className="rounded-lg px-2 py-1.5 text-[11px] font-bold text-white/75 transition-colors hover:text-white"
+        >
+          Más tarde
+        </button>
+        <button
+          type="button"
+          // Lo cargado en un informe se guarda solo antes de recargar.
+          onClick={() => window.location.reload()}
+          className="rounded-xl bg-white px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-wider text-primary shadow-sm transition-transform active:scale-95"
+        >
+          Actualizar
+        </button>
+      </div>
+    </div>
+  );
 }

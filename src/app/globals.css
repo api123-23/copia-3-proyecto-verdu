@@ -1113,6 +1113,9 @@ html.dark .fila-usuario, html.dark .section-card li { border-color: #405466; }
 .aviso-conexion-contenedor { transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1); }
 html.relogin-pildora .aviso-conexion-contenedor { transform: translateY(-3.6rem); }
 
+/* Aviso de versión nueva */
+.aviso-version { animation: toastIn 360ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
 /* Sugerencias de clientes */
 .lista-clientes { animation: desplegar 180ms cubic-bezier(0.22, 1, 0.36, 1) both; -webkit-overflow-scrolling: touch; }
 .lista-clientes li { touch-action: manipulation; }
