@@ -25,11 +25,19 @@ function etiquetaMes(mes: string, corto = false): string {
 function Resumen({ datos }: { datos: Mensual[] }) {
   const total = datos.reduce((suma, dato) => suma + dato.cantidad, 0);
   const conDatos = datos.filter((dato) => dato.cantidad > 0);
-  const promedio = datos.length > 0 ? total / datos.length : 0;
+  // Promedio del año en curso: de enero hasta el mes actual (incluido).
+  const anio = String(new Date().getFullYear());
+  const delAnio = datos.filter((dato) => dato.mes.startsWith(anio + "-"));
+  const promedio = delAnio.length > 0 ? delAnio.reduce((suma, dato) => suma + dato.cantidad, 0) / delAnio.length : 0;
+  const nombreMes = (mes: string) => etiquetaMes(mes).replace(/\s+de\s+\d{4}$|\s+\d{4}$/, "");
+  const hasta = delAnio.length > 0 ? delAnio[delAnio.length - 1].mes : null;
+  const periodo = hasta
+    ? delAnio.length === 1 ? `${nombreMes(hasta)} ${anio}, hasta hoy` : `Enero a ${nombreMes(hasta).toLowerCase()} ${anio}, hasta hoy`
+    : "Sin datos este año";
   const pico = conDatos.reduce<Mensual | null>((mejor, dato) => (!mejor || dato.cantidad > mejor.cantidad ? dato : mejor), null);
   const tarjetas = [
     { titulo: "Total del período", valor: String(total), detalle: `${datos.length} mes${datos.length === 1 ? "" : "es"}` },
-    { titulo: "Promedio mensual", valor: promedio.toLocaleString("es-AR", { maximumFractionDigits: 1 }), detalle: "informes por mes" },
+    { titulo: "Promedio de informes por mes de este año", valor: promedio.toLocaleString("es-AR", { maximumFractionDigits: 1 }), detalle: periodo },
     { titulo: "Mes con más informes", valor: pico ? String(pico.cantidad) : "—", detalle: pico ? etiquetaMes(pico.mes) : "Sin datos" },
   ];
   return (
@@ -38,7 +46,7 @@ function Resumen({ datos }: { datos: Mensual[] }) {
         <div key={tarjeta.titulo} className="chart-kpi list-item-in min-w-0 rounded-lg border border-outline-variant bg-white p-2.5 shadow-sm sm:p-md" style={{ "--item-delay": `${index * 70}ms` } as React.CSSProperties}>
           <p className="text-[9px] font-bold uppercase leading-tight tracking-wider text-on-surface-variant sm:text-[11px]">{tarjeta.titulo}</p>
           <p className="mt-1 text-[22px] font-bold leading-none text-primary tabular-nums sm:text-[28px]">{tarjeta.valor}</p>
-          <p className="mt-1 truncate text-[11px] text-on-surface-variant sm:text-[12px]" title={tarjeta.detalle}>{tarjeta.detalle}</p>
+          <p className="mt-1 text-[11px] leading-snug text-on-surface-variant sm:text-[12px]" title={tarjeta.detalle}>{tarjeta.detalle}</p>
         </div>
       ))}
     </div>
