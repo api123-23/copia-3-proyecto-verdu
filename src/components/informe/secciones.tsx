@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { InformeGeneral } from "@/lib/types";
 import { TIPOS_EQUIPO } from "@/lib/informes";
 import { supabase } from "@/lib/supabase";
@@ -15,18 +15,36 @@ type ClienteOpcion = {
   telefono: string | null;
 };
 
-function SelectorCliente({
+const CLIENTES_CACHE_KEY = "air-power-clientes";
+const MAX_SUGERENCIAS = 8;
+
+function leerClientesCache(): ClienteOpcion[] {
+  try {
+    const d = JSON.parse(window.localStorage.getItem(CLIENTES_CACHE_KEY) ?? "[]");
+    return Array.isArray(d) ? d : [];
+  } catch {
+    return [];
+  }
+}
+
+const normalizar = (t: string) =>
+  t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+
+/** Campo "Cliente / Empresa" con sugerencias de los clientes guardados. */
+function BuscadorCliente({
   informe,
   onChange,
 }: {
   informe: InformeGeneral;
   onChange: (p: PatchInforme) => void;
 }) {
-  const [clientes, setClientes] = useState<ClienteOpcion[]>([]);
-  const [seleccion, setSeleccion] = useState<string>(informe.cliente_id ?? "");
+  const [clientes, setClientes] = useState<ClienteOpcion[]>(() => (typeof window === "undefined" ? [] : leerClientesCache()));
+  const [abierto, setAbierto] = useState(false);
+  const [activo, setActivo] = useState(0);
+  const contenedor = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    let activo = true;
+    let vigente = true;
     (async () => {
       try {
         const { data, error } = await supabase()
@@ -34,49 +52,133 @@ function SelectorCliente({
           .select("id, nombre, telefono")
           .order("nombre", { ascending: true });
         if (error) throw error;
-        if (!activo) return;
-        setClientes((data ?? []) as ClienteOpcion[]);
+        if (!vigente) return;
+        const lista = (data ?? []) as ClienteOpcion[];
+        setClientes(lista);
+        // Copia local para buscar también sin conexión.
+        try {
+          window.localStorage.setItem(CLIENTES_CACHE_KEY, JSON.stringify(lista));
+        } catch {
+          /* sin espacio: se sigue con la lista en memoria */
+        }
       } catch {
-        if (!activo) return;
-        setClientes([]);
+        /* sin conexión: se usa la copia guardada */
       }
     })();
     return () => {
-      activo = false;
+      vigente = false;
     };
   }, []);
 
-  function alSeleccionar(id: string) {
-    setSeleccion(id);
-    if (!id) return;
-    const c = clientes.find((x) => x.id === id);
-    if (!c) return;
-    onChange({
-      cliente_id: c.id,
-      cliente_nombre: c.nombre,
-      cliente_telefono: c.telefono,
-    });
+  useEffect(() => {
+    const fuera = (e: PointerEvent) => {
+      if (contenedor.current && !contenedor.current.contains(e.target as Node)) setAbierto(false);
+    };
+    document.addEventListener("pointerdown", fuera);
+    return () => document.removeEventListener("pointerdown", fuera);
+  }, []);
+
+  const texto = normalizar(informe.cliente_nombre ?? "");
+  const digitos = texto.replace(/\D/g, "");
+  const sugerencias = texto
+    ? clientes
+        .map((c) => ({ c, n: normalizar(c.nombre), tel: (c.telefono ?? "").replace(/\D/g, "") }))
+        .filter(({ n, tel }) => n.includes(texto) || (digitos.length >= 3 && tel.includes(digitos)))
+        .sort((a, b) => Number(b.n.startsWith(texto)) - Number(a.n.startsWith(texto)) || a.n.localeCompare(b.n))
+        .slice(0, MAX_SUGERENCIAS)
+        .map(({ c }) => c)
+    : [];
+  const vinculado = informe.cliente_id ? clientes.find((c) => c.id === informe.cliente_id) : null;
+  const mostrar = abierto && texto.length > 0 && !(vinculado && normalizar(vinculado.nombre) === texto);
+
+  // Mientras la lista está abierta, su sección no recorta lo que sobresale
+  // (tiene overflow hidden por los bordes redondeados) y va por encima de las siguientes.
+  useEffect(() => {
+    const seccion = contenedor.current?.closest<HTMLElement>(".section-card");
+    if (!seccion) return;
+    seccion.style.zIndex = mostrar ? "20" : "";
+    seccion.style.overflow = mostrar ? "visible" : "";
+    return () => {
+      seccion.style.zIndex = "";
+      seccion.style.overflow = "";
+    };
+  }, [mostrar]);
+
+  function elegir(c: ClienteOpcion) {
+    onChange({ cliente_id: c.id, cliente_nombre: c.nombre, cliente_telefono: c.telefono });
+    setAbierto(false);
   }
 
   return (
-    <div className="md:col-span-2">
-      <Label>Cliente guardado (opcional)</Label>
-      <select
-        className="input-technical w-full h-[28px] py-0"
-        value={seleccion}
-        onChange={(e) => alSeleccionar(e.target.value)}
-      >
-        <option value="">— Seleccionar o cargar manual —</option>
-        {clientes.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.nombre}
-            {c.telefono ? ` · ${c.telefono}` : ""}
-          </option>
-        ))}
-      </select>
-      <p className="text-[10px] text-on-surface-variant">
-        Al elegir un cliente se completan nombre y teléfono automáticamente. La ubicación se carga manual.
-      </p>
+    <div className="relative" ref={contenedor}>
+      <Label>Cliente / Empresa</Label>
+      <input
+        className="input-technical"
+        placeholder="Escribí para buscar o cargar un cliente"
+        type="text"
+        role="combobox"
+        aria-expanded={mostrar}
+        aria-controls="lista-clientes"
+        aria-autocomplete="list"
+        autoComplete="off"
+        value={informe.cliente_nombre}
+        onFocus={() => setAbierto(true)}
+        onChange={(e) => {
+          // Si se edita el nombre a mano deja de estar vinculado al cliente guardado.
+          onChange({ cliente_nombre: e.target.value, cliente_id: null });
+          setAbierto(true);
+          setActivo(0);
+        }}
+        onKeyDown={(e) => {
+          if (!mostrar || sugerencias.length === 0) return;
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setActivo((a) => (a + 1) % sugerencias.length);
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setActivo((a) => (a - 1 + sugerencias.length) % sugerencias.length);
+          } else if (e.key === "Enter") {
+            e.preventDefault();
+            elegir(sugerencias[Math.min(activo, sugerencias.length - 1)]);
+          } else if (e.key === "Escape") {
+            setAbierto(false);
+          }
+        }}
+      />
+      {vinculado ? (
+        <p className="mt-0.5 flex items-center gap-1 text-[10px] font-bold text-green-700">
+          <span aria-hidden="true">✓</span> Cliente guardado: se completaron nombre y teléfono
+        </p>
+      ) : null}
+      {mostrar ? (
+        <ul
+          id="lista-clientes"
+          role="listbox"
+          className="lista-clientes absolute left-0 right-0 top-full z-30 mt-1 max-h-64 overflow-y-auto rounded-lg border border-outline-variant bg-white shadow-xl"
+        >
+          {sugerencias.length === 0 ? (
+            <li className="px-3 py-2.5 text-[12px] text-on-surface-variant">Sin coincidencias. Se cargará como cliente nuevo.</li>
+          ) : (
+            sugerencias.map((c, k) => (
+              <li
+                key={c.id}
+                role="option"
+                aria-selected={k === activo}
+                // pointerdown: se elige antes de que el campo pierda el foco
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  elegir(c);
+                }}
+                onMouseEnter={() => setActivo(k)}
+                className={`flex cursor-pointer items-center justify-between gap-2 border-b border-outline-variant/50 px-3 py-2.5 last:border-b-0 ${k === activo ? "bg-primary-fixed" : ""}`}
+              >
+                <span className="min-w-0 truncate text-body-md font-bold text-on-surface">{c.nombre}</span>
+                {c.telefono ? <span className="shrink-0 text-[11px] text-on-surface-variant">{c.telefono}</span> : null}
+              </li>
+            ))
+          )}
+        </ul>
+      ) : null}
     </div>
   );
 }
@@ -91,17 +193,7 @@ export function SeccionCliente({
   return (
     <Seccion titulo="Datos del Cliente" badge={informe.tipo_equipo === "extraordinarios" ? undefined : "Obligatorio"}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-sm">
-        <SelectorCliente informe={informe} onChange={onChange} />
-        <div>
-          <Label>Cliente / Empresa</Label>
-          <input
-            className="input-technical"
-            placeholder="Nombre de la empresa"
-            type="text"
-            value={informe.cliente_nombre}
-            onChange={(e) => onChange({ cliente_nombre: e.target.value })}
-          />
-        </div>
+        <BuscadorCliente informe={informe} onChange={onChange} />
         <div>
           <Label>Teléfono</Label>
           <input

@@ -1112,3 +1112,9 @@ html.dark .fila-usuario, html.dark .section-card li { border-color: #405466; }
 /* Si está la píldora de "Sesión vencida", el aviso de conexión va encima. */
 .aviso-conexion-contenedor { transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1); }
 html.relogin-pildora .aviso-conexion-contenedor { transform: translateY(-3.6rem); }
+
+/* Sugerencias de clientes */
+.lista-clientes { animation: desplegar 180ms cubic-bezier(0.22, 1, 0.36, 1) both; -webkit-overflow-scrolling: touch; }
+.lista-clientes li { touch-action: manipulation; }
+html.dark .lista-clientes { background: #17232e; border-color: #405466; }
+html.dark .lista-clientes li[aria-selected="true"] { background: #243747; }
