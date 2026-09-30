@@ -553,26 +553,26 @@ create table if not exists public.numeracion_informes (
 alter table public.numeracion_informes enable row level security;
 -- Sin políticas: solo las funciones del servidor pueden tocar el contador.
 
--- Punto de partida: el mayor número ya usado o ya reservado por la secuencia
--- anterior (así no choca con informes que un celular ya numeró y todavía no
--- subió). Nunca baja. Si no quedan informes, reinicia en 0 (el próximo es 1).
+-- Punto de partida (SOLO la primera vez que se crea el contador): el mayor
+-- número ya usado o ya reservado por la secuencia anterior. Después el
+-- contador no se toca al re-ejecutar este archivo, salvo que no quede ningún
+-- informe (entonces vuelve a 0 y el próximo es el 1).
 do $$
 declare
   maximo integer;
   reservado integer := 0;
 begin
   select coalesce(max(numero_registro), 0) into maximo from public.informes_generales;
-  if exists (select 1 from pg_class where relname = 'numero_informe_seq' and relkind = 'S') then
-    select case when is_called then last_value else last_value - 1 end into reservado
-    from public.numero_informe_seq;
+  if not exists (select 1 from public.numeracion_informes) then
+    if exists (select 1 from pg_class where relname = 'numero_informe_seq' and relkind = 'S') then
+      select case when is_called then last_value else last_value - 1 end into reservado
+      from public.numero_informe_seq;
+    end if;
+    insert into public.numeracion_informes (id, ultimo)
+      values (true, case when maximo = 0 then 0 else greatest(maximo, reservado) end);
+  elsif maximo = 0 then
+    update public.numeracion_informes set ultimo = 0 where id;
   end if;
-  insert into public.numeracion_informes (id, ultimo)
-    values (true, case when maximo = 0 then 0 else greatest(maximo, reservado) end)
-  on conflict (id) do update
-    set ultimo = case
-      when excluded.ultimo = 0 then 0
-      else greatest(public.numeracion_informes.ultimo, excluded.ultimo)
-    end;
 end $$;
 
 -- Uso interno: la llaman las funciones que guardan el informe.
@@ -612,19 +612,17 @@ $$;
 grant execute on function public.siguiente_numero_informe() to authenticated;
 grant usage on sequence public.numero_informe_seq to authenticated;
 
--- Asegura que la secuencia continúa a partir del máximo existente, o arranca en
--- 1 si la tabla está vacía (p. ej. recién creada).
--- Si borraste todos los informes y querés reiniciar la numeración en 1, este
--- bloque lo hace automáticamente cuando no quedan filas.
+-- La secuencia anterior ya no numera informes; se mantiene alineada con el
+-- contador solo por compatibilidad.
 do $$
 declare
-  maximo bigint;
+  ultimo integer;
 begin
-  select coalesce(max(numero_registro), 0)::bigint into maximo from public.informes_generales;
-  if maximo = 0 then
+  select coalesce((select n.ultimo from public.numeracion_informes n where n.id), 0) into ultimo;
+  if ultimo = 0 then
     perform setval('public.numero_informe_seq', 1, false);
   else
-    perform setval('public.numero_informe_seq', greatest(maximo, (select last_value from public.numero_informe_seq)), true);
+    perform setval('public.numero_informe_seq', ultimo, true);
   end if;
 end $$;
 
@@ -746,10 +744,9 @@ begin
     if not public.es_admin() and tecnico <> uid then
       raise exception 'El técnico no puede crear un informe para otro usuario' using errcode = '42501';
     end if;
-    numero := nullif(p_payload->>'numero_registro', '')::integer;
-    if numero is null or exists (select 1 from public.informes_generales where numero_registro = numero) then
-      numero := public.tomar_numero_informe();
-    end if;
+    -- Un informe nuevo SIEMPRE toma el número del contador (se ignora cualquier
+    -- número que traiga el celular: así nunca quedan huecos).
+    numero := public.tomar_numero_informe();
 
     insert into public.informes_generales (
       id, numero_registro, cliente_id, cliente_nombre, cliente_telefono,
@@ -834,13 +831,10 @@ begin
     if not public.es_admin() and tecnico <> uid then
       raise exception 'El técnico no puede crear un informe para otro usuario' using errcode = '42501';
     end if;
-    -- Versiones viejas de la app traen un número ya reservado: se respeta si
-    -- está libre. Las nuevas no mandan número y se asigna acá, en la misma
-    -- transacción que guarda el informe (si algo falla, no se pierde).
-    numero := nullif(p_informe->>'numero_registro', '')::integer;
-    if numero is null or exists (select 1 from public.informes_generales where numero_registro = numero) then
-      numero := public.tomar_numero_informe();
-    end if;
+    -- Un informe nuevo SIEMPRE toma el número del contador, en la misma
+    -- transacción que lo guarda (si algo falla, el número no se pierde). Se
+    -- ignora cualquier número que traiga el celular: así nunca quedan huecos.
+    numero := public.tomar_numero_informe();
   end if;
 
   p_informe := jsonb_set(p_informe, '{numero_registro}', to_jsonb(numero), true);
