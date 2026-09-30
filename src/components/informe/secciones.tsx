@@ -110,7 +110,7 @@ function BuscadorCliente({
   }
 
   return (
-    <div className="relative" ref={contenedor}>
+    <div className="relative" ref={contenedor} data-campo="cliente_nombre" data-validation-label="Cliente / Empresa">
       <Label>Cliente / Empresa</Label>
       <input
         className="input-technical"
@@ -294,7 +294,7 @@ export function SeccionTrabajos({
   const planilla = `${informe.cliente_nombre || "Cliente"} | ${TIPOS_EQUIPO.find((t) => t.value === informe.tipo_equipo)?.label ?? informe.tipo_equipo} | ${informe.observaciones || ""}`;
   return (
     <Seccion titulo="Trabajos Realizados / Observaciones">
-      <div className="flex flex-col gap-sm">
+      <div className="flex flex-col gap-sm" data-campo="observaciones" data-validation-label="Trabajos realizados / Observaciones">
         <textarea
           className="input-technical h-24 resize-none py-1 w-full"
           placeholder="Describa el trabajo realizado y observaciones detalladamente..."
@@ -349,7 +349,7 @@ export function SeccionHoras({
 }) {
   return (
     <Seccion titulo="Horas Trabajadas" badge={obligatoria ? "Obligatorio" : "Opcional"}>
-      <div>
+      <div data-campo="horas_trabajadas" data-validation-label="Total horas trabajadas">
         <Label>
           Total Horas Trabajadas <span className="text-error">*</span>
         </Label>
@@ -408,7 +408,7 @@ export function SeccionOperativa({
 }) {
   return (
     <Seccion titulo="¿La máquina queda operativa?">
-      <div className="flex items-center justify-between bg-surface-container-low p-1 rounded">
+      <div data-campo="maquina_operativa" data-validation-label="¿La máquina queda operativa?" className="flex items-center justify-between bg-surface-container-low p-1 rounded">
         <span className="text-body-md font-body-md text-[12px]">Operativa</span>
         <div className={`dual-option w-24 field-binary field-status-${informe.maquina_operativa === null ? "empty" : informe.maquina_operativa ? "si" : "no"}`}>
           <button

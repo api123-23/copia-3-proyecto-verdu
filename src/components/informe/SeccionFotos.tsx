@@ -230,7 +230,7 @@ export default function SeccionFotos({
 
   return (
     <Seccion titulo="Registro Fotográfico" badge={obligatoria ? "Obligatorio" : "Opcional"}>
-      <div className="flex flex-col items-center gap-md">
+      <div className="flex flex-col items-center gap-md" data-campo="fotos" data-validation-label="Registro fotográfico (mínimo 3 fotos)">
         <div className="w-full max-w-xs space-y-md">
           <div className="space-y-sm">
             <Label>Seleccionar Categoría</Label>

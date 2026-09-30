@@ -80,16 +80,19 @@ export function ItemSelect({
   onChange,
   opciones,
   className = "",
+  campo,
 }: {
   etiqueta: string;
   valor: string | null;
   onChange: (v: string | null) => void;
   opciones: { value: string; label: string }[];
   className?: string;
+  /** Identificador del campo: permite ubicarlo al validar. */
+  campo?: string;
 }) {
   const esSiNo = opciones.length === 2 && opciones.every((opcion) => opcion.value === "si" || opcion.value === "no");
   return (
-    <div data-validation-label={etiqueta} className={`flex justify-between items-center bg-surface-container-low p-1 rounded field-status-${valor ?? "empty"} ${esSiNo ? "field-binary" : ""} ${className}`}>
+    <div data-validation-label={etiqueta} data-campo={campo} className={`flex justify-between items-center bg-surface-container-low p-1 rounded field-status-${valor ?? "empty"} ${esSiNo ? "field-binary" : ""} ${className}`}>
       <span className="min-w-0 flex-1 pr-2 text-body-md font-body-md text-[12px] leading-tight field-label">{etiqueta}</span>
       <select
         className={`select-small ${valor === "no" || valor === "mal" ? "text-error" : ""}`}
@@ -113,16 +116,19 @@ export function ItemSelectFull({
   onChange,
   opciones,
   className,
+  campo,
 }: {
   etiqueta: string;
   valor: string | null;
   onChange: (v: string | null) => void;
   opciones: { value: string; label: string }[];
   className?: string;
+  /** Identificador del campo: permite ubicarlo al validar. */
+  campo?: string;
 }) {
   const esSiNo = opciones.length === 2 && opciones.every((opcion) => opcion.value === "si" || opcion.value === "no");
   return (
-    <div data-validation-label={etiqueta} className={`flex justify-between items-center bg-surface-container-low p-1.5 rounded field-status-${valor ?? "empty"} ${esSiNo ? "field-binary" : ""} ${className ?? ""}`}>
+    <div data-validation-label={etiqueta} data-campo={campo} className={`flex justify-between items-center bg-surface-container-low p-1.5 rounded field-status-${valor ?? "empty"} ${esSiNo ? "field-binary" : ""} ${className ?? ""}`}>
        <span className="min-w-0 flex-1 pr-2 text-body-md font-body-md text-[12px] leading-tight field-label">{etiqueta}</span>
       <select
         className={`select-small ${valor === "no" || valor === "mal" ? "text-error" : ""}`}
@@ -210,6 +216,7 @@ export function CampoNumero({
   sufijo,
   centrado,
   texto = false,
+  campo,
 }: {
   etiqueta: string;
   valor: number | string | null;
@@ -217,9 +224,10 @@ export function CampoNumero({
   sufijo?: string;
   centrado?: boolean;
   texto?: boolean;
+  campo?: string;
 }) {
   return (
-    <div>
+    <div data-campo={campo} data-validation-label={etiqueta || undefined}>
        {etiqueta ? <Label>{etiqueta}</Label> : null}
       <div className="relative">
         <input

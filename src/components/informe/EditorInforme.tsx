@@ -37,53 +37,29 @@ import SeccionValores from "@/components/informe/SeccionValores";
 import SeccionFotos from "@/components/informe/SeccionFotos";
 import SeccionFirmas from "@/components/informe/SeccionFirmas";
 
-function textoComparable(texto: string): string {
-  return texto
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .trim();
-}
+type Faltante = { campo: string; etiqueta: string };
 
-function encontrarControlFaltante(nombre: string): HTMLElement | null {
-  const buscado = textoComparable(nombre.replace(/\s*\([^)]*\)\s*$/, ""));
-  const palabras = buscado.split(" ").filter((palabra) => palabra.length > 2);
-  const candidatos = Array.from(document.querySelectorAll<HTMLElement>("[data-validation-label], label, span, h2, h3"));
-  const texto = candidatos.find((elemento) => {
-    const actual = textoComparable(elemento.dataset.validationLabel ?? elemento.textContent ?? "");
-    if (actual === buscado || actual.startsWith(`${buscado} `)) return true;
-    return palabras.length > 0 && palabras.every((palabra) => actual.includes(palabra));
-  });
-
-  if (texto) {
-    let actual: HTMLElement | null = texto;
-    for (let nivel = 0; actual && nivel < 5; nivel += 1, actual = actual.parentElement) {
-      const control = actual.querySelector<HTMLElement>("input, textarea, select, button");
-      if (control) return control;
-    }
+// Cada campo obligatorio tiene data-campo con su identificador. Se busca por
+// esa marca (no por el texto de la etiqueta, que cambia según el equipo) y se
+// usa el primero de arriba hacia abajo entre los que se ven en pantalla.
+function ubicarFaltantes(faltantes: Faltante[]): { elemento: HTMLElement | null; nombres: string[] } {
+  const encontrados: { el: HTMLElement; nombre: string }[] = [];
+  const sinUbicar: string[] = [];
+  for (const f of faltantes) {
+    const el = Array.from(document.querySelectorAll<HTMLElement>(`[data-campo="${f.campo}"]`)).find((x) => x.getClientRects().length > 0);
+    if (el) encontrados.push({ el, nombre: el.dataset.validationLabel?.replace(/^\d+\.\s*/, "") || f.etiqueta });
+    else sinUbicar.push(f.etiqueta);
   }
-
-  const seccion = Array.from(document.querySelectorAll<HTMLElement>("[data-seccion]"))
-    .find((elemento) => textoComparable(elemento.dataset.seccion ?? "") === buscado);
-  return seccion?.querySelector<HTMLElement>("input, textarea, select, button") ?? null;
+  encontrados.sort((a, b) => (a.el.compareDocumentPosition(b.el) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1));
+  return { elemento: encontrados[0]?.el ?? null, nombres: [...encontrados.map((e) => e.nombre), ...sinUbicar] };
 }
 
-function enfocarPrimerFaltante(faltantes: string[]) {
-  const controles = faltantes
-    .map((faltante) => encontrarControlFaltante(faltante))
-    .filter((control): control is HTMLElement => Boolean(control));
-  if (controles.length === 0) return;
-
-  const elementos = Array.from(document.querySelectorAll<HTMLElement>("input, textarea, select, button"));
-  const objetivo = controles.reduce((primero, actual) =>
-    elementos.indexOf(actual) < elementos.indexOf(primero) ? actual : primero
-  );
+function resaltar(objetivo: HTMLElement) {
   objetivo.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
   objetivo.classList.remove("field-validation-error");
   void objetivo.offsetWidth;
   objetivo.classList.add("field-validation-error");
-  window.setTimeout(() => objetivo.classList.remove("field-validation-error"), 1000);
+  window.setTimeout(() => objetivo.classList.remove("field-validation-error"), 2500);
 }
 
 export function EditorInforme({ id }: { id: string }) {
@@ -293,17 +269,17 @@ export function EditorInforme({ id }: { id: string }) {
     if (enviando) return;
     const { informe: inf, valores: val, valoresGE: ge } = estadoRef.current;
     if (!inf) return;
-    const faltantes: string[] = [];
+    const faltantes: Faltante[] = [];
     if (inf.tipo_equipo === "extraordinarios") {
-      if (!inf.observaciones?.trim()) faltantes.push("Trabajos realizados / Observaciones");
+      if (!inf.observaciones?.trim()) faltantes.push({ campo: "observaciones", etiqueta: "Trabajos realizados / Observaciones" });
     } else {
-      if (!inf.cliente_nombre.trim()) faltantes.push("Cliente / Empresa");
-      if (inf.horas_trabajadas === null) faltantes.push("Total Horas Trabajadas");
-      if (inf.maquina_operativa === null) faltantes.push("¿La máquina queda operativa?");
+      if (!inf.cliente_nombre.trim()) faltantes.push({ campo: "cliente_nombre", etiqueta: "Cliente / Empresa" });
+      if (inf.horas_trabajadas === null) faltantes.push({ campo: "horas_trabajadas", etiqueta: "Total Horas Trabajadas" });
+      if (inf.maquina_operativa === null) faltantes.push({ campo: "maquina_operativa", etiqueta: "¿La máquina queda operativa?" });
       if (inf.tipo_equipo === "grupo_electrogeno") {
           for (const campo of CAMPOS_GE) {
             if (campo === "informe_id") continue;
-            if (ge[campo] === null || ge[campo] === undefined) faltantes.push(CAMPO_LABELS_GE[campo]);
+            if (ge[campo] === null || ge[campo] === undefined) faltantes.push({ campo, etiqueta: CAMPO_LABELS_GE[campo] });
           }
       } else {
         for (const campo of CAMPOS_POR_TIPO[inf.tipo_equipo]) {
@@ -312,15 +288,16 @@ export function EditorInforme({ id }: { id: string }) {
             (inf.tipo_equipo === "secadores" && campo === "horometro")
           ) continue;
           if (inf.tipo_equipo === "vehiculos" && ["aceite_caja", "aceite_diferencial"].includes(campo)) continue;
-          if (val[campo] == null) faltantes.push(CAMPO_LABELS[campo]);
+          if (val[campo] == null) faltantes.push({ campo, etiqueta: CAMPO_LABELS[campo] });
         }
       }
       const fotos = await db.archivos.where("informe_id").equals(inf.id).filter((a) => a.tipo === "foto").count();
-      if (fotos < 3) faltantes.push("Registro Fotográfico (mínimo 3 fotos)");
+      if (fotos < 3) faltantes.push({ campo: "fotos", etiqueta: "Registro Fotográfico (mínimo 3 fotos)" });
     }
     if (faltantes.length > 0) {
-      enfocarPrimerFaltante(faltantes);
-      mostrarToast({ mensaje: `Faltan: ${faltantes.slice(0, 3).join(", ")}...`, tipo: "error" });
+      const { elemento, nombres } = ubicarFaltantes(faltantes);
+      if (elemento) resaltar(elemento);
+      mostrarToast({ mensaje: `Faltan: ${nombres.slice(0, 3).join(", ")}${nombres.length > 3 ? ` y ${nombres.length - 3} más` : ""}`, tipo: "error" });
       return;
     }
     setEnviando(true);

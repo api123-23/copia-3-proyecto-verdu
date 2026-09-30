@@ -39,46 +39,46 @@ function SeccionValoresGE({
     <>
       <SubTitulo>Verificar Con Motor Detenido</SubTitulo>
       <div className="flex flex-col gap-1 mb-sm">
-        <ItemSelectFull etiqueta="1. Nivel de aceite de motor" opciones={OPCIONES_NIVEL} valor={valoresGE.ge_motor_detenido_aceite_motor} onChange={setGE("ge_motor_detenido_aceite_motor")} />
-        <ItemSelectFull etiqueta="2. Nivel de agua radiador y refriger." opciones={OPCIONES_NIVEL} valor={valoresGE.ge_motor_detenido_agua_radiador} onChange={setGE("ge_motor_detenido_agua_radiador")} />
-        <ItemSelectFull etiqueta="3. Restricción en el filtro de aire" opciones={OPCIONES_SI_NO} valor={valoresGE.ge_motor_detenido_restriccion_aire} onChange={setGE("ge_motor_detenido_restriccion_aire")} />
-        <ItemSelectFull etiqueta="4. Tensión correas vent. Alternador" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_motor_detenido_tension_correas} onChange={setGE("ge_motor_detenido_tension_correas")} />
-        <ItemSelectFull etiqueta="5. Estado baterías" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_motor_detenido_estado_baterias} onChange={setGE("ge_motor_detenido_estado_baterias")} />
-        <ItemSelectFull etiqueta="6. Estado inst. eléctrica" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_motor_detenido_inst_electrica} onChange={setGE("ge_motor_detenido_inst_electrica")} />
-        <ItemSelectFull etiqueta="7. Cableado de distrib. de potencia" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_motor_detenido_cableado_distrib} onChange={setGE("ge_motor_detenido_cableado_distrib")} />
-        <ItemSelectFull etiqueta="8. Cubo de ventilador, polea y bomba de agua" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_motor_detenido_cubo_ventilador} onChange={setGE("ge_motor_detenido_cubo_ventilador")} />
-        <ItemSelectFull etiqueta="9. Ajuste de piezas de montaje de motor" opciones={OPCIONES_SI_NO} valor={valoresGE.ge_motor_detenido_ajuste_motor} onChange={setGE("ge_motor_detenido_ajuste_motor")} />
-        <ItemSelectFull etiqueta="10. Estado uniones y tubo admis. aire" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_motor_detenido_union_tubo_aire} onChange={setGE("ge_motor_detenido_union_tubo_aire")} />
-        <ItemSelectFull etiqueta="11. Conexiones y líneas de combustible" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_motor_detenido_lineas_combustible} onChange={setGE("ge_motor_detenido_lineas_combustible")} />
+        <ItemSelectFull campo="ge_motor_detenido_aceite_motor" etiqueta="1. Nivel de aceite de motor" opciones={OPCIONES_NIVEL} valor={valoresGE.ge_motor_detenido_aceite_motor} onChange={setGE("ge_motor_detenido_aceite_motor")} />
+        <ItemSelectFull campo="ge_motor_detenido_agua_radiador" etiqueta="2. Nivel de agua radiador y refriger." opciones={OPCIONES_NIVEL} valor={valoresGE.ge_motor_detenido_agua_radiador} onChange={setGE("ge_motor_detenido_agua_radiador")} />
+        <ItemSelectFull campo="ge_motor_detenido_restriccion_aire" etiqueta="3. Restricción en el filtro de aire" opciones={OPCIONES_SI_NO} valor={valoresGE.ge_motor_detenido_restriccion_aire} onChange={setGE("ge_motor_detenido_restriccion_aire")} />
+        <ItemSelectFull campo="ge_motor_detenido_tension_correas" etiqueta="4. Tensión correas vent. Alternador" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_motor_detenido_tension_correas} onChange={setGE("ge_motor_detenido_tension_correas")} />
+        <ItemSelectFull campo="ge_motor_detenido_estado_baterias" etiqueta="5. Estado baterías" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_motor_detenido_estado_baterias} onChange={setGE("ge_motor_detenido_estado_baterias")} />
+        <ItemSelectFull campo="ge_motor_detenido_inst_electrica" etiqueta="6. Estado inst. eléctrica" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_motor_detenido_inst_electrica} onChange={setGE("ge_motor_detenido_inst_electrica")} />
+        <ItemSelectFull campo="ge_motor_detenido_cableado_distrib" etiqueta="7. Cableado de distrib. de potencia" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_motor_detenido_cableado_distrib} onChange={setGE("ge_motor_detenido_cableado_distrib")} />
+        <ItemSelectFull campo="ge_motor_detenido_cubo_ventilador" etiqueta="8. Cubo de ventilador, polea y bomba de agua" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_motor_detenido_cubo_ventilador} onChange={setGE("ge_motor_detenido_cubo_ventilador")} />
+        <ItemSelectFull campo="ge_motor_detenido_ajuste_motor" etiqueta="9. Ajuste de piezas de montaje de motor" opciones={OPCIONES_SI_NO} valor={valoresGE.ge_motor_detenido_ajuste_motor} onChange={setGE("ge_motor_detenido_ajuste_motor")} />
+        <ItemSelectFull campo="ge_motor_detenido_union_tubo_aire" etiqueta="10. Estado uniones y tubo admis. aire" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_motor_detenido_union_tubo_aire} onChange={setGE("ge_motor_detenido_union_tubo_aire")} />
+        <ItemSelectFull campo="ge_motor_detenido_lineas_combustible" etiqueta="11. Conexiones y líneas de combustible" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_motor_detenido_lineas_combustible} onChange={setGE("ge_motor_detenido_lineas_combustible")} />
       </div>
 
       <div className="pt-sm border-t border-outline-variant">
         <SubTitulo>Verificaciones de Funcionamiento</SubTitulo>
         <div className="flex flex-col gap-1">
-          <ItemSelectFull etiqueta="1. Sistema de arranque" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_funcionamiento_sistema_arranque} onChange={setGE("ge_funcionamiento_sistema_arranque")} />
-          <ItemSelectFull etiqueta="2. Mangueras y conexiones" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_funcionamiento_mangueras} onChange={setGE("ge_funcionamiento_mangueras")} />
-           <ItemSelectFull etiqueta="3. Presión de aceite" opciones={OPCIONES_OK_BAJO_ALTO} valor={valoresGE.ge_funcionamiento_presion_aceite} onChange={setGE("ge_funcionamiento_presion_aceite")} />
-          <ItemSelectFull etiqueta="4. Temp. Agua motor" opciones={OPCIONES_OPTIMO_BAJO_ALTO} valor={valoresGE.ge_funcionamiento_temp_agua} onChange={setGE("ge_funcionamiento_temp_agua")} />
-          <ItemSelectFull etiqueta="5. Diferencial de Temperatura de Radiador" opciones={OPCIONES_OPTIMO_BAJO_ALTO} valor={valoresGE.ge_funcionamiento_diferencial_temp} onChange={setGE("ge_funcionamiento_diferencial_temp")} />
-          <ItemSelectFull etiqueta="6. Vibraciones inusuales" opciones={OPCIONES_SI_NO} valor={valoresGE.ge_funcionamiento_vibraciones} onChange={setGE("ge_funcionamiento_vibraciones")} />
-          <ItemSelectFull etiqueta="7. Antivibratorios" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_funcionamiento_antivibratorios} onChange={setGE("ge_funcionamiento_antivibratorios")} />
-          <ItemSelectFull etiqueta="8. Llave termomagnética" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_funcionamiento_llave_termomagnetica} onChange={setGE("ge_funcionamiento_llave_termomagnetica")} />
-          <ItemSelectFull etiqueta="9. Carga alternador" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_funcionamiento_carga_alternador} onChange={setGE("ge_funcionamiento_carga_alternador")} />
-          <ItemSelectFull etiqueta="10. Llave de transferencia" opciones={OPCIONES_SI_NO} valor={valoresGE.ge_funcionamiento_llave_transferencia} onChange={setGE("ge_funcionamiento_llave_transferencia")} />
-          <ItemSelectFull etiqueta="11. R.P.M. Motor máxima" opciones={OPCIONES_OPTIMO_BAJO_ALTO} valor={valoresGE.ge_funcionamiento_rpm_max} onChange={setGE("ge_funcionamiento_rpm_max")} />
-          <ItemSelectFull etiqueta="12. Funcionamiento circ. Seguridad" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_funcionamiento_circ_seguridad} onChange={setGE("ge_funcionamiento_circ_seguridad")} />
-          <ItemSelectFull etiqueta="13. Ventilación de aire generador" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_funcionamiento_ventilacion_aire} onChange={setGE("ge_funcionamiento_ventilacion_aire")} />
-          <ItemSelectFull etiqueta="14. Pérdidas aceite motor" opciones={OPCIONES_SI_NO} valor={valoresGE.ge_funcionamiento_perdidas_aceite} onChange={setGE("ge_funcionamiento_perdidas_aceite")} />
-          <ItemSelectFull etiqueta="15. Pérdidas circuito combustible" opciones={OPCIONES_SI_NO} valor={valoresGE.ge_funcionamiento_perdidas_combustible} onChange={setGE("ge_funcionamiento_perdidas_combustible")} />
-          <ItemSelectFull etiqueta="16. Restricc. en el escape" opciones={OPCIONES_SI_NO} valor={valoresGE.ge_funcionamiento_restriccion_escape} onChange={setGE("ge_funcionamiento_restriccion_escape")} />
-          <ItemSelectFull etiqueta="17. Restricción en entrada y salida de aire" opciones={OPCIONES_SI_NO} valor={valoresGE.ge_funcionamiento_restriccion_aire} onChange={setGE("ge_funcionamiento_restriccion_aire")} />
-           <ItemSelectFull etiqueta="18. Frecuencia (medición)" opciones={OPCIONES_OPTIMO_BAJO_ALTO} valor={valoresGE.ge_funcionamiento_frecuencia} onChange={setGE("ge_funcionamiento_frecuencia")} />
-           <ItemSelectFull etiqueta="19. Tensión de línea" opciones={OPCIONES_OPTIMO_BAJO_ALTO} valor={valoresGE.ge_funcionamiento_tension_linea} onChange={setGE("ge_funcionamiento_tension_linea")} />
+          <ItemSelectFull campo="ge_funcionamiento_sistema_arranque" etiqueta="1. Sistema de arranque" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_funcionamiento_sistema_arranque} onChange={setGE("ge_funcionamiento_sistema_arranque")} />
+          <ItemSelectFull campo="ge_funcionamiento_mangueras" etiqueta="2. Mangueras y conexiones" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_funcionamiento_mangueras} onChange={setGE("ge_funcionamiento_mangueras")} />
+           <ItemSelectFull campo="ge_funcionamiento_presion_aceite" etiqueta="3. Presión de aceite" opciones={OPCIONES_OK_BAJO_ALTO} valor={valoresGE.ge_funcionamiento_presion_aceite} onChange={setGE("ge_funcionamiento_presion_aceite")} />
+          <ItemSelectFull campo="ge_funcionamiento_temp_agua" etiqueta="4. Temp. Agua motor" opciones={OPCIONES_OPTIMO_BAJO_ALTO} valor={valoresGE.ge_funcionamiento_temp_agua} onChange={setGE("ge_funcionamiento_temp_agua")} />
+          <ItemSelectFull campo="ge_funcionamiento_diferencial_temp" etiqueta="5. Diferencial de Temperatura de Radiador" opciones={OPCIONES_OPTIMO_BAJO_ALTO} valor={valoresGE.ge_funcionamiento_diferencial_temp} onChange={setGE("ge_funcionamiento_diferencial_temp")} />
+          <ItemSelectFull campo="ge_funcionamiento_vibraciones" etiqueta="6. Vibraciones inusuales" opciones={OPCIONES_SI_NO} valor={valoresGE.ge_funcionamiento_vibraciones} onChange={setGE("ge_funcionamiento_vibraciones")} />
+          <ItemSelectFull campo="ge_funcionamiento_antivibratorios" etiqueta="7. Antivibratorios" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_funcionamiento_antivibratorios} onChange={setGE("ge_funcionamiento_antivibratorios")} />
+          <ItemSelectFull campo="ge_funcionamiento_llave_termomagnetica" etiqueta="8. Llave termomagnética" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_funcionamiento_llave_termomagnetica} onChange={setGE("ge_funcionamiento_llave_termomagnetica")} />
+          <ItemSelectFull campo="ge_funcionamiento_carga_alternador" etiqueta="9. Carga alternador" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_funcionamiento_carga_alternador} onChange={setGE("ge_funcionamiento_carga_alternador")} />
+          <ItemSelectFull campo="ge_funcionamiento_llave_transferencia" etiqueta="10. Llave de transferencia" opciones={OPCIONES_SI_NO} valor={valoresGE.ge_funcionamiento_llave_transferencia} onChange={setGE("ge_funcionamiento_llave_transferencia")} />
+          <ItemSelectFull campo="ge_funcionamiento_rpm_max" etiqueta="11. R.P.M. Motor máxima" opciones={OPCIONES_OPTIMO_BAJO_ALTO} valor={valoresGE.ge_funcionamiento_rpm_max} onChange={setGE("ge_funcionamiento_rpm_max")} />
+          <ItemSelectFull campo="ge_funcionamiento_circ_seguridad" etiqueta="12. Funcionamiento circ. Seguridad" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_funcionamiento_circ_seguridad} onChange={setGE("ge_funcionamiento_circ_seguridad")} />
+          <ItemSelectFull campo="ge_funcionamiento_ventilacion_aire" etiqueta="13. Ventilación de aire generador" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_funcionamiento_ventilacion_aire} onChange={setGE("ge_funcionamiento_ventilacion_aire")} />
+          <ItemSelectFull campo="ge_funcionamiento_perdidas_aceite" etiqueta="14. Pérdidas aceite motor" opciones={OPCIONES_SI_NO} valor={valoresGE.ge_funcionamiento_perdidas_aceite} onChange={setGE("ge_funcionamiento_perdidas_aceite")} />
+          <ItemSelectFull campo="ge_funcionamiento_perdidas_combustible" etiqueta="15. Pérdidas circuito combustible" opciones={OPCIONES_SI_NO} valor={valoresGE.ge_funcionamiento_perdidas_combustible} onChange={setGE("ge_funcionamiento_perdidas_combustible")} />
+          <ItemSelectFull campo="ge_funcionamiento_restriccion_escape" etiqueta="16. Restricc. en el escape" opciones={OPCIONES_SI_NO} valor={valoresGE.ge_funcionamiento_restriccion_escape} onChange={setGE("ge_funcionamiento_restriccion_escape")} />
+          <ItemSelectFull campo="ge_funcionamiento_restriccion_aire" etiqueta="17. Restricción en entrada y salida de aire" opciones={OPCIONES_SI_NO} valor={valoresGE.ge_funcionamiento_restriccion_aire} onChange={setGE("ge_funcionamiento_restriccion_aire")} />
+           <ItemSelectFull campo="ge_funcionamiento_frecuencia" etiqueta="18. Frecuencia (medición)" opciones={OPCIONES_OPTIMO_BAJO_ALTO} valor={valoresGE.ge_funcionamiento_frecuencia} onChange={setGE("ge_funcionamiento_frecuencia")} />
+           <ItemSelectFull campo="ge_funcionamiento_tension_linea" etiqueta="19. Tensión de línea" opciones={OPCIONES_OPTIMO_BAJO_ALTO} valor={valoresGE.ge_funcionamiento_tension_linea} onChange={setGE("ge_funcionamiento_tension_linea")} />
           <div className="flex flex-col gap-1 bg-surface-container-low p-1.5 rounded">
             <span className="text-body-md font-body-md text-[12px]">20. Amperaje Fases</span>
             <div className="flex gap-2">
               {(["ge_funcionamiento_amperaje_f1", "ge_funcionamiento_amperaje_f2", "ge_funcionamiento_amperaje_f3"] as const).map((campo, i) => (
-                <div key={campo} className="flex-1 flex items-center gap-1">
+                <div key={campo} data-campo={campo} data-validation-label={`Amperaje F${i + 1}`} className="flex-1 flex items-center gap-1">
                   <span className="text-[10px]">F{i + 1}</span>
                   <input
                     className="input-technical w-full h-[22px] py-0 px-1 text-[11px] text-center text-data-mono font-data-mono"
@@ -91,8 +91,8 @@ function SeccionValoresGE({
               ))}
             </div>
           </div>
-          <ItemSelectFull etiqueta="21. Tensión de línea con carga" opciones={OPCIONES_BAJA_ALTA} valor={valoresGE.ge_funcionamiento_tension_linea_carga} onChange={setGE("ge_funcionamiento_tension_linea_carga")} />
-          <div className="flex justify-between items-center bg-surface-container-low p-1.5 rounded">
+          <ItemSelectFull campo="ge_funcionamiento_tension_linea_carga" etiqueta="21. Tensión de línea con carga" opciones={OPCIONES_BAJA_ALTA} valor={valoresGE.ge_funcionamiento_tension_linea_carga} onChange={setGE("ge_funcionamiento_tension_linea_carga")} />
+          <div data-campo="ge_funcionamiento_temp_ambiente" data-validation-label="22. Temperatura ambiente" className="flex justify-between items-center bg-surface-container-low p-1.5 rounded">
             <span className="text-body-md font-body-md text-[12px]">22. Temperatura ambiente</span>
             <input
               className="input-technical w-16 h-[22px] py-0 px-1 text-[11px] text-center text-data-mono font-data-mono"
@@ -102,7 +102,7 @@ function SeccionValoresGE({
               onChange={(e) => onChangeGE({ ge_funcionamiento_temp_ambiente: e.target.value === "" ? null : Number(e.target.value) })}
             />
           </div>
-           <div className="flex justify-between items-center bg-surface-container-low p-1.5 rounded">
+           <div data-campo="ge_funcionamiento_temp_refrigerante" data-validation-label="23. Temperatura líquido refrigerante" className="flex justify-between items-center bg-surface-container-low p-1.5 rounded">
              <span className="text-body-md font-body-md text-[12px]">23. Temperatura líquido refrigerante</span>
              <input
                className="input-technical w-16 h-[22px] py-0 px-1 text-[11px] text-center text-data-mono font-data-mono"
@@ -112,8 +112,8 @@ function SeccionValoresGE({
                onChange={(e) => onChangeGE({ ge_funcionamiento_temp_refrigerante: e.target.value === "" ? null : Number(e.target.value) })}
              />
            </div>
-           <ItemSelectFull etiqueta="24. Inspección de batería" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_funcionamiento_inspeccion_bateria} onChange={setGE("ge_funcionamiento_inspeccion_bateria")} />
-           <ItemSelectFull etiqueta="25. Accionamiento de circ. eléctrico" opciones={OPCIONES_SI_NO} valor={valoresGE.ge_funcionamiento_accion_electrico} onChange={setGE("ge_funcionamiento_accion_electrico")} />
+           <ItemSelectFull campo="ge_funcionamiento_inspeccion_bateria" etiqueta="24. Inspección de batería" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_funcionamiento_inspeccion_bateria} onChange={setGE("ge_funcionamiento_inspeccion_bateria")} />
+           <ItemSelectFull campo="ge_funcionamiento_accion_electrico" etiqueta="25. Accionamiento de circ. eléctrico" opciones={OPCIONES_SI_NO} valor={valoresGE.ge_funcionamiento_accion_electrico} onChange={setGE("ge_funcionamiento_accion_electrico")} />
         </div>
       </div>
     </>
@@ -199,39 +199,39 @@ export default function SeccionValores({
             <SubTitulo>Con Motor Detenido</SubTitulo>
             {aplica(tipo, "horometro") ? (
               <div className="mb-sm">
-                <CampoNumero etiqueta="Horómetro" sufijo="HRS" texto valor={valores.horometro} onChange={set("horometro")} />
+                <CampoNumero campo="horometro" etiqueta="Horómetro" sufijo="HRS" texto valor={valores.horometro} onChange={set("horometro")} />
               </div>
             ) : null}
             {aplica(tipo, "kilometros") ? (
               <div className="mb-sm">
-                <CampoNumero etiqueta="Kilómetros" sufijo="KM" valor={valores.kilometros} onChange={set("kilometros")} />
+                <CampoNumero campo="kilometros" etiqueta="Kilómetros" sufijo="KM" valor={valores.kilometros} onChange={set("kilometros")} />
               </div>
             ) : null}
             {bloqueNiveles ? <div className="grid grid-cols-2 gap-sm mb-sm border-b border-outline-variant pb-sm">
               <GrupoTitulo>NIVELES</GrupoTitulo>
               {aplica(tipo, "aceite_motor") ? (
-                <ItemSelect etiqueta="Aceite Motor" opciones={OPCIONES_NIVEL} valor={valores.aceite_motor} onChange={set("aceite_motor")} />
+                <ItemSelect campo="aceite_motor" etiqueta="Aceite Motor" opciones={OPCIONES_NIVEL} valor={valores.aceite_motor} onChange={set("aceite_motor")} />
               ) : null}
               {tipo === "motocompresor" && aplica(tipo, "aceite_unidad") ? (
-                <ItemSelect etiqueta="Aceite Unidad" opciones={OPCIONES_NIVEL} valor={valores.aceite_unidad} onChange={set("aceite_unidad")} />
+                <ItemSelect campo="aceite_unidad" etiqueta="Aceite Unidad" opciones={OPCIONES_NIVEL} valor={valores.aceite_unidad} onChange={set("aceite_unidad")} />
               ) : null}
               {aplica(tipo, "refrig_radiador") ? (
-                <ItemSelect etiqueta="Refrig. Rad." opciones={OPCIONES_NIVEL} valor={valores.refrig_radiador} onChange={set("refrig_radiador")} />
+                <ItemSelect campo="refrig_radiador" etiqueta="Refrig. Rad." opciones={OPCIONES_NIVEL} valor={valores.refrig_radiador} onChange={set("refrig_radiador")} />
               ) : null}
               {aplica(tipo, "estado_bateria") ? (
-                 <ItemSelect etiqueta="Est. Batería" opciones={tipo === "motocompresor" ? OPCIONES_OK_MAL_NO_TIENE : OPCIONES_OK_MAL} valor={valores.estado_bateria} onChange={set("estado_bateria")} />
+                 <ItemSelect campo="estado_bateria" etiqueta="Est. Batería" opciones={tipo === "motocompresor" ? OPCIONES_OK_MAL_NO_TIENE : OPCIONES_OK_MAL} valor={valores.estado_bateria} onChange={set("estado_bateria")} />
               ) : null}
               {aplica(tipo, "conec_purga") ? (
-                   <ItemSelect className={esSecadores ? "field-mobile-wide" : ""} etiqueta={esSecadores ? "Conexión de purga" : "Conec. Purga"} opciones={OPCIONES_SI_NO} valor={valores.conec_purga} onChange={set("conec_purga")} />
+                   <ItemSelect campo="conec_purga" className={esSecadores ? "field-mobile-wide" : ""} etiqueta={esSecadores ? "Conexión de purga" : "Conec. Purga"} opciones={OPCIONES_SI_NO} valor={valores.conec_purga} onChange={set("conec_purga")} />
               ) : null}
               {esVehiculo ? (
                 <>
-                  <ItemSelect etiqueta="Aceite Caja" opciones={OPCIONES_OPTIMO_ALTO_BAJO} valor={valores.aceite_caja} onChange={set("aceite_caja")} />
-                  <ItemSelect etiqueta="Aceite Diferencial" opciones={OPCIONES_OPTIMO_ALTO_BAJO} valor={valores.aceite_diferencial} onChange={set("aceite_diferencial")} />
+                  <ItemSelect campo="aceite_caja" etiqueta="Aceite Caja" opciones={OPCIONES_OPTIMO_ALTO_BAJO} valor={valores.aceite_caja} onChange={set("aceite_caja")} />
+                  <ItemSelect campo="aceite_diferencial" etiqueta="Aceite Diferencial" opciones={OPCIONES_OPTIMO_ALTO_BAJO} valor={valores.aceite_diferencial} onChange={set("aceite_diferencial")} />
                   {esMaquinaVial ? (
                     <>
-                      <ItemSelect etiqueta="Aceite Hidráulico" opciones={OPCIONES_OPTIMO_ALTO_BAJO} valor={valores.aceite_hidraulico} onChange={set("aceite_hidraulico")} />
-                      <ItemSelect etiqueta="Aceite Convertidor" opciones={OPCIONES_OPTIMO_ALTO_BAJO} valor={valores.aceite_convertidor} onChange={set("aceite_convertidor")} />
+                      <ItemSelect campo="aceite_hidraulico" etiqueta="Aceite Hidráulico" opciones={OPCIONES_OPTIMO_ALTO_BAJO} valor={valores.aceite_hidraulico} onChange={set("aceite_hidraulico")} />
+                      <ItemSelect campo="aceite_convertidor" etiqueta="Aceite Convertidor" opciones={OPCIONES_OPTIMO_ALTO_BAJO} valor={valores.aceite_convertidor} onChange={set("aceite_convertidor")} />
                     </>
                   ) : null}
                 </>
@@ -240,16 +240,16 @@ export default function SeccionValores({
             <div className="grid grid-cols-2 gap-sm">
               <GrupoTitulo>ESTADO GENERAL</GrupoTitulo>
               {aplica(tipo, "inst_electrica") ? (
-                  <ItemSelect className={esSecadores ? "field-mobile-wide" : ""} etiqueta="Instalación eléctrica" opciones={OPCIONES_OK_MAL} valor={valores.inst_electrica} onChange={set("inst_electrica")} />
+                  <ItemSelect campo="inst_electrica" className={esSecadores ? "field-mobile-wide" : ""} etiqueta="Instalación eléctrica" opciones={OPCIONES_OK_MAL} valor={valores.inst_electrica} onChange={set("inst_electrica")} />
               ) : null}
               {aplica(tipo, "carroceria") ? (
-                  <ItemSelect etiqueta="Carrocería" opciones={OPCIONES_OK_MAL} valor={valores.carroceria} onChange={set("carroceria")} />
+                  <ItemSelect campo="carroceria" etiqueta="Carrocería" opciones={OPCIONES_OK_MAL} valor={valores.carroceria} onChange={set("carroceria")} />
               ) : null}
               {aplica(tipo, "jabalina") ? (
-                  <ItemSelect className={esSecadores ? "field-mobile-wide" : ""} etiqueta={esSecadores ? "Conexión de jabalina" : "Jabalina"} opciones={OPCIONES_SI_NO} valor={valores.jabalina} onChange={set("jabalina")} />
+                  <ItemSelect campo="jabalina" className={esSecadores ? "field-mobile-wide" : ""} etiqueta={esSecadores ? "Conexión de jabalina" : "Jabalina"} opciones={OPCIONES_SI_NO} valor={valores.jabalina} onChange={set("jabalina")} />
               ) : null}
               {aplica(tipo, "aislacion_suelo") ? (
-                  <ItemSelect className={esSecadores ? "field-mobile-wide" : ""} etiqueta={esSecadores ? "Aislación de suelo" : "Aislac. Suelo"} opciones={OPCIONES_SI_NO} valor={valores.aislacion_suelo} onChange={set("aislacion_suelo")} />
+                  <ItemSelect campo="aislacion_suelo" className={esSecadores ? "field-mobile-wide" : ""} etiqueta={esSecadores ? "Aislación de suelo" : "Aislac. Suelo"} opciones={OPCIONES_SI_NO} valor={valores.aislacion_suelo} onChange={set("aislacion_suelo")} />
               ) : null}
             </div>
           </div>
@@ -260,14 +260,14 @@ export default function SeccionValores({
             <SubTitulo>Con Motor en Marcha</SubTitulo>
             {aplica(tipo, "rpm_min") ? (
               <div className="grid grid-cols-2 gap-sm mb-sm border-b border-outline-variant pb-sm">
-                <CampoNumero etiqueta="RPM Min" valor={valores.rpm_min} onChange={set("rpm_min")} />
-                <CampoNumero etiqueta="RPM Max" valor={valores.rpm_max} onChange={set("rpm_max")} />
+                <CampoNumero campo="rpm_min" etiqueta="RPM Min" valor={valores.rpm_min} onChange={set("rpm_min")} />
+                <CampoNumero campo="rpm_max" etiqueta="RPM Max" valor={valores.rpm_max} onChange={set("rpm_max")} />
               </div>
             ) : null}
             {aplica(tipo, "tension_linea") ? (
               <div className="mb-sm border-b border-outline-variant pb-sm">
                 <h4 className="text-[10px] font-bold text-on-surface-variant mb-xs">TENSIÓN DE LÍNEA (V)</h4>
-                   <CampoNumero etiqueta={esSecadores ? "" : "Voltaje General"} centrado valor={valores.tension_linea} onChange={set("tension_linea")} />
+                   <CampoNumero campo="tension_linea" etiqueta={esSecadores ? "" : "Voltaje General"} centrado valor={valores.tension_linea} onChange={set("tension_linea")} />
               </div>
             ) : null}
             {aplica(tipo, "tension_gen_f1") ? (
@@ -275,7 +275,7 @@ export default function SeccionValores({
                 <h4 className="text-[10px] font-bold text-on-surface-variant mb-xs">TENSIÓN DE GEN. (V)</h4>
                 <div className="grid grid-cols-3 gap-sm">
                   {(["tension_gen_f1", "tension_gen_f2", "tension_gen_f3"] as const).map((c, i) => (
-                    <CampoNumero key={c} etiqueta={`F${i + 1}`} centrado valor={valores[c]} onChange={set(c)} />
+                    <CampoNumero key={c} campo={c} etiqueta={`F${i + 1}`} centrado valor={valores[c]} onChange={set(c)} />
                   ))}
                 </div>
               </div>
@@ -285,7 +285,7 @@ export default function SeccionValores({
                 <h4 className="text-[10px] font-bold text-on-surface-variant mb-xs">CONS. EN CARGA (A)</h4>
                 <div className="grid grid-cols-3 gap-sm">
                   {(["cons_carga_f1", "cons_carga_f2", "cons_carga_f3"] as const).map((c, i) => (
-                    <CampoNumero key={c} etiqueta={`F${i + 1}`} centrado valor={valores[c]} onChange={set(c)} />
+                    <CampoNumero key={c} campo={c} etiqueta={`F${i + 1}`} centrado valor={valores[c]} onChange={set(c)} />
                   ))}
                 </div>
               </div>
@@ -295,7 +295,7 @@ export default function SeccionValores({
                 <h4 className="text-[10px] font-bold text-on-surface-variant mb-xs">CONS. EN DESCARGA (A)</h4>
                 <div className="grid grid-cols-3 gap-sm">
                   {(["cons_descarga_f1", "cons_descarga_f2", "cons_descarga_f3"] as const).map((c, i) => (
-                    <CampoNumero key={c} etiqueta={`F${i + 1}`} centrado valor={valores[c]} onChange={set(c)} />
+                    <CampoNumero key={c} campo={c} etiqueta={`F${i + 1}`} centrado valor={valores[c]} onChange={set(c)} />
                   ))}
                 </div>
               </div>
@@ -304,16 +304,16 @@ export default function SeccionValores({
               <div className="mb-sm border-b border-outline-variant pb-sm">
                  <h4 className="text-[10px] font-bold text-on-surface-variant mb-xs">TEMPERATURA (°C)</h4>
                  <div className="grid grid-cols-2 gap-sm">
-                   <CampoNumero etiqueta={esCompresor ? "Temperatura de unidad" : "Ambiente"} valor={valores.temp_ambiente} onChange={set("temp_ambiente")} />
+                   <CampoNumero campo="temp_ambiente" etiqueta={esCompresor ? "Temperatura de unidad" : "Ambiente"} valor={valores.temp_ambiente} onChange={set("temp_ambiente")} />
                    {aplica(tipo, "temp_refrigerante") ? (
-                     <CampoNumero
+                     <CampoNumero campo="temp_refrigerante"
                        etiqueta="Refrigerante"
                        valor={valores.temp_refrigerante}
                        onChange={set("temp_refrigerante")}
                      />
                    ) : null}
                    {aplica(tipo, "pto_rocio") ? (
-                  <ItemSelect className={esSecadores ? "field-mobile-wide" : ""} etiqueta="Punto de rocío" opciones={OPCIONES_OPTIMO_ALTO_BAJO} valor={valores.pto_rocio} onChange={set("pto_rocio")} />
+                  <ItemSelect campo="pto_rocio" className={esSecadores ? "field-mobile-wide" : ""} etiqueta="Punto de rocío" opciones={OPCIONES_OPTIMO_ALTO_BAJO} valor={valores.pto_rocio} onChange={set("pto_rocio")} />
                    ) : null}
                 </div>
               </div>
@@ -322,9 +322,9 @@ export default function SeccionValores({
               <div className="mb-sm border-b border-outline-variant pb-sm">
                 <h4 className="text-[10px] font-bold text-on-surface-variant mb-xs">PRESIÓN</h4>
                 <div className="grid grid-cols-2 gap-sm">
-                  <CampoNumero etiqueta="Unid. Comp." valor={valores.presion_unidad_comp} onChange={set("presion_unidad_comp")} />
+                  <CampoNumero campo="presion_unidad_comp" etiqueta="Unid. Comp." valor={valores.presion_unidad_comp} onChange={set("presion_unidad_comp")} />
                   {aplica(tipo, "presion_aceite_motor") ? (
-                    <ItemSelect etiqueta="Aceite Motor" opciones={OPCIONES_OK_BAJO} valor={valores.presion_aceite_motor} onChange={set("presion_aceite_motor")} />
+                    <ItemSelect campo="presion_aceite_motor" etiqueta="Aceite Motor" opciones={OPCIONES_OK_BAJO} valor={valores.presion_aceite_motor} onChange={set("presion_aceite_motor")} />
                   ) : null}
                 </div>
               </div>
@@ -333,13 +333,13 @@ export default function SeccionValores({
               <div className="mb-sm border-b border-outline-variant pb-sm">
                 <h4 className="text-[10px] font-bold text-on-surface-variant mb-xs">FUNCIONAMIENTO CIRCUITO</h4>
                 <div className="grid grid-cols-2 gap-sm">
-                   {aplica(tipo, "circuito_refr_m") ? <ItemSelect etiqueta="Refr. M." opciones={OPCIONES_OK_MAL} valor={valores.circuito_refr_m} onChange={set("circuito_refr_m")} /> : null}
-                   {aplica(tipo, "circuito_despresuriz") ? <ItemSelect etiqueta="Despresuriz." opciones={OPCIONES_SI_NO} valor={valores.circuito_despresuriz} onChange={set("circuito_despresuriz")} /> : null}
-                   {aplica(tipo, "circuito_arranque") ? <ItemSelect etiqueta="Arranque" opciones={OPCIONES_OK_MAL} valor={valores.circuito_arranque} onChange={set("circuito_arranque")} /> : null}
-                    {aplica(tipo, "circuito_seguridad") ? <ItemSelect etiqueta="Seguridad" opciones={OPCIONES_OK_MAL} valor={valores.circuito_seguridad} onChange={set("circuito_seguridad")} /> : null}
-                    {aplica(tipo, "circuito_electr") ? <ItemSelect etiqueta="Eléctrico" opciones={OPCIONES_OK_MAL} valor={valores.circuito_electr} onChange={set("circuito_electr")} /> : null}
-                   {aplica(tipo, "tiempo_y_delta") ? <ItemSelect etiqueta="Tiempo Y-Δ" opciones={OPCIONES_TIEMPO_Y_DELTA} valor={valores.tiempo_y_delta} onChange={set("tiempo_y_delta")} /> : null}
-                   {aplica(tipo, "diferencial") ? <ItemSelect etiqueta="Diferencial" opciones={OPCIONES_OK_NO} valor={valores.diferencial} onChange={set("diferencial")} /> : null}
+                   {aplica(tipo, "circuito_refr_m") ? <ItemSelect campo="circuito_refr_m" etiqueta="Refr. M." opciones={OPCIONES_OK_MAL} valor={valores.circuito_refr_m} onChange={set("circuito_refr_m")} /> : null}
+                   {aplica(tipo, "circuito_despresuriz") ? <ItemSelect campo="circuito_despresuriz" etiqueta="Despresuriz." opciones={OPCIONES_SI_NO} valor={valores.circuito_despresuriz} onChange={set("circuito_despresuriz")} /> : null}
+                   {aplica(tipo, "circuito_arranque") ? <ItemSelect campo="circuito_arranque" etiqueta="Arranque" opciones={OPCIONES_OK_MAL} valor={valores.circuito_arranque} onChange={set("circuito_arranque")} /> : null}
+                    {aplica(tipo, "circuito_seguridad") ? <ItemSelect campo="circuito_seguridad" etiqueta="Seguridad" opciones={OPCIONES_OK_MAL} valor={valores.circuito_seguridad} onChange={set("circuito_seguridad")} /> : null}
+                    {aplica(tipo, "circuito_electr") ? <ItemSelect campo="circuito_electr" etiqueta="Eléctrico" opciones={OPCIONES_OK_MAL} valor={valores.circuito_electr} onChange={set("circuito_electr")} /> : null}
+                   {aplica(tipo, "tiempo_y_delta") ? <ItemSelect campo="tiempo_y_delta" etiqueta="Tiempo Y-Δ" opciones={OPCIONES_TIEMPO_Y_DELTA} valor={valores.tiempo_y_delta} onChange={set("tiempo_y_delta")} /> : null}
+                   {aplica(tipo, "diferencial") ? <ItemSelect campo="diferencial" etiqueta="Diferencial" opciones={OPCIONES_OK_NO} valor={valores.diferencial} onChange={set("diferencial")} /> : null}
                 </div>
               </div>
             ) : null}
@@ -351,16 +351,16 @@ export default function SeccionValores({
             <h4 className="text-[10px] font-bold text-on-surface-variant mb-xs">PÉRDIDAS</h4>
             <div className="grid grid-cols-2 gap-sm">
                {aplica(tipo, "perdida_aceite_motor") ? (
-                  <ItemSelect etiqueta={esMotocompresor ? "Aceite Unidad" : tipo === "compresor" ? "Pérdida de aceite de unidad" : "Aceite Motor"} opciones={OPCIONES_SI_NO} valor={valores.perdida_aceite_motor} onChange={set("perdida_aceite_motor")} />
+                  <ItemSelect campo="perdida_aceite_motor" etiqueta={esMotocompresor ? "Aceite Unidad" : tipo === "compresor" ? "Pérdida de aceite de unidad" : "Aceite Motor"} opciones={OPCIONES_SI_NO} valor={valores.perdida_aceite_motor} onChange={set("perdida_aceite_motor")} />
                ) : null}
               {aplica(tipo, "perdida_refrigerante") ? (
-                  <ItemSelect etiqueta="Refrigerante" opciones={OPCIONES_SI_NO} valor={valores.perdida_refrigerante} onChange={set("perdida_refrigerante")} />
+                  <ItemSelect campo="perdida_refrigerante" etiqueta="Refrigerante" opciones={OPCIONES_SI_NO} valor={valores.perdida_refrigerante} onChange={set("perdida_refrigerante")} />
               ) : null}
               {aplica(tipo, "perdida_aire") ? (
-                <ItemSelect etiqueta="Aire" opciones={OPCIONES_SI_NO} valor={valores.perdida_aire} onChange={set("perdida_aire")} />
+                <ItemSelect campo="perdida_aire" etiqueta="Aire" opciones={OPCIONES_SI_NO} valor={valores.perdida_aire} onChange={set("perdida_aire")} />
               ) : null}
               {aplica(tipo, "perdida_combustible") ? (
-                <ItemSelect etiqueta="Combustible" opciones={OPCIONES_SI_NO} valor={valores.perdida_combustible} onChange={set("perdida_combustible")} />
+                <ItemSelect campo="perdida_combustible" etiqueta="Combustible" opciones={OPCIONES_SI_NO} valor={valores.perdida_combustible} onChange={set("perdida_combustible")} />
               ) : null}
             </div>
           </div>
