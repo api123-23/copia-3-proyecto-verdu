@@ -1,4 +1,4 @@
-const CACHE = "verdu-shell-50-ZmIY0kY0b9YpFGs5VB";
+const CACHE = "verdu-shell-LqZXZBj1n2LQ9Fa9EDPw_";
 const PREFIJO = "verdu-shell-";
 const PRECACHE = [
   "/",

@@ -1,21 +1,25 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { MotorSync } from "@/components/MotorSync";
 import { RegistrarSW } from "@/components/RegistrarSW";
 import { EfectoScroll } from "@/components/EfectoScroll";
 import { EstadoConexion } from "@/components/EstadoConexion";
 import "./globals.css";
 
-const inter = Inter({
+// Fuentes incluidas en el proyecto (antes se descargaban de Google Fonts en
+// cada build y, si esa descarga fallaba, el deploy en Vercel fallaba).
+const inter = localFont({
+  src: "./fonts/inter-latin-wght-normal.woff2",
   variable: "--font-inter",
-  subsets: ["latin"],
-  weight: ["400", "600", "700", "900"],
+  weight: "100 900",
+  display: "swap",
 });
 
-const jetbrains = JetBrains_Mono({
+const jetbrains = localFont({
+  src: "./fonts/jetbrains-mono-latin-500-normal.woff2",
   variable: "--font-jetbrains",
-  subsets: ["latin"],
-  weight: ["500"],
+  weight: "500",
+  display: "swap",
 });
 
 export const viewport: Viewport = {
