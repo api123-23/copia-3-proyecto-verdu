@@ -16,10 +16,11 @@ import { PanelAdmin } from "@/components/PanelAdmin";
 import { GestionClientes } from "@/components/GestionClientes";
 import { Estadisticas } from "@/components/Estadisticas";
 import { usePerfil } from "@/lib/usePerfil";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Tutorial } from "@/components/Tutorial";
 import { debeMostrarse, iniciarRecorrido } from "@/lib/tutorial";
 import { useEstadoSesion } from "@/lib/reautenticacion";
+import { useEnLinea } from "@/lib/useEnLinea";
 
 export default function Home() {
   const { cargando, sesion } = useSesion(true);
@@ -27,6 +28,12 @@ export default function Home() {
   const hash = useHash();
   const ruta = parsearRuta(hash);
   const vistaKey = `${ruta.tipo}-${"id" in ruta ? ruta.id : ""}`;
+
+  // ESTADÍSTICAS necesita conexión: sin señal el botón queda apagado y, al
+  // volver, recupera su color con una animación.
+  const enLinea = useEnLinea();
+  const [estuvoSinConexion, setEstuvoSinConexion] = useState(false);
+  if (!enLinea && !estuvoSinConexion) setEstuvoSinConexion(true);
 
   useEffect(() => {
     if (esObservador && ["admin", "clientes", "estadisticas", "nuevo"].includes(ruta.tipo)) navegar("#/");
@@ -94,9 +101,17 @@ export default function Home() {
         <div className="flex shrink-0 items-center gap-1">
           {esMaster ? (
             <a
+              key={enLinea ? "en-linea" : "sin-conexion"}
               data-tutorial="estadisticas"
-              href="#/estadisticas"
-              className="flex h-10 items-center text-[10px] sm:text-label-caps font-label-caps font-bold tracking-wider bg-white/10 text-on-primary px-2 sm:px-4 rounded-lg shadow-sm hover:bg-white/20 hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all duration-300"
+              href={enLinea ? "#/estadisticas" : undefined}
+              aria-disabled={!enLinea}
+              title={enLinea ? undefined : "Requiere conexión a internet"}
+              onClick={(e) => { if (!enLinea) e.preventDefault(); }}
+              className={`flex h-10 items-center text-[10px] sm:text-label-caps font-label-caps font-bold tracking-wider px-2 sm:px-4 rounded-lg transition-all duration-300 ${
+                enLinea
+                  ? `bg-white/10 text-on-primary shadow-sm hover:bg-white/20 hover:shadow-md hover:-translate-y-0.5 active:scale-95 ${estuvoSinConexion ? "boton-reactivado" : ""}`
+                  : "boton-apagado cursor-not-allowed bg-white/5 text-on-primary/40 shadow-none"
+              }`}
             >
               ESTADÍSTICAS
             </a>

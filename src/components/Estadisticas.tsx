@@ -6,6 +6,40 @@ import { supabase } from "@/lib/supabase";
 import { navegar } from "@/lib/hashRuta";
 import { usePerfil } from "@/lib/usePerfil";
 import { PantallaCarga } from "@/components/PantallaCarga";
+import { IconoLinea } from "@/components/IconoLinea";
+import { useEnLinea } from "@/lib/useEnLinea";
+
+// Errores de red (sin señal o conexión cortada a mitad de la consulta).
+function esErrorDeRed(mensaje: string): boolean {
+  return /fetch|network|conexi|timeout|load failed/i.test(mensaje);
+}
+
+function AvisoSinConexion({ conDatos, onReintentar }: { conDatos: boolean; onReintentar?: () => void }) {
+  if (conDatos) {
+    return (
+      <div role="status" className="aviso-estadisticas flex items-center gap-2.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
+        <IconoLinea nombre="sin-red" className="h-4 w-4 shrink-0" grosor={2.2} />
+        <span>Sin conexión: se muestran los últimos datos cargados. Se actualizan solos cuando vuelva la señal.</span>
+      </div>
+    );
+  }
+  return (
+    <div role="status" className="aviso-estadisticas mx-auto mt-lg flex max-w-md flex-col items-center gap-3 rounded-2xl border border-outline-variant bg-white p-lg text-center shadow-sm">
+      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+        <IconoLinea nombre="sin-red" className="h-6 w-6" grosor={2.1} />
+      </span>
+      <h2 className="text-title-md font-bold text-on-surface">Sin conexión</h2>
+      <p className="text-body-md text-on-surface-variant">
+        Las estadísticas necesitan internet. Se cargan solas cuando vuelva la señal.
+      </p>
+      {onReintentar ? (
+        <button type="button" onClick={onReintentar} className="rounded-lg bg-primary px-4 py-2 text-[12px] font-bold uppercase tracking-wider text-on-primary active:scale-95">
+          Reintentar
+        </button>
+      ) : null}
+    </div>
+  );
+}
 
 type Mensual = { mes: string; cantidad: number };
 type Barra = { id?: string; nombre?: string; tipo?: string; cantidad: number };
@@ -174,6 +208,8 @@ export function Estadisticas() {
   const [datos, setDatos] = useState<Respuesta | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [intento, setIntento] = useState(0);
+  const enLinea = useEnLinea();
 
   const meses = useMemo(() => {
     const ahora = new Date();
@@ -193,6 +229,9 @@ export function Estadisticas() {
       navegar("#/");
       return;
     }
+    // Sin señal no se consulta: se muestra el aviso y, al volver la conexión,
+    // este efecto se ejecuta de nuevo y carga los datos.
+    if (!enLinea) return;
     let activo = true;
     const ahora = new Date();
     const desde = new Date(2026, 0, 1);
@@ -200,24 +239,32 @@ export function Estadisticas() {
     (async () => {
       setCargando(true);
       setError(null);
-      const { data, error: consultaError } = await supabase().rpc("estadisticas_informes", {
-        p_desde: fechaIso(desde),
-        p_hasta: fechaIso(hasta),
-        p_mes: `${mes}-01`,
-      });
+      let consultaError: { message: string } | null = null;
+      let data: unknown = null;
+      try {
+        ({ data, error: consultaError } = await supabase().rpc("estadisticas_informes", {
+          p_desde: fechaIso(desde),
+          p_hasta: fechaIso(hasta),
+          p_mes: `${mes}-01`,
+        }));
+      } catch (e) {
+        consultaError = { message: e instanceof Error ? e.message : String(e) };
+      }
       if (!activo) return;
       if (consultaError) {
         setError(consultaError.message);
-        setDatos(null);
+        // Si se cortó la señal se conservan los últimos datos cargados.
+        if (!esErrorDeRed(consultaError.message)) setDatos(null);
       } else {
         setDatos(data as Respuesta);
       }
       setCargando(false);
     })();
     return () => { activo = false; };
-  }, [esMaster, cargandoPerfil, mes]);
+  }, [esMaster, cargandoPerfil, mes, enLinea, intento]);
 
-  if (cargandoPerfil || (!datos && cargando)) return <PantallaCarga mensaje="Cargando estadísticas..." />;
+  const sinConexion = !enLinea || (error !== null && esErrorDeRed(error));
+  if (cargandoPerfil || (!datos && cargando && !sinConexion)) return <PantallaCarga mensaje="Cargando estadísticas..." />;
   if (!esMaster) return null;
 
   return (
@@ -227,7 +274,11 @@ export function Estadisticas() {
         <a href="#/" className="rounded-lg bg-white px-3 py-2 text-[12px] font-bold uppercase tracking-wider text-primary active:scale-95">Volver</a>
       </header>
       <main className="mx-auto max-w-7xl space-y-lg px-4 md:px-margin">
-        {error ? <p className="rounded-lg border border-error bg-error-container p-md text-error">No se pudieron cargar las estadísticas: {error}</p> : null}
+        {sinConexion ? (
+          <AvisoSinConexion conDatos={datos !== null} onReintentar={enLinea ? () => setIntento((n) => n + 1) : undefined} />
+        ) : error ? (
+          <p className="rounded-lg border border-error bg-error-container p-md text-error">No se pudieron cargar las estadísticas: {error}</p>
+        ) : null}
         {datos ? (
           <>
             <Resumen datos={datos.mensuales} />
@@ -241,7 +292,7 @@ export function Estadisticas() {
               <div className="mb-md flex flex-wrap items-end justify-between gap-sm">
                 <h2 className="section-title flex items-center gap-2">Informes por técnico{cargando ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-label="Actualizando" /> : null}</h2>
                 <label className="text-[12px] font-bold text-on-surface-variant">Mes
-                  <select className="filter-control ml-2 rounded border border-outline-variant bg-white px-2 py-1 text-[13px]" value={mes} onChange={(e) => setMes(e.target.value)}>
+                  <select disabled={!enLinea} className="filter-control ml-2 rounded border border-outline-variant bg-white px-2 py-1 text-[13px] disabled:opacity-50" value={mes} onChange={(e) => setMes(e.target.value)}>
                     {meses.slice().reverse().map((item) => <option key={item} value={item}>{etiquetaMes(item)}</option>)}
                   </select>
                 </label>
