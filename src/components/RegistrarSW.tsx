@@ -6,7 +6,6 @@ const INTERVALO_BUSQUEDA_MS = 30 * 60 * 1000;
 
 export function RegistrarSW() {
   const [hayVersionNueva, setHayVersionNueva] = useState(false);
-  const [oculto, setOculto] = useState(false);
 
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
@@ -64,7 +63,7 @@ export function RegistrarSW() {
     };
   }, []);
 
-  if (!hayVersionNueva || oculto) return null;
+  if (!hayVersionNueva) return null;
   return (
     <div
       className="pointer-events-none fixed inset-x-0 z-[95] flex justify-center px-3"
@@ -78,13 +77,6 @@ export function RegistrarSW() {
           <span className="relative h-2.5 w-2.5 rounded-full bg-sky-300" />
         </span>
         <span className="text-[12.5px] font-bold leading-tight">Hay una nueva versión de la app</span>
-        <button
-          type="button"
-          onClick={() => setOculto(true)}
-          className="rounded-lg px-2 py-1.5 text-[11px] font-bold text-white/75 transition-colors hover:text-white"
-        >
-          Más tarde
-        </button>
         <button
           type="button"
           // Lo cargado en un informe se guarda solo antes de recargar.
