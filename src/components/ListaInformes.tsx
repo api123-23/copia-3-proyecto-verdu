@@ -541,7 +541,7 @@ export function ListaInformes() {
       ) : null}
 
       {/* Vista PC: tabla de ancho completo */}
-      <div className="hidden md:block overflow-x-auto">
+      <div className="hidden lg:block overflow-x-auto">
         <table className="w-full border-collapse bg-white border border-outline-variant rounded-lg shadow-sm">
           <thead>
             <tr className="text-left text-[11px] uppercase tracking-wider text-on-surface-variant border-b border-outline-variant">
@@ -572,11 +572,11 @@ export function ListaInformes() {
                     {formatNumero(inf.numero_registro)}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">{formatoFecha(inf.fecha_hora)}</td>
-                  <td className="px-3 py-2 truncate max-w-[260px]">{inf.cliente_nombre || "Sin cliente"}</td>
+                  <td className="px-3 py-2 truncate max-w-[170px] xl:max-w-[260px]" title={inf.cliente_nombre || undefined}>{inf.cliente_nombre || "Sin cliente"}</td>
                   <td className="px-3 py-2 whitespace-nowrap text-on-surface-variant">
                     {nombreTecnico(inf.tecnico_id)}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap">{tipo}</td>
+                  <td className="px-3 py-2 min-w-[8rem] leading-snug">{tipo}</td>
                    <td className="px-3 py-2 whitespace-nowrap">
                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase transition-colors duration-500 ${estadoFirmaClase(inf)}`}>
                       {inf.estado_firma === "firmado" ? "Firmado" : "Sin firma"}
@@ -591,12 +591,14 @@ export function ListaInformes() {
                       <span className="text-[10px] text-on-surface-variant">—</span>
                      )}
                    </td>
-                    <td className="px-3 py-2 text-right">
-                      <div className="flex justify-end gap-1">
+                    <td className="px-3 py-2 text-right xl:whitespace-nowrap">
+                      <div className="flex flex-col items-end justify-end gap-1 xl:flex-row xl:items-center">
                         {esBorradorPc ? (
                           <button
                             type="button"
-                            className="inline-flex items-center rounded px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-error hover:bg-error-container active:scale-95 transition-all"
+                            title="Descartar borrador"
+                            aria-label="Descartar borrador"
+                            className="inline-flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded text-error hover:bg-error-container active:scale-95 transition-all"
                             onClick={(e) => {
                               e.stopPropagation();
                               if (window.confirm("¿Descartar este borrador? Se borran los datos y fotos cargados en este equipo que no se enviaron.")) {
@@ -604,7 +606,7 @@ export function ListaInformes() {
                               }
                             }}
                           >
-                            Descartar
+                            <Icono nombre="delete" className="h-[17px] w-[17px]" />
                           </button>
                         ) : null}
                         <button
@@ -636,7 +638,7 @@ export function ListaInformes() {
       </div>
 
       {/* Vista móvil: tarjetas */}
-      <div className="space-y-sm md:hidden">
+      <div className="space-y-sm lg:hidden">
          {informes.map((inf, index) => {
           const tipo = etiquetaTipo.get(inf.tipo_equipo) ?? inf.tipo_equipo;
           const esLocal = idsLocales.has(inf.id);
