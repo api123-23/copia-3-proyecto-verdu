@@ -12,27 +12,37 @@ function sinClave(metodo: string): NextResponse {
   );
 }
 
-async function esAdminAutenticado(
-  req: Request,
-  admin: SupabaseClient
-): Promise<boolean> {
+type Verificacion = "ok" | "sin_sesion" | "sin_permiso" | "error";
+
+async function verificarMaster(req: Request, admin: SupabaseClient): Promise<Verificacion> {
   const auth = req.headers.get("authorization");
   const token = auth?.startsWith("Bearer ") ? auth.slice(7) : null;
-  if (!token) return false;
+  if (!token) return "sin_sesion";
 
   try {
     const { data: userData, error: userError } = await admin.auth.getUser(token);
-    if (userError || !userData?.user) return false;
+    if (userError || !userData?.user) {
+      // 4xx de Auth = credencial vencida o inválida; cualquier otra cosa es una falla transitoria.
+      const estado = (userError as { status?: number } | null)?.status ?? 0;
+      return estado >= 400 && estado < 500 ? "sin_sesion" : "error";
+    }
 
-    const { data: perfil } = await admin
+    const { data: perfil, error: perfilError } = await admin
       .from("perfiles")
       .select("rol")
       .eq("id", userData.user.id)
       .maybeSingle();
-    return perfil?.rol === "master";
+    if (perfilError) return "error";
+    return perfil?.rol === "master" ? "ok" : "sin_permiso";
   } catch {
-    return false;
+    return "error";
   }
+}
+
+function rechazo(v: Exclude<Verificacion, "ok">): NextResponse {
+  if (v === "sin_sesion") return NextResponse.json({ error: "Tu sesión venció. Volvé a ingresar tu contraseña." }, { status: 401 });
+  if (v === "sin_permiso") return NextResponse.json({ error: "No autorizado: solo un usuario Master puede administrar usuarios." }, { status: 403 });
+  return NextResponse.json({ error: "No se pudo verificar tu usuario en este momento. Reintentá en unos segundos." }, { status: 503 });
 }
 
 function crearAdmin(url: string, key: string) {
@@ -44,9 +54,8 @@ export async function GET(req: Request) {
   const key = serverEnv("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !key) return sinClave("GET");
   const admin = crearAdmin(url, key);
-  if (!(await esAdminAutenticado(req, admin))) {
-    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
-  }
+  const verificacion = await verificarMaster(req, admin);
+  if (verificacion !== "ok") return rechazo(verificacion);
 
   const { data, error } = await admin.auth.admin.listUsers({ perPage: 1000 });
   if (error) {
@@ -78,9 +87,8 @@ export async function POST(req: Request) {
   const key = serverEnv("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !key) return sinClave("POST");
   const admin = crearAdmin(url, key);
-  if (!(await esAdminAutenticado(req, admin))) {
-    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
-  }
+  const verificacion = await verificarMaster(req, admin);
+  if (verificacion !== "ok") return rechazo(verificacion);
 
   let body: { email?: string; password?: string; rol?: string; nombre?: string; apellido?: string };
   try {
@@ -129,9 +137,8 @@ export async function DELETE(req: Request) {
   const key = serverEnv("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !key) return sinClave("DELETE");
   const admin = crearAdmin(url, key);
-  if (!(await esAdminAutenticado(req, admin))) {
-    return NextResponse.json({ error: "No autorizado." }, { status: 403 });
-  }
+  const verificacion = await verificarMaster(req, admin);
+  if (verificacion !== "ok") return rechazo(verificacion);
 
   let body: { id?: string };
   try {

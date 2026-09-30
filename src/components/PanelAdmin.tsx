@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePerfil } from "@/lib/usePerfil";
 import { supabase } from "@/lib/supabase";
+import { fetchAutenticado } from "@/lib/fetchAutenticado";
 import { LogoTipo } from "@/components/LogoTipo";
 import { Icono } from "@/components/Icono";
 import { IconoLinea } from "@/components/IconoLinea";
@@ -32,17 +33,8 @@ export function PanelAdmin() {
   const [busqueda, setBusqueda] = useState("");
   const [verPassword, setVerPassword] = useState(false);
 
-  async function authFetch(path: string, init?: RequestInit) {
-    const { data: ses } = await supabase().auth.getSession();
-    const token = ses?.session?.access_token;
-    return fetch(path, {
-      ...init,
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...init?.headers,
-      },
-    });
+  function authFetch(path: string, init?: RequestInit) {
+    return fetchAutenticado(path, init);
   }
 
   async function cargar() {

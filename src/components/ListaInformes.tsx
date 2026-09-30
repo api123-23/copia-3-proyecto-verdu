@@ -5,6 +5,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
 import { listarRemotos } from "@/lib/remoto";
 import { supabase } from "@/lib/supabase";
+import { fetchAutenticado } from "@/lib/fetchAutenticado";
 import type { InformeGeneral } from "@/lib/types";
 import { TIPOS_EQUIPO, formatNumero } from "@/lib/informes";
 import { intentarSync } from "@/lib/sync";
@@ -118,11 +119,7 @@ export function ListaInformes() {
         const porId = new Map<string, Tecnico>();
 
         try {
-          const { data: ses } = await supabase().auth.getSession();
-          const token = ses?.session?.access_token;
-          const res = await fetch("/api/tecnicos", {
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-          });
+          const res = await fetchAutenticado("/api/tecnicos");
           if (res.ok) {
             const body = (await res.json()) as { tecnicos?: { id: string; nombre: string | null; apellido: string | null }[] };
             for (const t of body.tecnicos ?? []) {

@@ -1,16 +1,10 @@
 "use client";
 
-import { supabase } from "./supabase";
+import { fetchAutenticado } from "./fetchAutenticado";
 
 export async function gemini(prompt: string): Promise<string> {
-  const { data: sesion } = await supabase().auth.getSession();
-  const token = sesion.session?.access_token;
-  const res = await fetch("/api/gemini", {
+  const res = await fetchAutenticado("/api/gemini", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
     body: JSON.stringify({ prompt }),
   });
   const data = await res.json().catch(() => ({}));

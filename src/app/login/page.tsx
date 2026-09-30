@@ -55,9 +55,6 @@ export default function LoginPage() {
           <h1 className="text-headline-sm text-primary font-bold text-center animate-[loginBrandIn_550ms_120ms_both_ease-out]">
             Air Power S.A.
           </h1>
-          <p className="text-title-md font-bold text-on-surface mt-xs text-center animate-[loginBrandIn_550ms_220ms_both_ease-out]">
-            Acceso de técnicos
-          </p>
         </div>
         <div className="space-y-md">
           <div>
