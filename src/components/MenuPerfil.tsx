@@ -6,10 +6,12 @@ import { supabase } from "@/lib/supabase";
 import { usePerfil } from "@/lib/usePerfil";
 import { limpiarSesionCache } from "@/lib/useSesion";
 import { contarPendientes } from "@/lib/reautenticacion";
+import { iniciarRecorrido } from "@/lib/tutorial";
+import { navegar } from "@/lib/hashRuta";
 import { Icono } from "@/components/Icono";
 import type { Session } from "@supabase/supabase-js";
 
-type Modo = null | "clave" | "datos";
+type Modo = null | "clave" | "datos" | "tutorial";
 
 export function MenuPerfil({ sesion }: { sesion: Session | null }) {
   const { perfil, esMaster, refrescar } = usePerfil();
@@ -92,6 +94,7 @@ export function MenuPerfil({ sesion }: { sesion: Session | null }) {
           abierto ? "bg-white/20 ring-2 ring-white/40" : "bg-white/10"
         }`}
         aria-label="Menú de cuenta"
+        data-tutorial="menu"
         aria-expanded={abierto}
       >
         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-sky-200 to-white text-[12px] font-extrabold text-primary shadow-inner">
@@ -118,7 +121,29 @@ export function MenuPerfil({ sesion }: { sesion: Session | null }) {
             </p>
           </div>
 
-          {modo === "clave" ? (
+          {modo === "tutorial" ? (
+            <div className="space-y-sm">
+              <p className="text-body-md text-on-surface">¿Querés ver el tutorial?</p>
+              <p className="text-[12px] text-on-surface-variant">Te muestra qué hace cada botón de la pantalla principal y de la carga de un informe.</p>
+              <div className="flex gap-1">
+                <button
+                  type="button"
+                  className="flex-1 rounded-lg bg-primary px-md py-1.5 text-[13px] font-bold uppercase tracking-wider text-on-primary"
+                  onClick={() => {
+                    setAbierto(false);
+                    setModo(null);
+                    navegar("#/");
+                    window.setTimeout(() => iniciarRecorrido("lista", true), 700);
+                  }}
+                >
+                  Ver tutorial
+                </button>
+                <button type="button" className="rounded-lg border border-outline-variant px-md py-1.5 text-[13px]" onClick={() => setModo(null)}>
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          ) : modo === "clave" ? (
             <FormCambiarClave onListo={() => setModo(null)} />
           ) : modo === "datos" ? (
             <FormDatos onListo={() => { setModo(null); refrescar(); }} />
@@ -157,6 +182,13 @@ export function MenuPerfil({ sesion }: { sesion: Session | null }) {
                     </a>
                   </>
                 ) : null}
+                <button
+                  type="button"
+                  className="text-left px-2 py-2 rounded-lg hover:bg-surface-container-low hover:translate-x-1 text-body-md text-on-surface-variant active:scale-[0.98] transition-all duration-300"
+                  onClick={() => setModo("tutorial")}
+                >
+                  Ver tutorial
+                </button>
               </div>
               <div className="border-t border-outline-variant mt-sm pt-sm">
                 <div className="flex items-center gap-2">

@@ -13,6 +13,23 @@ alter table perfiles add column if not exists email text;
 alter table perfiles add column if not exists nombre text;
 alter table perfiles add column if not exists apellido text;
 
+-- Tutorial de primer uso: fecha en que el usuario vio (o salteó) cada recorrido.
+-- Se guarda en la cuenta para que no vuelva a aparecer aunque cambie de
+-- celular o se borren los datos del navegador. Solo lo ven los usuarios
+-- nuevos: al crear las columnas, los usuarios que ya existían quedan marcados.
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'perfiles' and column_name = 'tutorial_lista_visto_en'
+  ) then
+    alter table perfiles add column tutorial_lista_visto_en timestamptz;
+    alter table perfiles add column if not exists tutorial_informe_visto_en timestamptz;
+    update perfiles set tutorial_lista_visto_en = now(), tutorial_informe_visto_en = now();
+  end if;
+end $$;
+alter table perfiles add column if not exists tutorial_informe_visto_en timestamptz;
+
 -- El rol administrador histórico pasa a master. El nuevo admin es observador.
 alter table perfiles drop constraint if exists perfiles_rol_check;
 update perfiles set rol = 'master' where rol = 'admin';

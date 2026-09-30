@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
+import { debeMostrarse, iniciarRecorrido, pedirRepasoInforme, repasoInformePendiente } from "@/lib/tutorial";
 import { useSesion } from "@/lib/useSesion";
 import { db } from "@/lib/db";
 import {
@@ -63,7 +64,8 @@ function resaltar(objetivo: HTMLElement) {
 }
 
 export function EditorInforme({ id }: { id: string }) {
-  const { cargando } = useSesion(false);
+  const { cargando, sesion } = useSesion(false);
+  const uidTutorial = sesion?.user?.id ?? null;
   const [informe, setInforme] = useState<InformeGeneral | null>(null);
   const [valores, setValores] = useState<ValoresBase>(valoresVacios);
   const [valoresGE, setValoresGE] = useState<InformeGrupoElectrogeno>(valoresVaciosGE());
@@ -233,6 +235,26 @@ export function EditorInforme({ id }: { id: string }) {
       void guardarAhora();
     }
   }, [archivosSinSubir, informe, guardarAhora]);
+
+  // Tutorial del informe: la primera vez que se abre uno (o al repasarlo desde el menú).
+  const informeListo = Boolean(informe);
+  useEffect(() => {
+    if (!informeListo) return;
+    let vigente = true;
+    const t = window.setTimeout(async () => {
+      if (!vigente) return;
+      if (repasoInformePendiente()) {
+        pedirRepasoInforme(false);
+        iniciarRecorrido("informe", true);
+      } else if (uidTutorial && (await debeMostrarse(uidTutorial, "informe")) && vigente) {
+        iniciarRecorrido("informe");
+      }
+    }, 900);
+    return () => {
+      vigente = false;
+      window.clearTimeout(t);
+    };
+  }, [informeListo, uidTutorial]);
 
   function patchInforme(p: Partial<InformeGeneral>) {
     sucioRef.current = true;
@@ -454,6 +476,7 @@ export function EditorInforme({ id }: { id: string }) {
             href="#/"
             className="hover:bg-primary-container active:scale-95 transition-all px-2 py-1 rounded"
             aria-label="Volver al listado"
+            data-tutorial="volver"
             onClick={volverAlListado}
           >
             <Icono nombre="arrow_back" className="w-[16px] h-[16px]" />
@@ -479,6 +502,7 @@ export function EditorInforme({ id }: { id: string }) {
           disabled={enviando}
            className="action-light-button flex min-h-[44px] items-center gap-1.5 text-label-caps font-label-caps font-bold tracking-wider bg-gradient-to-br from-white to-sky-100 text-primary px-4 py-2 rounded-lg shadow-lg shadow-black/30 ring-1 ring-white/50 hover:brightness-105 hover:-translate-y-0.5 hover:scale-[1.03] hover:shadow-xl active:scale-95 transition-all duration-300 disabled:opacity-60 disabled:scale-100"
           onClick={enviar}
+          data-tutorial="enviar"
         >
           {enviando ? (
             <span className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
@@ -509,13 +533,15 @@ export function EditorInforme({ id }: { id: string }) {
             onGenerarInforme={generarInforme}
             generandoInforme={generandoInforme}
           />
-          <SeccionValores
-            tipo={informe.tipo_equipo}
-            valores={valores}
-            onChange={patchValores}
-             valoresGE={valoresGE}
-             onChangeGE={patchValoresGE}
-          />
+          <div data-tutorial="valores">
+            <SeccionValores
+              tipo={informe.tipo_equipo}
+              valores={valores}
+              onChange={patchValores}
+              valoresGE={valoresGE}
+              onChangeGE={patchValoresGE}
+            />
+          </div>
           <Divisor />
           <SeccionOperativa informe={informe} onChange={patchInforme} />
           <Divisor />
@@ -532,7 +558,9 @@ export function EditorInforme({ id }: { id: string }) {
           <Divisor />
            <SeccionFotos informeId={informe.id} cerrado={informe.cerrado} obligatoria={informe.tipo_equipo !== "extraordinarios"} />
           <Divisor />
-          <SeccionFirmas informe={informe} onChange={patchInforme} />
+          <div data-tutorial="firmas">
+            <SeccionFirmas informe={informe} onChange={patchInforme} />
+          </div>
         </fieldset>
       </main>
       {toast ? (

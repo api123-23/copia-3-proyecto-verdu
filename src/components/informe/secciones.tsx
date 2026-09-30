@@ -110,7 +110,7 @@ function BuscadorCliente({
   }
 
   return (
-    <div className="relative" ref={contenedor} data-campo="cliente_nombre" data-validation-label="Cliente / Empresa">
+    <div className="relative" ref={contenedor} data-campo="cliente_nombre" data-validation-label="Cliente / Empresa" data-tutorial="cliente">
       <Label>Cliente / Empresa</Label>
       <input
         className="input-technical"
@@ -241,7 +241,7 @@ export function SeccionCliente({
             </button>
           </div>
         </div>
-        <div className="md:col-span-2">
+        <div className="md:col-span-2" data-tutorial="categoria">
           <Label>Categoría de Equipo</Label>
           <select
             className="input-technical w-full h-[28px] py-0"

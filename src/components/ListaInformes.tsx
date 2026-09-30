@@ -381,6 +381,7 @@ export function ListaInformes() {
             <button
               type="button"
               onClick={actualizar}
+              data-tutorial="actualizar"
               disabled={actualizando}
               className="inline-block border border-outline-variant rounded px-md py-1.5 text-title-md font-bold uppercase tracking-wider text-primary active:scale-95 transition-all"
             >
@@ -507,6 +508,7 @@ export function ListaInformes() {
         <button
           type="button"
           onClick={actualizar}
+              data-tutorial="actualizar"
           disabled={actualizando || !online}
            className={`my-2 inline-flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wider border border-outline-variant rounded px-3 py-2 active:scale-95 transition-all duration-300 ${
             actualizando
@@ -564,6 +566,7 @@ export function ListaInformes() {
               return (
                 <tr
                   key={inf.id}
+                  data-tutorial={index === 0 ? "informe" : undefined}
                     className={`${resaltadoId === inf.id ? "animate-[reportHighlight_2.8s_ease-out]" : "hover:bg-surface-container-low active:bg-surface-container-high"} list-item-in transition-all duration-300 cursor-pointer`}
                   style={{ "--item-delay": `${Math.min(index, 8) * 55}ms` } as React.CSSProperties}
                   onClick={() => { window.location.hash = esObservador ? `#/informe/${encodeURIComponent(inf.id)}/pdf` : `#/informe/${encodeURIComponent(inf.id)}`; }}
@@ -582,7 +585,7 @@ export function ListaInformes() {
                       {inf.estado_firma === "firmado" ? "Firmado" : "Sin firma"}
                     </span>
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap">
+                  <td data-tutorial={index === 0 ? "estado" : undefined} className="px-3 py-2 whitespace-nowrap">
                     {sync ? (
                       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase transition-colors duration-500 ${sync.clase}`}>
                         {sync.label}
@@ -592,7 +595,7 @@ export function ListaInformes() {
                      )}
                    </td>
                     <td className="px-3 py-2 text-right xl:whitespace-nowrap">
-                      <div className="flex flex-col items-end justify-end gap-1 xl:flex-row xl:items-center">
+                      <div data-tutorial={index === 0 ? "pdf" : undefined} className="flex flex-col items-end justify-end gap-1 xl:flex-row xl:items-center">
                         {esBorradorPc ? (
                           <button
                             type="button"
@@ -648,6 +651,7 @@ export function ListaInformes() {
           return (
              <div
                key={inf.id}
+               data-tutorial={index === 0 ? "informe" : undefined}
                role="link"
                tabIndex={0}
                onClick={() => { window.location.hash = esObservador ? `#/informe/${encodeURIComponent(inf.id)}/pdf` : `#/informe/${encodeURIComponent(inf.id)}`; }}
@@ -671,7 +675,7 @@ export function ListaInformes() {
               <p className="text-body-md text-on-surface-variant">
                 Técnico: {nombreTecnico(inf.tecnico_id)}
               </p>
-              <div className="flex gap-xs mt-sm">
+              <div data-tutorial={index === 0 ? "estado" : undefined} className="flex gap-xs mt-sm">
                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase transition-colors duration-500 ${estadoFirmaClase(inf)}`}>
                   {inf.estado_firma === "firmado" ? "Firmado por cliente" : "Sin firma de cliente"}
                 </span>
@@ -699,7 +703,7 @@ export function ListaInformes() {
                   </button>
                 </div>
                ) : null}
-                <div className="mt-sm flex justify-end gap-1">
+                <div data-tutorial={index === 0 ? "pdf" : undefined} className="mt-sm flex justify-end gap-1">
                   {esBorrador ? (
                     <button
                       type="button"
