@@ -69,18 +69,26 @@ function Resumen({ datos }: { datos: Mensual[] }) {
     ? delAnio.length === 1 ? `${nombreMes(hasta)} ${anio}, hasta hoy` : `Enero a ${nombreMes(hasta).toLowerCase()} ${anio}, hasta hoy`
     : "Sin datos este año";
   const pico = conDatos.reduce<Mensual | null>((mejor, dato) => (!mejor || dato.cantidad > mejor.cantidad ? dato : mejor), null);
+  // En el celular se usan títulos y detalles cortos para que las tres tarjetas
+  // queden parejas (mismo alto de título y números alineados).
   const tarjetas = [
-    { titulo: "Total del período", valor: String(total), detalle: `${datos.length} mes${datos.length === 1 ? "" : "es"}` },
-    { titulo: "Promedio de informes por mes de este año", valor: promedio.toLocaleString("es-AR", { maximumFractionDigits: 1 }), detalle: periodo },
-    { titulo: "Mes con más informes", valor: pico ? String(pico.cantidad) : "—", detalle: pico ? etiquetaMes(pico.mes) : "Sin datos" },
+    { titulo: "Total del período", corto: "Total", valor: String(total), detalle: `${datos.length} mes${datos.length === 1 ? "" : "es"}`, detalleCorto: `${datos.length} mes${datos.length === 1 ? "" : "es"}` },
+    { titulo: "Promedio de informes por mes de este año", corto: "Promedio", valor: promedio.toLocaleString("es-AR", { maximumFractionDigits: 1 }), detalle: periodo, detalleCorto: hasta ? `Ene–${etiquetaMes(hasta, true).replace(/\.?\s.*$/, "").toLowerCase()} ${anio}` : "Sin datos" },
+    { titulo: "Mes con más informes", corto: "Mejor mes", valor: pico ? String(pico.cantidad) : "—", detalle: pico ? etiquetaMes(pico.mes) : "Sin datos", detalleCorto: pico ? etiquetaMes(pico.mes, true).replace(/\.(?=\s)/, "") : "Sin datos" },
   ];
   return (
     <div className="grid grid-cols-3 gap-2 sm:gap-sm">
       {tarjetas.map((tarjeta, index) => (
-        <div key={tarjeta.titulo} className="chart-kpi list-item-in min-w-0 rounded-lg border border-outline-variant bg-white p-2.5 shadow-sm sm:p-md" style={{ "--item-delay": `${index * 70}ms` } as React.CSSProperties}>
-          <p className="text-[9px] font-bold uppercase leading-tight tracking-wider text-on-surface-variant sm:text-[11px]">{tarjeta.titulo}</p>
-          <p className="mt-1 text-[22px] font-bold leading-none text-primary tabular-nums sm:text-[28px]">{tarjeta.valor}</p>
-          <p className="mt-1 text-[11px] leading-snug text-on-surface-variant sm:text-[12px]" title={tarjeta.detalle}>{tarjeta.detalle}</p>
+        <div key={tarjeta.titulo} className="chart-kpi list-item-in flex min-w-0 flex-col rounded-xl border border-outline-variant bg-white px-3 py-3 shadow-sm sm:rounded-lg sm:p-md" style={{ "--item-delay": `${index * 70}ms` } as React.CSSProperties}>
+          <p className="truncate text-[10px] font-bold uppercase leading-tight tracking-wide text-on-surface-variant sm:whitespace-normal sm:text-[11px] sm:tracking-wider" title={tarjeta.titulo}>
+            <span className="sm:hidden">{tarjeta.corto}</span>
+            <span className="hidden sm:inline">{tarjeta.titulo}</span>
+          </p>
+          <p className="mt-2 text-[26px] font-bold leading-none text-primary tabular-nums sm:mt-1 sm:text-[28px]">{tarjeta.valor}</p>
+          <p className="mt-auto truncate pt-1.5 text-[11px] leading-snug text-on-surface-variant sm:whitespace-normal sm:text-[12px]" title={tarjeta.detalle}>
+            <span className="sm:hidden">{tarjeta.detalleCorto}</span>
+            <span className="hidden sm:inline">{tarjeta.detalle}</span>
+          </p>
         </div>
       ))}
     </div>
@@ -93,8 +101,11 @@ function LineaMensual({ datos }: { datos: Mensual[] }) {
   const ancho = Math.max(720, datos.length * 64);
   const alto = 250;
   const base = alto - 45;
-  const max = Math.max(1, ...datos.map((x) => x.cantidad));
-  const referencias = [1, 0.75, 0.5, 0.25, 0].map((fraccion) => Math.round(max * fraccion));
+  // Eje con valores redondos y parejos (0, 5, 10, 15, 20…), no 19, 14, 10…
+  const mayor = Math.max(1, ...datos.map((x) => x.cantidad));
+  const paso = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500].find((p) => p * 4 >= mayor) ?? Math.ceil(mayor / 4);
+  const max = paso * 4;
+  const referencias = [4, 3, 2, 1, 0].map((n) => n * paso);
   const puntos = datos.map((dato, i) => {
     const x = 36 + i * ((ancho - 72) / Math.max(1, datos.length - 1));
     const y = 25 + (alto - 70) * (1 - dato.cantidad / max);
@@ -110,8 +121,11 @@ function LineaMensual({ datos }: { datos: Mensual[] }) {
   return (
     <div className="rounded-lg border border-outline-variant bg-surface-container-low/30">
       <div className="flex h-[250px] min-w-0">
-        <div className="flex w-10 shrink-0 flex-col justify-between pb-[48px] pl-1 pt-[17px] text-right text-[11px] text-on-surface-variant tabular-nums" aria-hidden="true">
-          {referencias.map((valor, index) => <span key={`${valor}-${index}`}>{valor}</span>)}
+        {/* Cada número del eje queda exactamente a la altura de su línea. */}
+        <div className="relative w-10 shrink-0 text-[11px] text-on-surface-variant tabular-nums" aria-hidden="true">
+          {referencias.map((valor, index) => (
+            <span key={`${valor}-${index}`} className="absolute right-1.5 leading-none" style={{ top: 25 + (alto - 70) * (index / 4) - 5.5 }}>{valor}</span>
+          ))}
         </div>
         <div ref={scrollRef} className="min-w-0 flex-1 overflow-x-auto overflow-y-hidden">
           <svg width={ancho} height={alto} role="img" aria-label="Informes realizados por mes" className="block min-w-full">
@@ -154,7 +168,7 @@ function LineaMensual({ datos }: { datos: Mensual[] }) {
                   {activo ? <circle cx={p.x} cy={p.y} r="10" className="chart-point-halo" strokeWidth="2" /> : null}
                   <circle cx={p.x} cy={p.y} r={activo ? 5.5 : 4} className="chart-point-dot" />
                   {p.cantidad > 0 || activo ? (
-                    <text x={p.x} y={p.y - 12} textAnchor="middle" fontSize="11" fontWeight={activo ? 700 : 500} className={activo ? "chart-value-active" : "chart-value"}>{p.cantidad}</text>
+                    <text x={p.x} y={p.y - (activo ? 16 : 11)} textAnchor="middle" fontSize={activo ? 12 : 11} fontWeight={activo ? 700 : 500} className={activo ? "chart-value-active" : "chart-value"}>{p.cantidad}</text>
                   ) : null}
                   <text x={p.x} y={alto - 22} textAnchor="middle" fontSize="11" fontWeight={activo ? 700 : 400} className="chart-axis-text">{etiquetaMes(p.mes, true)}</text>
                 </g>
@@ -164,8 +178,9 @@ function LineaMensual({ datos }: { datos: Mensual[] }) {
         </div>
       </div>
       {seleccionado !== null && datos[seleccionado] ? (
-        <p className="border-t border-outline-variant bg-white px-md py-2 text-right text-[13px]" aria-live="polite">
-          <strong>{etiquetaMes(datos[seleccionado].mes)}:</strong> {datos[seleccionado].cantidad} informe{datos[seleccionado].cantidad === 1 ? "" : "s"}
+        <p className="flex items-center justify-between gap-2 rounded-b-lg border-t border-outline-variant bg-white px-3 py-2 text-[13px] sm:px-md" aria-live="polite">
+          <strong className="text-on-surface">{etiquetaMes(datos[seleccionado].mes)}</strong>
+          <span className="tabular-nums text-on-surface-variant"><strong className="text-primary">{datos[seleccionado].cantidad}</strong> informe{datos[seleccionado].cantidad === 1 ? "" : "s"}</span>
         </p>
       ) : (
         <p className="border-t border-outline-variant bg-white px-md py-2 text-right text-[12px] text-on-surface-variant">Seleccioná un mes para ver la cantidad.</p>
@@ -181,17 +196,17 @@ function Barras({ datos, etiqueta }: { datos: Barra[]; etiqueta: (dato: Barra) =
   return (
     <div className="space-y-sm">
       {datos.map((dato, i) => (
-        <div key={`${dato.id ?? dato.tipo ?? i}`} className="grid grid-cols-[minmax(4.5rem,8rem)_1fr_auto] items-center gap-2 text-[13px] sm:grid-cols-[minmax(7rem,12rem)_1fr_auto] sm:gap-sm">
-          <span className="truncate" title={etiqueta(dato)}>{etiqueta(dato)}</span>
-          <div className="h-6 overflow-hidden rounded bg-surface-container-low">
+        <div key={`${dato.id ?? dato.tipo ?? i}`} className="grid grid-cols-[minmax(5.5rem,8rem)_1fr_4.25rem] items-center gap-2.5 text-[13px] sm:grid-cols-[minmax(7rem,12rem)_1fr_5rem] sm:gap-sm">
+          <span className="truncate font-medium text-on-surface" title={etiqueta(dato)}>{etiqueta(dato)}</span>
+          <div className="h-5 overflow-hidden rounded-full bg-surface-container-low sm:h-6 sm:rounded">
             <div
-              className="chart-bar h-full rounded"
+              className="chart-bar h-full rounded-full sm:rounded"
               style={{ width: `${Math.max(4, (dato.cantidad / max) * 100)}%`, "--item-delay": `${Math.min(i, 10) * 60}ms` } as React.CSSProperties}
             />
           </div>
-          <span className="whitespace-nowrap text-right tabular-nums">
-            <strong className="text-primary">{dato.cantidad}</strong>
-            <span className="ml-1 text-[11px] text-on-surface-variant">{total > 0 ? `${Math.round((dato.cantidad / total) * 100)}%` : ""}</span>
+          <span className="flex items-baseline justify-end gap-1.5 whitespace-nowrap tabular-nums">
+            <strong className="text-[14px] text-primary">{dato.cantidad}</strong>
+            <span className="w-9 text-right text-[11px] text-on-surface-variant">{total > 0 ? `${Math.round((dato.cantidad / total) * 100)}%` : ""}</span>
           </span>
         </div>
       ))}
@@ -273,7 +288,7 @@ export function Estadisticas() {
         <h1 className="text-title-md font-bold tracking-tight">Estadísticas</h1>
         <a href="#/" className="rounded-lg bg-white px-3 py-2 text-[12px] font-bold uppercase tracking-wider text-primary active:scale-95">Volver</a>
       </header>
-      <main className="mx-auto max-w-7xl space-y-lg px-4 md:px-margin">
+      <main className="mx-auto max-w-7xl space-y-md px-4 pt-3 sm:space-y-lg sm:pt-md md:px-margin">
         {sinConexion ? (
           <AvisoSinConexion conDatos={datos !== null} onReintentar={enLinea ? () => setIntento((n) => n + 1) : undefined} />
         ) : error ? (
@@ -284,15 +299,15 @@ export function Estadisticas() {
             <Resumen datos={datos.mensuales} />
             <section className="rounded-lg border border-outline-variant bg-white p-md shadow-sm">
               <div className="mb-md flex items-center justify-between gap-sm">
-                <div><h2 className="section-title">Informes por mes</h2><p className="text-[12px] text-on-surface-variant">Últimos 12 meses visibles; deslizá para consultar meses anteriores.</p></div>
+                <div><h2 className="section-title">Informes por mes</h2><p className="mt-0.5 text-[12px] leading-snug text-on-surface-variant">Tocá un mes para ver su cantidad. Deslizá para ver meses anteriores.</p></div>
               </div>
               <LineaMensual datos={datos.mensuales} />
             </section>
             <section className={`rounded-lg border border-outline-variant bg-white p-md shadow-sm transition-opacity duration-300 ${cargando ? "opacity-60" : ""}`} aria-busy={cargando}>
-              <div className="mb-md flex flex-wrap items-end justify-between gap-sm">
+              <div className="mb-md flex flex-wrap items-center justify-between gap-x-sm gap-y-2">
                 <h2 className="section-title flex items-center gap-2">Informes por técnico{cargando ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-label="Actualizando" /> : null}</h2>
-                <label className="text-[12px] font-bold text-on-surface-variant">Mes
-                  <select disabled={!enLinea} className="filter-control ml-2 rounded border border-outline-variant bg-white px-2 py-1 text-[13px] disabled:opacity-50" value={mes} onChange={(e) => setMes(e.target.value)}>
+                <label className="flex items-center text-[12px] font-bold text-on-surface-variant">Mes
+                  <select disabled={!enLinea} className="filter-control ml-2 h-9 rounded-lg border border-outline-variant bg-white px-2 text-[13px] disabled:opacity-50" value={mes} onChange={(e) => setMes(e.target.value)}>
                     {meses.slice().reverse().map((item) => <option key={item} value={item}>{etiquetaMes(item)}</option>)}
                   </select>
                 </label>
