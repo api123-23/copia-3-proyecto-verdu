@@ -34,8 +34,14 @@ export function ReLogin({ sesion }: { sesion: Session | null }) {
   const [error, setError] = useState<string | null>(null);
   const [bloqueo, setBloqueo] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Todo lo que no está en el servidor (incluye borradores): impide cambiar de cuenta.
   const pendientes = useLiveQuery(
     () => db.informes.filter((informe) => informe.estado_sync !== "sincronizado").count(),
+    []
+  ) ?? 0;
+  // Solo los informes ya enviados que esperan subirse (los borradores no se suben solos).
+  const porSubir = useLiveQuery(
+    () => db.informes.filter((informe) => informe.listo_para_enviar && informe.estado_sync !== "sincronizado").count(),
     []
   ) ?? 0;
 
@@ -141,7 +147,7 @@ export function ReLogin({ sesion }: { sesion: Session | null }) {
       >
         <span className="h-2 w-2 rounded-full bg-amber-300 animate-pulse" aria-hidden="true" />
         Sesión vencida · Ingresar
-        {pendientes > 0 ? <span className="rounded-full bg-white/20 px-1.5">{pendientes}</span> : null}
+        {porSubir > 0 ? <span className="rounded-full bg-white/20 px-1.5">{porSubir}</span> : null}
       </button>
     );
   }
@@ -163,8 +169,8 @@ export function ReLogin({ sesion }: { sesion: Session | null }) {
         </div>
 
         <p className="mt-3 text-[13px] leading-snug text-on-surface-variant">
-          {pendientes > 0
-            ? <>Tenés <strong className="text-primary">{pendientes} informe{pendientes === 1 ? "" : "s"}</strong> esperando para subirse. Se suben apenas ingreses.</>
+          {porSubir > 0
+            ? <>Tenés <strong className="text-primary">{porSubir} informe{porSubir === 1 ? "" : "s"}</strong> esperando para subirse. Se suben apenas ingreses.</>
             : "Por seguridad, volvé a ingresar tu contraseña para seguir sincronizando."}
         </p>
 

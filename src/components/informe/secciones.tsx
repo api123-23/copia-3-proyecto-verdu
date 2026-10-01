@@ -46,6 +46,8 @@ function BuscadorCliente({
   useEffect(() => {
     let vigente = true;
     (async () => {
+      // Sin conexión no se intenta: se usa directamente la copia guardada.
+      if (typeof navigator !== "undefined" && !navigator.onLine) return;
       try {
         const { data, error } = await supabase()
           .from("clientes")

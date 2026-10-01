@@ -616,16 +616,20 @@ revoke all on function public.tomar_numero_informe() from public, anon, authenti
 
 -- Compatibilidad con versiones viejas de la app que todavía piden el número
 -- por adelantado. Las versiones nuevas ya no la usan.
+-- Ya NO consume números: solo informa cuál sería el próximo. El número real lo
+-- asigna sincronizar_informe_completo al guardar. Así nadie puede dejar huecos
+-- en la numeración llamándola, y sin sesión no se puede usar.
 create or replace function public.siguiente_numero_informe()
 returns bigint
 language sql
-volatile
+stable
 security definer
 set search_path = public
 as $$
-  select public.tomar_numero_informe()::bigint;
+  select coalesce((select n.ultimo from public.numeracion_informes n where n.id), 0)::bigint + 1;
 $$;
 
+revoke all on function public.siguiente_numero_informe() from public, anon;
 grant execute on function public.siguiente_numero_informe() to authenticated;
 grant usage on sequence public.numero_informe_seq to authenticated;
 
@@ -685,6 +689,8 @@ stable
 security definer
 set search_path = public
 as $$
+    -- El master puede editar cualquier informe. El técnico, solo los suyos que
+    -- todavía no firmó el cliente: una vez firmado, el informe no se modifica.
     select public.es_admin()
     or exists (
       select 1
@@ -692,6 +698,7 @@ as $$
       where g.id = informe
         and public.rol_actual() = 'tecnico'
         and g.tecnico_id = auth.uid()
+        and g.estado_firma <> 'firmado'
     );
 $$;
 
@@ -720,6 +727,11 @@ begin
   where id = informe_id;
 
   if existente.id is not null then
+    -- Informe propio ya firmado por el cliente (reintento de un envío que ya
+    -- se guardó): no se modifica nada y se responde OK.
+    if existente.estado_firma = 'firmado' and not public.es_admin() and existente.tecnico_id = uid then
+      return jsonb_build_object('numero_registro', existente.numero_registro);
+    end if;
     if not public.puede_editar_informe(informe_id) then
       raise exception 'El técnico no puede editar este informe' using errcode = '42501';
     end if;
@@ -757,6 +769,10 @@ begin
       sincronizado_en = (p_payload->>'sincronizado_en')::timestamptz
     where id = informe_id;
   else
+    -- Solo técnicos y master crean informes (el observador no).
+    if public.rol_actual() not in ('tecnico', 'master') then
+      raise exception 'Este usuario no puede crear informes' using errcode = '42501';
+    end if;
     tecnico := coalesce(nullif(p_payload->>'tecnico_id', '')::uuid, uid);
     if not public.es_admin() and tecnico <> uid then
       raise exception 'El técnico no puede crear un informe para otro usuario' using errcode = '42501';
@@ -834,6 +850,13 @@ begin
   where id = informe_id;
 
   if existente.id is not null then
+    -- Informe propio ya firmado por el cliente: el técnico no puede modificarlo.
+    -- Si llega igual es un reintento de un envío que ya se guardó completo (por
+    -- ejemplo, se cortó la señal antes de recibir la respuesta): se responde OK
+    -- sin tocar nada, así el celular lo da por subido.
+    if existente.estado_firma = 'firmado' and not public.es_admin() and existente.tecnico_id = uid then
+      return jsonb_build_object('numero_registro', existente.numero_registro);
+    end if;
     if not public.puede_editar_informe(informe_id) then
       raise exception 'El usuario no puede editar este informe' using errcode = '42501';
     end if;
@@ -844,6 +867,10 @@ begin
       numero := public.tomar_numero_informe();
     end if;
   else
+    -- Solo técnicos y master crean informes (el observador no).
+    if public.rol_actual() not in ('tecnico', 'master') then
+      raise exception 'Este usuario no puede crear informes' using errcode = '42501';
+    end if;
     tecnico := coalesce(nullif(p_informe->>'tecnico_id', '')::uuid, uid);
     if not public.es_admin() and tecnico <> uid then
       raise exception 'El técnico no puede crear un informe para otro usuario' using errcode = '42501';
@@ -890,6 +917,9 @@ begin
   end;
 
   if tabla is not null and p_valores is not null then
+    -- Los valores técnicos se guardan SIEMPRE en el informe que se sincroniza
+    -- (nunca en otro, aunque el pedido traiga otro informe_id).
+    p_valores := jsonb_set(p_valores, '{informe_id}', to_jsonb((p_informe->>'id')::uuid), true);
     select string_agg(format('%1$I = EXCLUDED.%1$I', column_name), ', ' order by ordinal_position)
       into columnas_update
     from information_schema.columns
@@ -919,6 +949,25 @@ begin
     raise exception 'Un archivo no pertenece al informe sincronizado' using errcode = '22023';
   end if;
 
+  -- Un archivo ya registrado en OTRO informe no se puede mover a este.
+  if exists (
+    select 1
+    from public.informe_archivos a
+    join jsonb_to_recordset(coalesce(p_archivos, '[]'::jsonb)) as x(id uuid) on x.id = a.id
+    where a.informe_id <> (p_informe->>'id')::uuid
+  ) then
+    raise exception 'Un archivo pertenece a otro informe' using errcode = '22023';
+  end if;
+
+  -- Fotos que el usuario eliminó en la app (vienen marcadas con "eliminado").
+  -- Solo se borran las pedidas explícitamente y solo de este informe.
+  delete from public.informe_archivos a
+  using jsonb_to_recordset(coalesce(p_archivos, '[]'::jsonb)) as x(id uuid, eliminado boolean)
+  where coalesce(x.eliminado, false)
+    and a.id = x.id
+    and a.informe_id = (p_informe->>'id')::uuid
+    and a.tipo = 'foto';
+
   delete from public.informe_archivos a
   where a.informe_id = (p_informe->>'id')::uuid
     and a.tipo in ('firma_tecnico', 'firma_cliente')
@@ -942,8 +991,10 @@ begin
         informe_id uuid,
         tipo text,
         categoria text,
-        url text
+        url text,
+        eliminado boolean
       )
+      where not coalesce(x.eliminado, false)
     on conflict (id) do update set
       informe_id = excluded.informe_id,
       tipo = excluded.tipo,
@@ -959,7 +1010,8 @@ revoke all on function public.sincronizar_informe_completo(jsonb, jsonb, jsonb) 
 grant execute on function public.sincronizar_informe_completo(jsonb, jsonb, jsonb) to authenticated;
 
 -- Estadísticas agregadas: solo administradores, sin transferir todos los
--- informes al navegador.
+-- informes al navegador. Los meses se cuentan en horario de Córdoba
+-- (Argentina): un informe del 30/09 a las 23:00 cuenta en septiembre.
 create or replace function public.estadisticas_informes(
   p_desde date,
   p_hasta date,
@@ -986,8 +1038,8 @@ begin
         left join lateral (
           select count(*)::integer as cantidad
           from public.informes_generales g
-          where g.fecha_hora >= m.mes
-            and g.fecha_hora < m.mes + interval '1 month'
+          where (g.fecha_hora at time zone 'America/Argentina/Cordoba') >= m.mes
+            and (g.fecha_hora at time zone 'America/Argentina/Cordoba') < m.mes + interval '1 month'
         ) c on true
       ) q
     ), '[]'::jsonb),
@@ -1000,8 +1052,8 @@ begin
           count(*)::integer as cantidad
         from public.informes_generales g
         left join public.perfiles p on p.id = g.tecnico_id
-        where g.fecha_hora >= date_trunc('month', p_mes::timestamp)
-          and g.fecha_hora < date_trunc('month', p_mes::timestamp) + interval '1 month'
+        where (g.fecha_hora at time zone 'America/Argentina/Cordoba') >= date_trunc('month', p_mes::timestamp)
+          and (g.fecha_hora at time zone 'America/Argentina/Cordoba') < date_trunc('month', p_mes::timestamp) + interval '1 month'
         group by g.tecnico_id, p.nombre, p.apellido, p.email
       ) q
     ), '[]'::jsonb),
@@ -1010,8 +1062,8 @@ begin
       from (
         select g.tipo_equipo as tipo, count(*)::integer as cantidad
         from public.informes_generales g
-        where g.fecha_hora >= date_trunc('month', p_mes::timestamp)
-          and g.fecha_hora < date_trunc('month', p_mes::timestamp) + interval '1 month'
+        where (g.fecha_hora at time zone 'America/Argentina/Cordoba') >= date_trunc('month', p_mes::timestamp)
+          and (g.fecha_hora at time zone 'America/Argentina/Cordoba') < date_trunc('month', p_mes::timestamp) + interval '1 month'
         group by g.tipo_equipo
       ) q
     ), '[]'::jsonb)

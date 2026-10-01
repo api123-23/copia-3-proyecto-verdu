@@ -68,8 +68,11 @@ export async function traerInformeRemoto(id: string): Promise<boolean> {
   let anexa: Partial<ValoresBase> | null = null;
   let anexaGE: InformeGrupoElectrogeno | null = null;
 
+  // Si alguna parte del informe no se pudo traer, no se abre con datos
+  // incompletos: al reenviarlo se pisarían los datos reales del servidor.
   if (tabla && informe.tipo_equipo !== "grupo_electrogeno") {
-    const { data: filaAnexa } = await supabase().from(tabla).select("*").eq("informe_id", id).maybeSingle();
+    const { data: filaAnexa, error: errorAnexa } = await supabase().from(tabla).select("*").eq("informe_id", id).maybeSingle();
+    if (errorAnexa) return false;
     if (filaAnexa) {
       const resto = { ...(filaAnexa as FilaServidor) };
       delete resto.informe_id;
@@ -79,7 +82,8 @@ export async function traerInformeRemoto(id: string): Promise<boolean> {
   }
 
   if (tabla && informe.tipo_equipo === "grupo_electrogeno") {
-    const { data: filaGE } = await supabase().from(tabla).select("*").eq("informe_id", id).maybeSingle();
+    const { data: filaGE, error: errorGE } = await supabase().from(tabla).select("*").eq("informe_id", id).maybeSingle();
+    if (errorGE) return false;
     if (filaGE) {
       const resto = { ...(filaGE as FilaServidor) };
       normalizarValores("grupo_electrogeno", resto);
@@ -87,18 +91,21 @@ export async function traerInformeRemoto(id: string): Promise<boolean> {
     }
   }
 
-  const { data: archivos } = await supabase()
+  const { data: archivos, error: errorArchivos } = await supabase()
     .from("informe_archivos")
     .select("*")
     .eq("informe_id", id);
+  if (errorArchivos || !archivos) return false;
 
   const archivosMeta = (archivos ?? []) as FilaServidor[];
 
   await db.transaction(
     "rw",
-    [db.informes, db.valores_motocompresor, db.valores_compresor, db.valores_vehiculos, db.valores_secadores, db.valores_grupo_electrogeno, db.archivos],
+    [db.informes, db.valores_motocompresor, db.valores_compresor, db.valores_vehiculos, db.valores_secadores, db.valores_grupo_electrogeno, db.archivos, db.eliminados],
     async () => {
       await db.informes.put(informe);
+      // Copia fresca del servidor: no aplica ningún borrado de fotos anterior.
+      await db.eliminados.where("informe_id").equals(id).delete();
       if (anexa) {
         const destino =
           informe.tipo_equipo === "motocompresor"

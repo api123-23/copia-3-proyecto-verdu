@@ -316,7 +316,9 @@ export function VistaPdfInforme({
   useEffect(() => {
     if (!archivos) return;
     const listaArchivos = archivos;
-    if (!claveArchivos) return;
+    // Sin archivos la clave es "" (no null): igual se marca como lista para que
+    // un informe sin fotos ni firmas también se pueda ver e imprimir.
+    if (claveArchivos === null) return;
     const clave = claveArchivos;
     let activo = true;
     const urlsTemporales: string[] = [];

@@ -63,6 +63,18 @@ function resaltar(objetivo: HTMLElement) {
   window.setTimeout(() => objetivo.classList.remove("field-validation-error"), 2500);
 }
 
+// La copia en memoria de un informe recién creado solo sirve hasta que queda
+// guardado en el celular. Después se lee de ahí o del servidor: nunca de esta
+// copia en blanco (si no, al reabrirlo ya enviado se vería vacío).
+function olvidarInformeNuevo(id: string) {
+  try {
+    const crudo = sessionStorage.getItem("verdu-nuevo");
+    if (crudo && (JSON.parse(crudo) as { id?: string }).id === id) sessionStorage.removeItem("verdu-nuevo");
+  } catch {
+    /* sin acceso a la memoria de la sesión: no hay nada que olvidar */
+  }
+}
+
 export function EditorInforme({ id }: { id: string }) {
   const { cargando, sesion } = useSesion(false);
   const uidTutorial = sesion?.user?.id ?? null;
@@ -182,6 +194,7 @@ export function EditorInforme({ id }: { id: string }) {
           inf.tipo_equipo === "grupo_electrogeno" ? ge : undefined
         );
         esNuevoRef.current = false;
+        olvidarInformeNuevo(inf.id);
         setEstadoGuardado("guardado");
         if (ocultarGuardadoRef.current) clearTimeout(ocultarGuardadoRef.current);
         ocultarGuardadoRef.current = setTimeout(() => setEstadoGuardado(null), 2200);
@@ -235,6 +248,24 @@ export function EditorInforme({ id }: { id: string }) {
       void guardarAhora();
     }
   }, [archivosSinSubir, informe, guardarAhora]);
+
+  // Eliminar una foto ya subida también guarda el informe como borrador al
+  // instante, para que el borrado se envíe junto con el resto de los cambios.
+  const fotosEliminadas = useLiveQuery(() => db.eliminados.where("informe_id").equals(id).count(), [id]);
+  const fotosEliminadasInicialRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (fotosEliminadas === undefined || !informe) return;
+    if (fotosEliminadasInicialRef.current === null) {
+      fotosEliminadasInicialRef.current = fotosEliminadas;
+      return;
+    }
+    if (fotosEliminadas > fotosEliminadasInicialRef.current) {
+      fotosEliminadasInicialRef.current = fotosEliminadas;
+      sucioRef.current = true;
+      pendienteGuardarRef.current = true;
+      void guardarAhora();
+    }
+  }, [fotosEliminadas, informe, guardarAhora]);
 
   // Tutorial del informe: la primera vez que se abre uno (o al repasarlo desde el menú).
   const informeListo = Boolean(informe);
@@ -337,7 +368,8 @@ export function EditorInforme({ id }: { id: string }) {
         .equals(inf.id)
         .filter((a) => a.estado_sync !== "sincronizado")
         .count();
-      const hayCambios = sucioRef.current || archivosPendientes > 0;
+      const fotosEliminadas = await db.eliminados.where("informe_id").equals(inf.id).count();
+      const hayCambios = sucioRef.current || archivosPendientes > 0 || fotosEliminadas > 0;
       const resincronizar = !yaSincronizado || hayCambios;
        const guardado = {
          ...inf,
@@ -348,6 +380,7 @@ export function EditorInforme({ id }: { id: string }) {
       estadoRef.current.informe = guardado;
       setInforme(guardado);
        await guardarBorrador(guardado, val, inf.tipo_equipo === "grupo_electrogeno" ? ge : undefined);
+       olvidarInformeNuevo(inf.id);
        desbloquearInformeSync(inf.id);
        if (resincronizar) intentarSync();
       mostrarToast({ mensaje: "Informe guardado. Sincronizando...", tipo: "exito" });

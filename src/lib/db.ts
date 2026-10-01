@@ -1,5 +1,6 @@
 import Dexie, { type Table } from "dexie";
 import type {
+  ArchivoEliminado,
   ArchivoLocal,
   BlobArchivo,
   InformeCompresor,
@@ -19,6 +20,7 @@ class AppDB extends Dexie {
   valores_grupo_electrogeno!: Table<InformeGrupoElectrogeno, string>;
   archivos!: Table<ArchivoLocal, string>;
   blobs!: Table<BlobArchivo, string>;
+  eliminados!: Table<ArchivoEliminado, string>;
 
   constructor() {
     super("verdu-informes");
@@ -76,6 +78,11 @@ class AppDB extends Dexie {
       valores_secadores: "informe_id",
       archivos: "id, informe_id, tipo, categoria, estado_sync",
       blobs: "id",
+    });
+    // Fotos ya subidas que el usuario eliminó: se avisa al servidor en el
+    // próximo envío para que las borre también allá.
+    this.version(5).stores({
+      eliminados: "id, informe_id",
     });
   }
 }

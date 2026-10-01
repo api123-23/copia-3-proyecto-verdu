@@ -166,7 +166,6 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
   let informe = informeOriginal;
   if (!informe.listo_para_enviar) return;
   if (informesEnEdicion.has(informe.id)) return;
-  const rutasIntento: string[] = [];
   let archivosIniciales: ArchivoLocal[] = [];
   try {
     await exigirConexion();
@@ -181,17 +180,10 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
     await db.informes.update(informe.id, { estado_sync: "subiendo_imagenes", error_sync: null });
     const archivos = await db.archivos.where("informe_id").equals(informe.id).toArray();
     archivosIniciales = archivos;
-    const archivosPendientes = archivos.filter((archivo) => !archivo.url);
-    const rutasPendientes = archivosPendientes.map((archivo) => `${informe.id}/${archivo.id}`);
-
-    // Limpia restos de un intento anterior antes de volver a subir. Los blobs
-    // locales se conservan; solo se eliminan objetos remotos incompletos.
-    if (rutasPendientes.length > 0) {
-      await supabase().storage.from(BUCKET).remove(rutasPendientes);
-      const idsPendientes = archivosPendientes.map((archivo) => archivo.id);
-      await supabase().from("informe_archivos").delete().in("id", idsPendientes);
-    }
-
+    // Nunca se borran del servidor archivos de un intento anterior: si ese
+    // intento llegó a guardarse (y se perdió la respuesta), esos archivos ya
+    // forman parte del informe. Cada archivo se sube siempre a la misma ruta y
+    // reemplaza lo que hubiera, así que reintentar no deja copias.
     for (const archivo of archivos) {
       if (archivo.url) {
         await db.archivos.update(archivo.id, { estado_sync: "sincronizado" });
@@ -204,7 +196,6 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       }
       await db.archivos.update(archivo.id, { estado_sync: "subiendo" });
       const path = `${informe.id}/${archivo.id}`;
-      rutasIntento.push(path);
       const blob = registro.blob;
       await conReintentos(4, async () => {
         const { error } = await supabase()
@@ -276,7 +267,7 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       }
     }
 
-    const filasArchivos = archivosOk
+    const filasArchivos: Record<string, unknown>[] = archivosOk
       .filter((a) => a.url)
       .map((a) => ({
         id: a.id,
@@ -285,6 +276,11 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
         categoria: a.categoria,
         url: a.url,
       }));
+    // Fotos ya subidas que el usuario eliminó: el servidor borra solo éstas.
+    const eliminados = await db.eliminados.where("informe_id").equals(informe.id).toArray();
+    for (const e of eliminados) {
+      filasArchivos.push({ id: e.id, informe_id: informe.id, tipo: "foto", categoria: e.categoria ?? null, url: e.url, eliminado: true });
+    }
     const data = await conReintentos(3, async () => {
       const respuesta = await supabase().rpc("sincronizar_informe_completo", {
         p_informe: payload,
@@ -308,8 +304,9 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
 
     await db.transaction(
       "rw",
-      [db.informes, db.valores_motocompresor, db.valores_compresor, db.valores_vehiculos, db.valores_secadores, db.valores_grupo_electrogeno, db.archivos, db.blobs],
+      [db.informes, db.valores_motocompresor, db.valores_compresor, db.valores_vehiculos, db.valores_secadores, db.valores_grupo_electrogeno, db.archivos, db.blobs, db.eliminados],
       async () => {
+        await db.eliminados.where("informe_id").equals(informe.id).delete();
         await db.valores_motocompresor.delete(informe.id);
         await db.valores_compresor.delete(informe.id);
         await db.valores_vehiculos.delete(informe.id);
@@ -328,9 +325,6 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
     console.error(`Sync ${informe.id}:`, mensaje);
     if (/jwt|token|not authorized|unauthorized|401|permission denied|row-level security/i.test(mensaje)) {
       pedirVerificacionSesion();
-    }
-    if (rutasIntento.length > 0) {
-      await supabase().storage.from(BUCKET).remove(rutasIntento).catch(() => undefined);
     }
     const archivosParaResetear = archivosIniciales.filter((archivo) => !archivo.url);
     await db.transaction("rw", [db.informes, db.archivos], async () => {

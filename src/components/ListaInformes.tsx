@@ -30,14 +30,16 @@ const BADGE_BORRADOR = { label: "Borrador", clase: "bg-sky-100 text-sky-800" };
 async function descartarBorrador(id: string): Promise<void> {
   await db.transaction(
     "rw",
-    [db.informes, db.valores_motocompresor, db.valores_compresor, db.valores_vehiculos, db.valores_secadores, db.valores_grupo_electrogeno, db.archivos, db.blobs],
+    [db.informes, db.valores_motocompresor, db.valores_compresor, db.valores_vehiculos, db.valores_secadores, db.valores_grupo_electrogeno, db.archivos, db.blobs, db.eliminados],
     async () => {
       const informe = await db.informes.get(id);
       if (!informe || informe.listo_para_enviar) return;
       const archivos = await db.archivos.where("informe_id").equals(id).primaryKeys();
-      // Fotos/firmas ya subidas pertenecen al informe del servidor: se conservan allá.
+      // Fotos/firmas ya subidas pertenecen al informe del servidor: se conservan allá
+      // (también las que se habían eliminado en este borrador descartado).
       await db.blobs.bulkDelete(archivos);
       await db.archivos.bulkDelete(archivos);
+      await db.eliminados.where("informe_id").equals(id).delete();
       for (const tabla of [db.valores_motocompresor, db.valores_compresor, db.valores_vehiculos, db.valores_secadores, db.valores_grupo_electrogeno]) {
         await tabla.delete(id);
       }
@@ -174,6 +176,7 @@ export function ListaInformes() {
           db.valores_grupo_electrogeno,
           db.archivos,
           db.blobs,
+          db.eliminados,
         ],
         async () => {
           // Solo se descartan las copias locales de informes ya sincronizados
@@ -193,6 +196,8 @@ export function ListaInformes() {
           const archivosDescartables = await db.archivos.filter((a) => !conservar.has(a.informe_id)).primaryKeys();
           await db.archivos.bulkDelete(archivosDescartables);
           await db.blobs.bulkDelete(archivosDescartables);
+          const eliminadosDescartables = await db.eliminados.filter((e) => !conservar.has(e.informe_id)).primaryKeys();
+          await db.eliminados.bulkDelete(eliminadosDescartables);
         }
       );
       setRemotos(lista);

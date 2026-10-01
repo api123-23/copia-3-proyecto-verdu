@@ -307,6 +307,14 @@ export interface ArchivoLocal {
   creado_en: string;
 }
 
+/** Foto ya subida al servidor que el usuario eliminó en la app. */
+export interface ArchivoEliminado {
+  id: string;
+  informe_id: string;
+  url: string;
+  categoria: CategoriaFoto | null;
+}
+
 export interface BlobArchivo {
   id: string;
   blob: Blob;

@@ -128,9 +128,24 @@ function FotoItem({ archivo, cerrado }: { archivo: ArchivoLocal; cerrado: boolea
           className="absolute -top-1 -right-1 bg-error text-on-error rounded-full w-7 h-7 min-w-[28px] min-h-[28px] flex items-center justify-center shadow-sm hover:scale-110 active:scale-95 transition-all"
           onClick={() => {
             if (window.confirm("¿Eliminar esta foto?")) {
-              db.transaction("rw", [db.archivos, db.blobs], async () => {
+              db.transaction("rw", [db.archivos, db.blobs, db.eliminados, db.informes], async () => {
                 await db.archivos.delete(archivo.id);
                 await db.blobs.delete(archivo.id);
+                // Se le avisa al servidor en el próximo envío. Se anota siempre
+                // (aunque acá no figure como subida, un envío anterior pudo
+                // haberla guardado): el servidor solo borra fotos de este informe.
+                await db.eliminados.put({
+                  id: archivo.id,
+                  informe_id: archivo.informe_id,
+                  url: archivo.url ?? `${archivo.informe_id}/${archivo.id}`,
+                  categoria: archivo.categoria,
+                });
+                // El informe queda como borrador en el mismo paso, así el borrado
+                // no se pierde aunque la app se cierre enseguida.
+                const informe = await db.informes.get(archivo.informe_id);
+                if (informe?.estado_sync === "sincronizado") {
+                  await db.informes.update(archivo.informe_id, { estado_sync: "pendiente", listo_para_enviar: false });
+                }
               });
             }
           }}
