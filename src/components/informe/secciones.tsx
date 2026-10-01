@@ -359,6 +359,8 @@ export function SeccionHoras({
           className="input-technical w-32 text-data-mono font-data-mono h-[28px]"
           placeholder="0.0"
           type="number"
+          inputMode="decimal"
+          onWheel={(e) => e.currentTarget.blur()}
           step="0.1"
           value={informe.horas_trabajadas ?? ""}
           onChange={(e) => onChange({ horas_trabajadas: e.target.value === "" ? null : Number(e.target.value) })}

@@ -19,7 +19,8 @@ import {
 } from "@/lib/informes";
 import { bloquearInformeSync, desbloquearInformeSync, intentarSync } from "@/lib/sync";
 import { Icono } from "@/components/Icono";
-import { traerInformeRemoto } from "@/lib/remoto";
+import { actualizadoEnServidor, copiaLocalVigente, descartarCopiaLocal, traerInformeRemoto } from "@/lib/remoto";
+import { EVENTO_GUARDAR_ANTES_DE_RECARGAR, type EsperarGuardado } from "@/lib/recarga";
 import { navegar } from "@/lib/hashRuta";
 import { gemini } from "@/lib/gemini";
 import type { InformeGeneral, InformeGrupoElectrogeno, ValoresBase } from "@/lib/types";
@@ -62,6 +63,8 @@ function resaltar(objetivo: HTMLElement) {
   objetivo.classList.add("field-validation-error");
   window.setTimeout(() => objetivo.classList.remove("field-validation-error"), 2500);
 }
+
+const MENSAJE_ERROR_GUARDADO = "No se pudo guardar en el celular. No cierres la app: revisá el espacio libre y volvé a intentar.";
 
 // La copia en memoria de un informe recién creado solo sirve hasta que queda
 // guardado en el celular. Después se lee de ahí o del servidor: nunca de esta
@@ -127,6 +130,16 @@ export function EditorInforme({ id }: { id: string }) {
     let activo = true;
     (async () => {
       let inf = await db.informes.get(id).catch(() => undefined);
+      // Copia local SIN cambios de un informe del servidor: con conexión se
+      // compara con el servidor. Si otra persona lo modificó (o este usuario ya
+      // no puede verlo) se descarta la copia vieja y se trae la versión actual,
+      // así nunca se edita sobre datos viejos.
+      if (inf && inf.estado_sync === "sincronizado" && (typeof navigator === "undefined" || navigator.onLine)) {
+        if ((await copiaLocalVigente(inf)) === false) {
+          await descartarCopiaLocal(id).catch(() => undefined);
+          inf = undefined;
+        }
+      }
       // Informe recién creado: está en memoria de la sesión, no hace falta
       // consultar el servidor (sin señal eso demoraba la apertura).
       if (!inf) {
@@ -198,10 +211,13 @@ export function EditorInforme({ id }: { id: string }) {
         setEstadoGuardado("guardado");
         if (ocultarGuardadoRef.current) clearTimeout(ocultarGuardadoRef.current);
         ocultarGuardadoRef.current = setTimeout(() => setEstadoGuardado(null), 2200);
+        setToast((t) => (t?.mensaje === MENSAJE_ERROR_GUARDADO ? null : t));
       } catch (error) {
         pendienteGuardarRef.current = true;
         setEstadoGuardado(null);
         console.error("[editor] No se pudo guardar el borrador:", error);
+        // Aviso visible (queda hasta cerrarlo o hasta que se guarde bien).
+        setToast({ mensaje: MENSAJE_ERROR_GUARDADO, tipo: "error" });
       }
     });
     return colaGuardadoRef.current;
@@ -219,11 +235,15 @@ export function EditorInforme({ id }: { id: string }) {
       if (document.visibilityState === "hidden") void guardarAhora();
     };
     const alSalir = () => void guardarAhora();
+    // Antes de recargar la app (actualización) se guarda y se espera.
+    const alRecargar = (e: Event) => (e as CustomEvent<EsperarGuardado>).detail?.(guardarAhora());
     document.addEventListener("visibilitychange", alOcultar);
     window.addEventListener("pagehide", alSalir);
+    window.addEventListener(EVENTO_GUARDAR_ANTES_DE_RECARGAR, alRecargar);
     return () => {
       document.removeEventListener("visibilitychange", alOcultar);
       window.removeEventListener("pagehide", alSalir);
+      window.removeEventListener(EVENTO_GUARDAR_ANTES_DE_RECARGAR, alRecargar);
       void guardarAhora();
     };
   }, [guardarAhora]);
@@ -352,6 +372,17 @@ export function EditorInforme({ id }: { id: string }) {
       if (elemento) resaltar(elemento);
       mostrarToast({ mensaje: `Faltan: ${nombres.slice(0, 3).join(", ")}${nombres.length > 3 ? ` y ${nombres.length - 3} más` : ""}`, tipo: "error" });
       return;
+    }
+    // Si otra persona modificó el informe en el servidor después de abrirlo,
+    // se avisa antes de reemplazar sus cambios.
+    if (inf.base_servidor_en && (typeof navigator === "undefined" || navigator.onLine)) {
+      const enServidor = await actualizadoEnServidor(inf.id);
+      if (enServidor && new Date(enServidor).getTime() !== new Date(inf.base_servidor_en).getTime()) {
+        const seguir = window.confirm(
+          "Otra persona modificó este informe después de que lo abriste. Si enviás, tus cambios reemplazan los suyos. ¿Enviar igual?"
+        );
+        if (!seguir) return;
+      }
     }
     setEnviando(true);
     try {

@@ -81,6 +81,8 @@ export interface InformeGeneral {
   estado_sync: EstadoSync;
   listo_para_enviar: boolean;
   error_sync: string | null;
+  /** actualizado_en del servidor cuando se bajó esta copia (para detectar cambios de otra persona). */
+  base_servidor_en?: string | null;
 }
 
 export interface ValoresBase {

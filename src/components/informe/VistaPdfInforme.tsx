@@ -297,8 +297,15 @@ export function VistaPdfInforme({
     let activo = true;
     (async () => {
       let inf = await db.informes.get(id).catch(() => undefined);
+      const { copiaLocalVigente, descartarCopiaLocal, traerInformeRemoto } = await import("@/lib/remoto");
+      // Una copia local vieja (sin cambios) se reemplaza por la versión actual del servidor.
+      if (inf && inf.estado_sync === "sincronizado" && (typeof navigator === "undefined" || navigator.onLine)) {
+        if ((await copiaLocalVigente(inf)) === false) {
+          await descartarCopiaLocal(id).catch(() => undefined);
+          inf = undefined;
+        }
+      }
       if (!inf && (typeof navigator === "undefined" || navigator.onLine)) {
-        const { traerInformeRemoto } = await import("@/lib/remoto");
         if (await traerInformeRemoto(id).catch(() => false)) inf = await db.informes.get(id).catch(() => undefined);
       }
       if (!inf) { if (activo) setFallo(true); return; }

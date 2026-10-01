@@ -30,9 +30,11 @@ begin
 end $$;
 alter table perfiles add column if not exists tutorial_informe_visto_en timestamptz;
 
--- El rol administrador histórico pasa a master. El nuevo admin es observador.
+-- Roles: tecnico, admin (observador, solo lectura) y master.
+-- La conversión histórica "admin → master" ya se aplicó una vez y NO se
+-- repite: si se repitiera, cada ejecución de este archivo convertiría a todos
+-- los observadores en master.
 alter table perfiles drop constraint if exists perfiles_rol_check;
-update perfiles set rol = 'master' where rol = 'admin';
 alter table perfiles add constraint perfiles_rol_check check (rol in ('tecnico', 'admin', 'master'));
 
 -- (opcional) backfill email de perfiles existentes
@@ -935,6 +937,25 @@ begin
     ) using p_valores;
   end if;
 
+  -- Si cambió el tipo de equipo, los valores técnicos del tipo anterior quedan
+  -- huérfanos en otra tabla: se borran de todas las tablas de valores salvo la
+  -- del tipo actual (para 'extraordinarios' tabla es null y se borran todos).
+  -- Se usa (p_informe->>'id')::uuid y no la variable informe_id para evitar la
+  -- ambigüedad con la columna del mismo nombre.
+  declare
+    t text;
+  begin
+    foreach t in array array[
+      'informes_motocompresor', 'informes_compresor', 'informes_vehiculos',
+      'informes_secadores', 'informes_grupo_electrogeno'
+    ] loop
+      if t is distinct from tabla and to_regclass('public.' || t) is not null then
+        execute format('delete from public.%I where informe_id = $1', t)
+          using (p_informe->>'id')::uuid;
+      end if;
+    end loop;
+  end;
+
   if exists (
     select 1
     from jsonb_to_recordset(coalesce(p_archivos, '[]'::jsonb)) as x(
@@ -1258,6 +1279,21 @@ create policy archivos_update on informe_archivos for update to authenticated
 drop policy if exists archivos_delete on informe_archivos;
 create policy archivos_delete on informe_archivos for delete to authenticated
   using (public.es_admin());
+
+-- Los informes y sus tablas hijas SOLO se escriben a través de las funciones
+-- sincronizar_informe_completo / guardar_informe_general_sync (security
+-- definer, dueño postgres), que validan numeración, dueño y firma. Sin esto un
+-- técnico podía hacer PATCH/INSERT directo por la API (por ejemplo cambiar el
+-- numero_registro de su informe y trabar la numeración de todos). Se conservan
+-- los permisos de lectura y de borrado (el borrado sigue limitado por RLS).
+-- Las políticas de insert/update quedan pero ya no tienen efecto.
+revoke insert, update on table public.informes_generales from anon, authenticated;
+revoke insert, update on table public.informes_motocompresor from anon, authenticated;
+revoke insert, update on table public.informes_compresor from anon, authenticated;
+revoke insert, update on table public.informes_vehiculos from anon, authenticated;
+revoke insert, update on table public.informes_secadores from anon, authenticated;
+revoke insert, update on table public.informes_grupo_electrogeno from anon, authenticated;
+revoke insert, update on table public.informe_archivos from anon, authenticated;
 
 insert into storage.buckets (id, name, public)
 values ('informe-archivos', 'informe-archivos', false)

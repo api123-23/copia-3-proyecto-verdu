@@ -13,13 +13,68 @@ let timer: ReturnType<typeof setTimeout> | null = null;
 let corriendo = false;
 let syncEnCurso: Promise<boolean> | null = null;
 const informesEnEdicion = new Set<string>();
+// Liberadores de los Web Locks "editar-informe-<id>" que toma esta pestaña. El
+// Set de arriba solo lo ve esta pestaña; el lock lo ven todas (otra pestaña con
+// el mismo informe abierto en el editor también frena la sincronización).
+const liberadoresEdicion = new Map<string, () => void>();
+
+function nombreLockEdicion(id: string): string {
+  return `editar-informe-${id}`;
+}
+
+function locksDisponibles(): LockManager | undefined {
+  return typeof navigator !== "undefined" ? navigator.locks : undefined;
+}
 
 export function bloquearInformeSync(id: string): void {
   informesEnEdicion.add(id);
+  if (liberadoresEdicion.has(id)) return;
+  const locks = locksDisponibles();
+  if (!locks) return;
+  let liberar: () => void = () => undefined;
+  const hastaDesbloquear = new Promise<void>((resolve) => {
+    liberar = resolve;
+  });
+  // Si el lock todavía está en espera (otra pestaña lo tiene) y se desbloquea,
+  // se aborta el pedido para que no quede tomado después.
+  const control = new AbortController();
+  liberadoresEdicion.set(id, () => {
+    liberar();
+    control.abort();
+  });
+  try {
+    locks
+      .request(nombreLockEdicion(id), { signal: control.signal }, () => hastaDesbloquear)
+      .catch(() => undefined);
+  } catch {
+    // Sin Web Locks utilizables: alcanza con el Set local.
+  }
 }
 
 export function desbloquearInformeSync(id: string): void {
   informesEnEdicion.delete(id);
+  const liberar = liberadoresEdicion.get(id);
+  if (!liberar) return;
+  liberadoresEdicion.delete(id);
+  liberar();
+  // Al cerrar el editor se intenta subir lo pendiente (si se salteó mientras
+  // estaba abierto). Se espera un momento a que termine el guardado del editor.
+  if (typeof window !== "undefined") window.setTimeout(() => void intentarSync(), 1500);
+}
+
+// Un informe está en edición si esta pestaña lo tiene abierto en el editor o si
+// alguna otra pestaña tiene tomado su lock de edición.
+async function enEdicion(id: string): Promise<boolean> {
+  if (informesEnEdicion.has(id)) return true;
+  const locks = locksDisponibles();
+  if (!locks) return false;
+  try {
+    const estado = await locks.query();
+    const nombre = nombreLockEdicion(id);
+    return (estado.held ?? []).some((l) => l.name === nombre);
+  } catch {
+    return informesEnEdicion.has(id);
+  }
 }
 
 export function tablaAnexa(tipo: TipoEquipo): string | null {
@@ -142,15 +197,21 @@ async function ejecutar(): Promise<boolean> {
       .filter((i) => i.estado_sync !== "sincronizado")
       .toArray();
     pendientes.sort((a, b) => a.creado_en.localeCompare(b.creado_en));
+    let huboSalteado = false;
     for (const informe of pendientes) {
-      if (informesEnEdicion.has(informe.id) || !informe.listo_para_enviar) continue;
+      if (!informe.listo_para_enviar) continue;
+      // Abierto en el editor (en esta u otra pestaña): se reintenta más tarde.
+      if (await enEdicion(informe.id)) {
+        huboSalteado = true;
+        continue;
+      }
       try {
         await sincronizarInforme(informe);
       } catch {
         huboError = true;
       }
     }
-    if (huboError) {
+    if (huboError || huboSalteado) {
       programarReintento();
     } else {
       backoff = BACKOFF_INICIAL;
@@ -162,10 +223,52 @@ async function ejecutar(): Promise<boolean> {
   return !huboError;
 }
 
+// Mensaje para el técnico cuando se perdió la imagen guardada en el celular.
+function mensajeArchivoPerdido(tipo: ArchivoLocal["tipo"]): string {
+  if (tipo === "firma_cliente") {
+    return "Se perdió la firma del cliente. Volvé a pedirle la firma y enviá el informe de nuevo.";
+  }
+  if (tipo === "firma_tecnico") {
+    return "Se perdió la firma del técnico. Volvé a firmar y enviá el informe de nuevo.";
+  }
+  return "Se perdió una foto guardada en el celular. Volvé a sacarla y enviá el informe de nuevo.";
+}
+
+// Un archivo sin subir cuya imagen ya no está en el celular no se puede enviar
+// nunca: se descarta y el informe vuelve a borrador para que el técnico la
+// reponga, en lugar de quedar trabado con error en cada intento.
+// Devuelve false si el archivo ya no existía (lo reemplazó o borró el editor).
+async function descartarArchivoPerdido(informeId: string, archivo: ArchivoLocal): Promise<boolean> {
+  return await db.transaction("rw", [db.informes, db.archivos, db.blobs], async () => {
+    const actual = await db.archivos.get(archivo.id);
+    if (!actual) return false;
+    if (actual.url || (await db.blobs.get(archivo.id))) return false;
+    await db.archivos.delete(archivo.id);
+    const cambios: Partial<InformeGeneral> = {
+      listo_para_enviar: false,
+      estado_sync: "pendiente",
+      error_sync: mensajeArchivoPerdido(actual.tipo),
+    };
+    if (actual.tipo === "firma_cliente") {
+      cambios.estado_firma = "pendiente";
+      cambios.firmado_en = null;
+      cambios.cerrado = false;
+    }
+    await db.informes.update(informeId, cambios);
+    return true;
+  });
+}
+
 async function sincronizarInforme(informeOriginal: InformeGeneral) {
-  let informe = informeOriginal;
+  // Se relee el informe: la lista de pendientes pudo quedar vieja.
+  const fresco = await db.informes.get(informeOriginal.id);
+  if (!fresco) return;
+  let informe = fresco;
   if (!informe.listo_para_enviar) return;
-  if (informesEnEdicion.has(informe.id)) return;
+  if (await enEdicion(informe.id)) return;
+  // Versión local que se envía: si cambia durante la subida, al terminar no se
+  // borra nada local (los cambios nuevos quedan para el próximo envío).
+  const actualizadoEnviado = informe.actualizado_en;
   let archivosIniciales: ArchivoLocal[] = [];
   try {
     await exigirConexion();
@@ -192,7 +295,13 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       await exigirConexion();
       const registro = await db.blobs.get(archivo.id);
       if (!registro) {
-        throw new Error(`No se encontró la cache local del archivo ${archivo.id}.`);
+        if (await descartarArchivoPerdido(informe.id, archivo)) {
+          console.error(`Sync ${informe.id}: falta la imagen local del archivo ${archivo.id}; el informe volvió a borrador.`);
+          return;
+        }
+        // El editor reemplazó o borró este archivo mientras tanto: se sigue
+        // con el resto y la comparación final decide qué se conserva.
+        continue;
       }
       await db.archivos.update(archivo.id, { estado_sync: "subiendo" });
       const path = `${informe.id}/${archivo.id}`;
@@ -293,33 +402,68 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       throw new Error(`Guardado transaccional del informe (${mensajeDe(e)})`);
     });
 
-    await db.informes.update(informe.id, {
-      estado_sync: "sincronizado",
-      listo_para_enviar: true,
-      sincronizado_en: new Date().toISOString(),
-      numero_registro: data.numero_registro ?? informe.numero_registro,
-      firma_tecnico_url: firmaTecnico,
-      firma_cliente_url: firmaCliente,
-    });
+    const numeroFinal = data.numero_registro ?? informe.numero_registro;
+    const sincronizadoEn = new Date().toISOString();
+    const idsEnviados = new Set(archivosOk.filter((a) => a.url).map((a) => a.id));
+    const idsEliminadosEnviados = eliminados.map((e) => e.id);
+    const firmaTecnicoId = archivosOk.find((a) => a.tipo === "firma_tecnico" && a.url)?.id ?? null;
+    const firmaClienteId = archivosOk.find((a) => a.tipo === "firma_cliente" && a.url)?.id ?? null;
+    // El lock de otra pestaña no se puede consultar dentro de la transacción de
+    // Dexie (se cerraría); el Set local se vuelve a mirar adentro.
+    const editandoAhora = await enEdicion(informe.id);
 
+    let quedoPendiente = false;
     await db.transaction(
       "rw",
       [db.informes, db.valores_motocompresor, db.valores_compresor, db.valores_vehiculos, db.valores_secadores, db.valores_grupo_electrogeno, db.archivos, db.blobs, db.eliminados],
       async () => {
-        await db.eliminados.where("informe_id").equals(informe.id).delete();
-        await db.valores_motocompresor.delete(informe.id);
-        await db.valores_compresor.delete(informe.id);
-        await db.valores_vehiculos.delete(informe.id);
-        await db.valores_secadores.delete(informe.id);
-        await db.valores_grupo_electrogeno.delete(informe.id);
+        await db.eliminados.bulkDelete(idsEliminadosEnviados);
+        const local = await db.informes.get(informe.id);
+        if (!local) return;
         const archLocal = await db.archivos.where("informe_id").equals(informe.id).toArray();
-        for (const a of archLocal) {
-          await db.blobs.delete(a.id);
+        const eliminadosLocal = await db.eliminados.where("informe_id").equals(informe.id).count();
+        const sinCambios =
+          !editandoAhora &&
+          !informesEnEdicion.has(informe.id) &&
+          local.actualizado_en === actualizadoEnviado &&
+          local.listo_para_enviar &&
+          eliminadosLocal === 0 &&
+          archLocal.length === idsEnviados.size &&
+          archLocal.every((a) => idsEnviados.has(a.id));
+
+        if (sinCambios) {
+          await db.valores_motocompresor.delete(informe.id);
+          await db.valores_compresor.delete(informe.id);
+          await db.valores_vehiculos.delete(informe.id);
+          await db.valores_secadores.delete(informe.id);
+          await db.valores_grupo_electrogeno.delete(informe.id);
+          for (const a of archLocal) {
+            await db.blobs.delete(a.id);
+          }
+          await db.archivos.where("informe_id").equals(informe.id).delete();
+          await db.informes.delete(informe.id);
+          return;
         }
-        await db.archivos.where("informe_id").equals(informe.id).delete();
-        await db.informes.delete(informe.id);
+
+        // Hubo cambios locales durante la subida: se conserva todo como
+        // pendiente y solo se guarda lo que el servidor ya confirmó.
+        const cambios: Partial<InformeGeneral> = {
+          estado_sync: "pendiente",
+          error_sync: null,
+          sincronizado_en: sincronizadoEn,
+          numero_registro: numeroFinal ?? local.numero_registro,
+          // Lo que quedó en el servidor es este envío: no es un cambio de otra persona.
+          base_servidor_en: payload.actualizado_en,
+        };
+        const idsLocales = new Set(archLocal.map((a) => a.id));
+        if (firmaTecnicoId && idsLocales.has(firmaTecnicoId)) cambios.firma_tecnico_url = firmaTecnico;
+        if (firmaClienteId && idsLocales.has(firmaClienteId)) cambios.firma_cliente_url = firmaCliente;
+        await db.informes.update(informe.id, cambios);
+        quedoPendiente = local.listo_para_enviar && !editandoAhora && !informesEnEdicion.has(informe.id);
       }
     );
+    // Los cambios nuevos ya marcados para enviar se suben en un próximo intento.
+    if (quedoPendiente) programarReintento();
   } catch (e) {
     const mensaje = mensajeDe(e);
     console.error(`Sync ${informe.id}:`, mensaje);

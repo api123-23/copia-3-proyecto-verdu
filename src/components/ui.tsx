@@ -234,6 +234,7 @@ export function CampoNumero({
           className={`input-technical text-data-mono font-data-mono h-[28px] ${centrado ? "text-center px-1" : ""} ${sufijo ? "pr-12" : ""}`}
           type={texto ? "text" : "number"}
           inputMode={texto ? "text" : "decimal"}
+          onWheel={texto ? undefined : (e) => e.currentTarget.blur()}
           value={valor ?? ""}
           onChange={(e) => onChange(e.target.value === "" ? null : texto ? e.target.value : Number(e.target.value))}
         />
@@ -296,7 +297,7 @@ export function Toast({
   return (
     <div
       className="pointer-events-none fixed inset-x-0 z-[90] flex justify-center px-4"
-      style={{ top: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
+      style={{ top: "calc(env(safe-area-inset-top, 0px) + 3.6rem)" }}
       role={tipo === "error" ? "alert" : "status"}
       aria-live={tipo === "error" ? "assertive" : "polite"}
     >

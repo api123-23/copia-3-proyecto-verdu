@@ -11,6 +11,7 @@ import { TIPOS_EQUIPO, formatNumero } from "@/lib/informes";
 import { intentarSync } from "@/lib/sync";
 import { useSesion } from "@/lib/useSesion";
 import { usePerfil } from "@/lib/usePerfil";
+import { useEnLinea } from "@/lib/useEnLinea";
 import { LogoTipo } from "@/components/LogoTipo";
 import { Icono } from "@/components/Icono";
 import { PantallaCarga } from "@/components/PantallaCarga";
@@ -25,6 +26,27 @@ const BADGE_SYNC: Record<string, { label: string; clase: string }> = {
 };
 
 const BADGE_BORRADOR = { label: "Borrador", clase: "bg-sky-100 text-sky-800" };
+
+/** Sin señal: el informe espera en el equipo; no se muestra como "subiendo". */
+const BADGE_EN_ESPERA = { label: "En espera (sin señal)", clase: "bg-surface-container-high text-on-surface-variant" };
+
+const ESTADOS_EN_CURSO = new Set(["pendiente", "subiendo_imagenes", "imagenes_ok"]);
+
+function badgeSync(inf: InformeGeneral, enLinea: boolean): { label: string; clase: string } {
+  if (!inf.listo_para_enviar) return BADGE_BORRADOR;
+  const estado = BADGE_SYNC[inf.estado_sync] ? inf.estado_sync : "pendiente";
+  if (!enLinea && ESTADOS_EN_CURSO.has(estado)) return BADGE_EN_ESPERA;
+  return BADGE_SYNC[estado];
+}
+
+/** Traduce el error técnico de sincronización a un mensaje claro para el técnico. */
+function mensajeErrorSync(error: string): string {
+  if (error.startsWith("Se perdió")) return error;
+  const e = error.toLowerCase();
+  if (/conexión|conexion|fetch|network|pendiente/.test(e)) return "Sin conexión estable. Se vuelve a intentar solo.";
+  if (/sesión|jwt|token|401/.test(e)) return "Tu sesión venció. Ingresá tu contraseña para subirlo.";
+  return "No se pudo subir. Tocá Reintentar.";
+}
 
 /** Elimina un borrador local (nunca toca lo que ya está en el servidor). */
 async function descartarBorrador(id: string): Promise<void> {
@@ -62,6 +84,7 @@ function formatoFecha(iso: string): string {
 export function ListaInformes() {
   const { cargando, sesion } = useSesion(true);
   const { esMaster, esObservador } = usePerfil();
+  const enLinea = useEnLinea();
   const locales = useLiveQuery(
     () => db.informes.where("estado_sync").notEqual("sincronizado").toArray(),
     []
@@ -566,7 +589,7 @@ export function ListaInformes() {
              {informes.map((inf, index) => {
               const tipo = etiquetaTipo.get(inf.tipo_equipo) ?? inf.tipo_equipo;
               const esLocal = idsLocales.has(inf.id);
-              const sync = esLocal ? (!inf.listo_para_enviar ? BADGE_BORRADOR : BADGE_SYNC[inf.estado_sync] ?? BADGE_SYNC.pendiente) : null;
+              const sync = esLocal ? badgeSync(inf, enLinea) : null;
               const esBorradorPc = esLocal && !inf.listo_para_enviar;
               return (
                 <tr
@@ -598,6 +621,25 @@ export function ListaInformes() {
                     ) : (
                       <span className="text-[10px] text-on-surface-variant">—</span>
                      )}
+                    {esLocal && inf.error_sync && (inf.estado_sync === "error" || esBorradorPc) ? (
+                      <div className="mt-1 max-w-[220px] whitespace-normal">
+                        <p className="text-[12px] leading-snug text-error" title={inf.error_sync}>
+                          {mensajeErrorSync(inf.error_sync)}
+                        </p>
+                        {inf.estado_sync === "error" ? (
+                          <button
+                            type="button"
+                            className="mt-1 min-h-[40px] rounded border border-primary px-3 text-[12px] font-bold uppercase tracking-wider text-primary hover:bg-primary hover:text-white active:scale-95 transition-all"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              intentarSync();
+                            }}
+                          >
+                            Reintentar
+                          </button>
+                        ) : null}
+                      </div>
+                    ) : null}
                    </td>
                     <td className="px-3 py-2 text-right xl:whitespace-nowrap">
                       <div data-tutorial={index === 0 ? "pdf" : undefined} className="flex flex-col items-end justify-end gap-1 xl:flex-row xl:items-center">
@@ -650,7 +692,7 @@ export function ListaInformes() {
          {informes.map((inf, index) => {
           const tipo = etiquetaTipo.get(inf.tipo_equipo) ?? inf.tipo_equipo;
           const esLocal = idsLocales.has(inf.id);
-          const sync = esLocal ? (!inf.listo_para_enviar ? BADGE_BORRADOR : BADGE_SYNC[inf.estado_sync] ?? BADGE_SYNC.pendiente) : null;
+          const sync = esLocal ? badgeSync(inf, enLinea) : null;
           const esBorrador = esLocal && !inf.listo_para_enviar;
           const fecha = formatoFecha(inf.fecha_hora);
           return (
@@ -690,22 +732,26 @@ export function ListaInformes() {
                   </span>
                 ) : null}
               </div>
-               {esLocal && inf.estado_sync === "error" ? (
+               {esLocal && (inf.estado_sync === "error" || (esBorrador && inf.error_sync)) ? (
                 <div className="mt-xs">
                   {inf.error_sync ? (
-                    <p className="text-[10px] text-error break-words">{inf.error_sync}</p>
+                    <p className="text-[13px] leading-snug text-error break-words" title={inf.error_sync}>
+                      {mensajeErrorSync(inf.error_sync)}
+                    </p>
                   ) : null}
-                  <button
-                    type="button"
-                    className="mt-xs text-[11px] font-bold text-primary underline"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      intentarSync();
-                    }}
-                  >
-                    Reintentar sincronización
-                  </button>
+                  {inf.estado_sync === "error" ? (
+                    <button
+                      type="button"
+                      className="mt-xs min-h-[40px] rounded border border-primary px-4 text-[12px] font-bold uppercase tracking-wider text-primary active:scale-95 transition-all"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        intentarSync();
+                      }}
+                    >
+                      Reintentar
+                    </button>
+                  ) : null}
                 </div>
                ) : null}
                 <div data-tutorial={index === 0 ? "pdf" : undefined} className="mt-sm flex justify-end gap-1">

@@ -83,6 +83,8 @@ function SeccionValoresGE({
                   <input
                     className="input-technical w-full h-[22px] py-0 px-1 text-[11px] text-center text-data-mono font-data-mono"
                     type="number"
+                    inputMode="decimal"
+                    onWheel={(e) => e.currentTarget.blur()}
                     placeholder="A"
                     value={valoresGE[campo] ?? ""}
                     onChange={(e) => setGE(campo)(e.target.value === "" ? null : Number(e.target.value))}
@@ -97,6 +99,8 @@ function SeccionValoresGE({
             <input
               className="input-technical w-16 h-[22px] py-0 px-1 text-[11px] text-center text-data-mono font-data-mono"
               type="number"
+              inputMode="decimal"
+              onWheel={(e) => e.currentTarget.blur()}
               placeholder="°C"
               value={valoresGE.ge_funcionamiento_temp_ambiente ?? ""}
               onChange={(e) => onChangeGE({ ge_funcionamiento_temp_ambiente: e.target.value === "" ? null : Number(e.target.value) })}
@@ -107,6 +111,8 @@ function SeccionValoresGE({
              <input
                className="input-technical w-16 h-[22px] py-0 px-1 text-[11px] text-center text-data-mono font-data-mono"
                type="number"
+               inputMode="decimal"
+               onWheel={(e) => e.currentTarget.blur()}
                placeholder="°C"
                value={valoresGE.ge_funcionamiento_temp_refrigerante ?? ""}
                onChange={(e) => onChangeGE({ ge_funcionamiento_temp_refrigerante: e.target.value === "" ? null : Number(e.target.value) })}

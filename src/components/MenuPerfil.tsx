@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { borrarCopiasSincronizadas } from "@/lib/remoto";
 import { usePerfil } from "@/lib/usePerfil";
 import { limpiarSesionCache } from "@/lib/useSesion";
 import { contarPendientes } from "@/lib/reautenticacion";
@@ -62,6 +63,8 @@ export function MenuPerfil({ sesion }: { sesion: Session | null }) {
       : "¿Seguro que querés cerrar sesión?";
     if (!window.confirm(aviso)) return;
     try {
+      // Los informes ya subidos no quedan en el celular (puede usarlo otra persona).
+      await borrarCopiasSincronizadas().catch(() => undefined);
       await supabase().auth.signOut();
     } finally {
       limpiarSesionCache();

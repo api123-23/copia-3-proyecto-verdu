@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { recargarGuardando } from "@/lib/recarga";
 
 const INTERVALO_BUSQUEDA_MS = 30 * 60 * 1000;
 
@@ -37,11 +38,14 @@ export function RegistrarSW() {
     // Evita que el navegador borre los informes guardados si falta espacio.
     void navigator.storage?.persist?.().catch(() => false);
 
+    // Solo cuando falta un archivo de la propia app (pasa tras publicar una
+    // versión nueva). Un corte de red común ("Failed to fetch") NO recarga:
+    // eso interrumpía al técnico en medio de una firma.
     const recargarSiFallaChunk = (mensaje: string) => {
-      if (!/dynamically imported module|failed to fetch|error loading|loading chunk/i.test(mensaje)) return;
+      if (!/ChunkLoadError|Failed to load chunk|Loading chunk|dynamically imported module|Importing a module script failed/i.test(mensaje)) return;
       if (sessionStorage.getItem("verdu-recargando") === "1") return;
       sessionStorage.setItem("verdu-recargando", "1");
-      window.location.reload();
+      void recargarGuardando();
     };
     const onRejection = (e: PromiseRejectionEvent) => {
       recargarSiFallaChunk(String(e.reason?.message ?? e.reason ?? ""));
@@ -79,8 +83,8 @@ export function RegistrarSW() {
         <span className="text-[12.5px] font-bold leading-tight">Hay una nueva versión de la app</span>
         <button
           type="button"
-          // Lo cargado en un informe se guarda solo antes de recargar.
-          onClick={() => window.location.reload()}
+          // Lo cargado en un informe se guarda antes de recargar.
+          onClick={() => void recargarGuardando()}
           className="rounded-xl bg-white px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-wider text-primary shadow-sm transition-transform active:scale-95"
         >
           Actualizar

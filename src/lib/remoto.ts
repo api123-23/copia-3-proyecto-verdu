@@ -39,6 +39,7 @@ function normalizar(f: FilaServidor): InformeGeneral {
     creado_en: String(f.creado_en),
     actualizado_en: String(f.actualizado_en),
     sincronizado_en: (f.sincronizado_en as string) ?? null,
+    base_servidor_en: (f.actualizado_en as string) ?? null,
     estado_sync: "sincronizado",
     listo_para_enviar: true,
     error_sync: null,
@@ -150,4 +151,52 @@ export async function traerInformeRemoto(id: string): Promise<boolean> {
   }
 
   return true;
+}
+
+/** actualizado_en del informe en el servidor. null: no existe o este usuario no
+ *  puede verlo. undefined: no se pudo consultar (sin señal o tardó demasiado). */
+export async function actualizadoEnServidor(id: string): Promise<string | null | undefined> {
+  try {
+    const consulta = supabase().from("informes_generales").select("actualizado_en").eq("id", id).maybeSingle();
+    const resultado = await Promise.race([consulta, new Promise<null>((r) => setTimeout(() => r(null), 5000))]);
+    if (!resultado || resultado.error) return undefined;
+    return (resultado.data?.actualizado_en as string | undefined) ?? null;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Una copia local sin cambios, ¿sigue igual que en el servidor? (undefined: no se sabe). */
+export async function copiaLocalVigente(informe: InformeGeneral): Promise<boolean | undefined> {
+  const enServidor = await actualizadoEnServidor(informe.id);
+  if (enServidor === undefined) return undefined;
+  if (enServidor === null) return false;
+  return new Date(enServidor).getTime() === new Date(informe.base_servidor_en ?? informe.actualizado_en).getTime();
+}
+
+/** Borra la copia local de un informe (solo se usa con copias sin cambios). */
+export async function descartarCopiaLocal(id: string): Promise<void> {
+  await db.transaction(
+    "rw",
+    [db.informes, db.valores_motocompresor, db.valores_compresor, db.valores_vehiculos, db.valores_secadores, db.valores_grupo_electrogeno, db.archivos, db.blobs, db.eliminados],
+    async () => {
+      const actual = await db.informes.get(id);
+      if (actual && actual.estado_sync !== "sincronizado") return; // tiene cambios locales: no se toca
+      const archivos = await db.archivos.where("informe_id").equals(id).primaryKeys();
+      await db.blobs.bulkDelete(archivos);
+      await db.archivos.bulkDelete(archivos);
+      await db.eliminados.where("informe_id").equals(id).delete();
+      for (const tabla of [db.valores_motocompresor, db.valores_compresor, db.valores_vehiculos, db.valores_secadores, db.valores_grupo_electrogeno]) {
+        await tabla.delete(id);
+      }
+      await db.informes.delete(id);
+    }
+  );
+}
+
+/** Al cerrar sesión: borra del celular las copias de informes ya subidos (lo
+ *  que no se subió todavía se conserva para subirlo al volver a ingresar). */
+export async function borrarCopiasSincronizadas(): Promise<void> {
+  const ids = (await db.informes.filter((i) => i.estado_sync === "sincronizado").primaryKeys()).map(String);
+  for (const id of ids) await descartarCopiaLocal(id);
 }
