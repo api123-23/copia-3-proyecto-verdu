@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
+import { buscarClientes, leerCacheClientes } from "@/lib/clientes";
 import { INFORMES_POR_PAGINA, diaArgentina, listarRemotos, numeroDeFiltro, type FiltrosListado } from "@/lib/remoto";
 import { marcarListaCargada } from "@/lib/tutorial";
 import { supabase } from "@/lib/supabase";
@@ -141,25 +142,26 @@ export function ListaInformes() {
     return () => mq.removeEventListener("change", act);
   }, []);
 
+  // Sugerencias del filtro Cliente: búsqueda en el servidor con espera (no se descarga la cartera completa).
   useEffect(() => {
-    if (!online) return;
     let activo = true;
-    (async () => {
-      try {
-        const { data: c } = await supabase()
-          .from("clientes")
-          .select("id, nombre")
-          .order("nombre", { ascending: true });
-        if (!activo) return;
-        if (c) setClientes((c ?? []) as ClienteL[]);
-      } catch {
-        /* ignorar */
-      }
-    })();
+    const t = window.setTimeout(() => {
+      const pedido = clienteFiltro
+        ? buscarClientes(clienteFiltro, 20)
+        : Promise.resolve(leerCacheClientes().slice(0, 20));
+      void pedido
+        .then((lista) => {
+          if (activo) setClientes(lista.map((c) => ({ id: c.id, nombre: c.nombre })));
+        })
+        .catch(() => {
+          /* ignorar: sin sugerencias */
+        });
+    }, 350);
     return () => {
       activo = false;
+      window.clearTimeout(t);
     };
-  }, [online]);
+  }, [clienteFiltro]);
 
   useEffect(() => {
     if (!online) return;

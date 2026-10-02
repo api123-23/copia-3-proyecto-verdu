@@ -228,12 +228,33 @@ create index if not exists idx_archivos_informe on informe_archivos (informe_id)
 -- cambian datos ni permisos). El orden por numero_registro usa el índice
 -- único ya existente; fecha_hora usa idx_informes_fecha (también al revés).
 -- Las tablas anexas tienen informe_id como clave primaria (ya indexado).
--- No se indexa lower(cliente_nombre): el buscador usa ilike '%texto%', que
--- un btree no puede aprovechar (haría falta pg_trgm).
+-- El buscador usa ilike '%texto%' (un btree no sirve): ver índices pg_trgm
+-- más abajo, creados solo si la extensión está disponible.
 create index if not exists idx_informes_tecnico_estado on informes_generales (tecnico_id, estado_firma);
 create index if not exists idx_informes_tecnico_fecha on informes_generales (tecnico_id, fecha_hora desc);
 create index if not exists idx_informes_estado_fecha on informes_generales (estado_firma, fecha_hora desc);
 create index if not exists idx_informes_tipo_fecha on informes_generales (tipo_equipo, fecha_hora desc);
+-- Orden exacto del listado (numero_registro desc nulls last, fecha_hora desc,
+-- id desc): la página sale del índice sin ordenar toda la tabla.
+create index if not exists idx_informes_orden_lista on informes_generales (numero_registro desc nulls last, fecha_hora desc, id desc);
+-- Listado paginado de clientes ordenado por nombre.
+create index if not exists idx_clientes_nombre on clientes (nombre, id);
+-- Buscador por cliente (ilike '%texto%') con trigramas. Forma recomendada por
+-- Supabase (extensión en el schema extensions). Si la extensión no se puede
+-- habilitar, se avisa y se sigue: el resto del archivo no depende de esto.
+-- (Si pg_trgm ya estaba habilitada en otro schema, se usa ese.)
+do $$
+declare
+  esq text;
+begin
+  create extension if not exists pg_trgm with schema extensions;
+  select n.nspname into esq from pg_extension e join pg_namespace n on n.oid = e.extnamespace where e.extname = 'pg_trgm';
+  execute format('create index if not exists idx_clientes_nombre_trgm on public.clientes using gin (nombre %I.gin_trgm_ops)', esq);
+  execute format('create index if not exists idx_informes_cliente_nombre_trgm on public.informes_generales using gin (cliente_nombre %I.gin_trgm_ops)', esq);
+exception when others then
+  raise notice 'pg_trgm no disponible, se omiten índices de búsqueda: %', sqlerrm;
+end;
+$$;
 -- Por si una base vieja quedó sin el unique de numero_registro: índice simple
 -- solo cuando no existe ya un índice que empiece por esa columna.
 do $$
@@ -1267,9 +1288,16 @@ drop policy if exists informes_delete_admin on informes_generales;
 create policy informes_delete_admin on informes_generales for delete to authenticated
   using ((select public.es_admin()));
 
+-- Lectura de anexas/archivos: misma regla que puede_ver_informe() pero
+-- escrita en línea para que el planificador evalúe rol_actual() una sola vez
+-- y resuelva el exists con un join (antes: una llamada por fila). Mismo
+-- resultado: el exists solo mira informes que el propio técnico ya puede ver
+-- por informes_select (suyos y sin firmar). puede_ver_informe() se conserva.
 drop policy if exists moto_select on informes_motocompresor;
 create policy moto_select on informes_motocompresor for select to authenticated
-  using (public.puede_ver_informe(informe_id));
+  using ((select public.rol_actual()) in ('admin', 'master')
+    or exists (select 1 from public.informes_generales g
+      where g.id = informes_motocompresor.informe_id and g.tecnico_id = (select auth.uid()) and g.estado_firma <> 'firmado'));
 drop policy if exists moto_write on informes_motocompresor;
 create policy moto_write on informes_motocompresor for insert to authenticated
   with check (public.puede_editar_informe(informe_id));
@@ -1282,7 +1310,9 @@ create policy moto_delete on informes_motocompresor for delete to authenticated
 
 drop policy if exists comp_select on informes_compresor;
 create policy comp_select on informes_compresor for select to authenticated
-  using (public.puede_ver_informe(informe_id));
+  using ((select public.rol_actual()) in ('admin', 'master')
+    or exists (select 1 from public.informes_generales g
+      where g.id = informes_compresor.informe_id and g.tecnico_id = (select auth.uid()) and g.estado_firma <> 'firmado'));
 drop policy if exists comp_write on informes_compresor;
 create policy comp_write on informes_compresor for insert to authenticated
   with check (public.puede_editar_informe(informe_id));
@@ -1295,7 +1325,9 @@ create policy comp_delete on informes_compresor for delete to authenticated
 
 drop policy if exists veh_select on informes_vehiculos;
 create policy veh_select on informes_vehiculos for select to authenticated
-  using (public.puede_ver_informe(informe_id));
+  using ((select public.rol_actual()) in ('admin', 'master')
+    or exists (select 1 from public.informes_generales g
+      where g.id = informes_vehiculos.informe_id and g.tecnico_id = (select auth.uid()) and g.estado_firma <> 'firmado'));
 drop policy if exists veh_write on informes_vehiculos;
 create policy veh_write on informes_vehiculos for insert to authenticated
   with check (public.puede_editar_informe(informe_id));
@@ -1308,7 +1340,9 @@ create policy veh_delete on informes_vehiculos for delete to authenticated
 
 drop policy if exists sec_select on informes_secadores;
 create policy sec_select on informes_secadores for select to authenticated
-  using (public.puede_ver_informe(informe_id));
+  using ((select public.rol_actual()) in ('admin', 'master')
+    or exists (select 1 from public.informes_generales g
+      where g.id = informes_secadores.informe_id and g.tecnico_id = (select auth.uid()) and g.estado_firma <> 'firmado'));
 drop policy if exists sec_write on informes_secadores;
 create policy sec_write on informes_secadores for insert to authenticated
   with check (public.puede_editar_informe(informe_id));
@@ -1321,7 +1355,9 @@ create policy sec_delete on informes_secadores for delete to authenticated
 
 drop policy if exists ge_select on informes_grupo_electrogeno;
 create policy ge_select on informes_grupo_electrogeno for select to authenticated
-  using (public.puede_ver_informe(informe_id));
+  using ((select public.rol_actual()) in ('admin', 'master')
+    or exists (select 1 from public.informes_generales g
+      where g.id = informes_grupo_electrogeno.informe_id and g.tecnico_id = (select auth.uid()) and g.estado_firma <> 'firmado'));
 drop policy if exists ge_write on informes_grupo_electrogeno;
 create policy ge_write on informes_grupo_electrogeno for insert to authenticated
   with check (public.puede_editar_informe(informe_id));
@@ -1334,7 +1370,9 @@ create policy ge_delete on informes_grupo_electrogeno for delete to authenticate
 
 drop policy if exists archivos_select on informe_archivos;
 create policy archivos_select on informe_archivos for select to authenticated
-  using (public.puede_ver_informe(informe_id));
+  using ((select public.rol_actual()) in ('admin', 'master')
+    or exists (select 1 from public.informes_generales g
+      where g.id = informe_archivos.informe_id and g.tecnico_id = (select auth.uid()) and g.estado_firma <> 'firmado'));
 drop policy if exists archivos_insert on informe_archivos;
 create policy archivos_insert on informe_archivos for insert to authenticated
   with check (public.puede_editar_informe(informe_id));

@@ -52,11 +52,28 @@ export const metadata: Metadata = {
   },
 };
 
+// Origen de Supabase: se abre la conexión (DNS + TLS) mientras carga la página,
+// así el primer pedido (sesión, perfil, informes) no paga ese costo. Está
+// permitido por la CSP (connect-src/img-src incluyen este mismo origen).
+const origenSupabase = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").origin;
+  } catch {
+    return null;
+  }
+})();
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="es" className={`${inter.variable} ${jetbrains.variable}`}>
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
+        {origenSupabase ? (
+          <>
+            <link rel="preconnect" href={origenSupabase} crossOrigin="anonymous" />
+            <link rel="dns-prefetch" href={origenSupabase} />
+          </>
+        ) : null}
       </head>
       <body className="bg-background font-body-md text-on-surface antialiased">
         <MotorSync />

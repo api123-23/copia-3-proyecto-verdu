@@ -3,34 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 import type { InformeGeneral } from "@/lib/types";
 import { TIPOS_EQUIPO } from "@/lib/informes";
-import { supabase } from "@/lib/supabase";
+import { buscarClientes, filtrarClientes, leerCacheClientes, normalizarTexto, recordarClientes, type ClienteOpcion } from "@/lib/clientes";
 import { InputNumero, Label, Seccion } from "@/components/ui";
 import { Icono } from "@/components/Icono";
 
 type PatchInforme = Partial<InformeGeneral>;
 
-type ClienteOpcion = {
-  id: string;
-  nombre: string;
-  telefono: string | null;
-};
-
-const CLIENTES_CACHE_KEY = "air-power-clientes";
 const MAX_SUGERENCIAS = 8;
+const ESPERA_BUSQUEDA_MS = 300;
 
-function leerClientesCache(): ClienteOpcion[] {
-  try {
-    const d = JSON.parse(window.localStorage.getItem(CLIENTES_CACHE_KEY) ?? "[]");
-    return Array.isArray(d) ? d : [];
-  } catch {
-    return [];
-  }
-}
-
-const normalizar = (t: string) =>
-  t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
-
-/** Campo "Cliente / Empresa" con sugerencias de los clientes guardados. */
+/** Campo "Cliente / Empresa" con sugerencias de los clientes guardados (búsqueda en el servidor; sin conexión, en la copia local). */
 function BuscadorCliente({
   informe,
   onChange,
@@ -38,39 +20,32 @@ function BuscadorCliente({
   informe: InformeGeneral;
   onChange: (p: PatchInforme) => void;
 }) {
-  const [clientes, setClientes] = useState<ClienteOpcion[]>(() => (typeof window === "undefined" ? [] : leerClientesCache()));
+  // Resultado de la última búsqueda y el texto (normalizado) al que corresponde.
+  const [resultado, setResultado] = useState<{ clave: string; lista: ClienteOpcion[] } | null>(null);
+  // Copia local acotada (clientes vistos/usados): sugerencias inmediatas mientras llega la respuesta.
+  const [locales, setLocales] = useState<ClienteOpcion[]>(() => leerCacheClientes());
   const [abierto, setAbierto] = useState(false);
   const [activo, setActivo] = useState(0);
   const contenedor = useRef<HTMLDivElement>(null);
 
+  const texto = normalizarTexto(informe.cliente_nombre ?? "");
+  const busqueda = (informe.cliente_nombre ?? "").trim();
+
   useEffect(() => {
+    if (!abierto || !texto) return;
     let vigente = true;
-    (async () => {
-      // Sin conexión no se intenta: se usa directamente la copia guardada.
-      if (typeof navigator !== "undefined" && !navigator.onLine) return;
-      try {
-        const { data, error } = await supabase()
-          .from("clientes")
-          .select("id, nombre, telefono")
-          .order("nombre", { ascending: true });
-        if (error) throw error;
+    const t = window.setTimeout(() => {
+      void buscarClientes(busqueda, MAX_SUGERENCIAS).then((lista) => {
         if (!vigente) return;
-        const lista = (data ?? []) as ClienteOpcion[];
-        setClientes(lista);
-        // Copia local para buscar también sin conexión.
-        try {
-          window.localStorage.setItem(CLIENTES_CACHE_KEY, JSON.stringify(lista));
-        } catch {
-          /* sin espacio: se sigue con la lista en memoria */
-        }
-      } catch {
-        /* sin conexión: se usa la copia guardada */
-      }
-    })();
+        setResultado({ clave: texto, lista });
+        setLocales(leerCacheClientes());
+      });
+    }, ESPERA_BUSQUEDA_MS);
     return () => {
       vigente = false;
+      window.clearTimeout(t);
     };
-  }, []);
+  }, [abierto, texto, busqueda]);
 
   useEffect(() => {
     const fuera = (e: PointerEvent) => {
@@ -80,18 +55,14 @@ function BuscadorCliente({
     return () => document.removeEventListener("pointerdown", fuera);
   }, []);
 
-  const texto = normalizar(informe.cliente_nombre ?? "");
-  const digitos = texto.replace(/\D/g, "");
-  const sugerencias = texto
-    ? clientes
-        .map((c) => ({ c, n: normalizar(c.nombre), tel: (c.telefono ?? "").replace(/\D/g, "") }))
-        .filter(({ n, tel }) => n.includes(texto) || (digitos.length >= 3 && tel.includes(digitos)))
-        .sort((a, b) => Number(b.n.startsWith(texto)) - Number(a.n.startsWith(texto)) || a.n.localeCompare(b.n))
-        .slice(0, MAX_SUGERENCIAS)
-        .map(({ c }) => c)
-    : [];
-  const vinculado = informe.cliente_id ? clientes.find((c) => c.id === informe.cliente_id) : null;
-  const mostrar = abierto && texto.length > 0 && !(vinculado && normalizar(vinculado.nombre) === texto);
+  const sugerencias = !texto
+    ? []
+    : resultado && resultado.clave === texto
+      ? resultado.lista.slice(0, MAX_SUGERENCIAS)
+      : filtrarClientes(locales, texto, MAX_SUGERENCIAS);
+  // cliente_id solo queda cargado al elegir una sugerencia (editar el nombre a mano lo borra).
+  const vinculado = Boolean(informe.cliente_id);
+  const mostrar = abierto && texto.length > 0 && !vinculado;
 
   // Mientras la lista está abierta, su sección no recorta lo que sobresale
   // (tiene overflow hidden por los bordes redondeados) y va por encima de las siguientes.
@@ -109,6 +80,8 @@ function BuscadorCliente({
   function elegir(c: ClienteOpcion) {
     onChange({ cliente_id: c.id, cliente_nombre: c.nombre, cliente_telefono: c.telefono });
     setAbierto(false);
+    // Queda entre los recientes de la copia local para encontrarlo sin conexión.
+    recordarClientes([c]);
   }
 
   return (

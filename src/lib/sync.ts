@@ -9,6 +9,14 @@ const BACKOFF_INICIAL = 5000;
 const BACKOFF_MAX = 300000;
 
 let backoff = BACKOFF_INICIAL;
+
+/**
+ * Agrega un poco de azar (±25 %) a una espera. Así, cuando el servidor vuelve
+ * después de un corte, los celulares no reintentan todos en el mismo instante.
+ */
+function conVariacion(ms: number): number {
+  return Math.round(ms * (0.75 + Math.random() * 0.5));
+}
 let timer: ReturnType<typeof setTimeout> | null = null;
 let corriendo = false;
 let syncEnCurso: Promise<boolean> | null = null;
@@ -129,7 +137,7 @@ async function conReintentos<T>(intentos: number, operacion: () => Promise<T>): 
       return await operacion();
     } catch (e) {
       ultimo = e;
-      if (i < intentos - 1) await new Promise((r) => setTimeout(r, 1500 * (i + 1)));
+      if (i < intentos - 1) await new Promise((r) => setTimeout(r, conVariacion(1500 * (i + 1))));
     }
   }
   throw ultimo;
@@ -155,7 +163,7 @@ function programarReintento() {
   timer = setTimeout(() => {
     timer = null;
     intentarSync();
-  }, backoff);
+  }, conVariacion(backoff));
   backoff = Math.min(backoff * 2, BACKOFF_MAX);
 }
 

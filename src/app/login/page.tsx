@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Label } from "@/components/ui";
 import { LogoTipo } from "@/components/LogoTipo";
-import { registrarIngreso } from "@/lib/reautenticacion";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -24,7 +23,17 @@ export default function LoginPage() {
       setError("Credenciales inválidas o usuario inexistente.");
       return;
     }
-    const resultado = await registrarIngreso(data.user.id, data.user.email ?? email);
+    // Se carga recién al ingresar: usa la base local (Dexie) para revisar
+    // informes pendientes y así /login no la descarga al abrir.
+    let resultado: Awaited<ReturnType<typeof import("@/lib/reautenticacion").registrarIngreso>>;
+    try {
+      const { registrarIngreso } = await import("@/lib/reautenticacion");
+      resultado = await registrarIngreso(data.user.id, data.user.email ?? email);
+    } catch {
+      setCargando(false);
+      setError("No se pudo completar el ingreso. Revisá la conexión y volvé a intentar.");
+      return;
+    }
     setCargando(false);
     if (!resultado.ok) {
       setError(`Este celular tiene ${resultado.pendientes} informe${resultado.pendientes === 1 ? "" : "s"} sin subir de ${resultado.emailCorrecto}. Ingresá con esa cuenta para subirlos.`);

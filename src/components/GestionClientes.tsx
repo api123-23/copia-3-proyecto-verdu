@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePerfil } from "@/lib/usePerfil";
 import { supabase } from "@/lib/supabase";
 import { LogoTipo } from "@/components/LogoTipo";
@@ -8,6 +8,7 @@ import { Icono } from "@/components/Icono";
 import { IconoLinea } from "@/components/IconoLinea";
 import { PantallaCarga } from "@/components/PantallaCarga";
 import type { Cliente } from "@/lib/types";
+import { escaparLike } from "@/lib/clientes";
 
 type ClienteForm = {
   nombre: string;
@@ -15,6 +16,8 @@ type ClienteForm = {
 };
 
 const VACIO: ClienteForm = { nombre: "", telefono: "" };
+const CLIENTES_POR_PAGINA = 50;
+const ESPERA_BUSQUEDA_MS = 350;
 
 function useEsPc() {
   const [esPc, setEsPc] = useState(false);
@@ -33,6 +36,8 @@ export function GestionClientes() {
   const esPc = useEsPc();
 
   const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [total, setTotal] = useState(0);
+  const [pagina, setPagina] = useState(1);
   const [cargandoLista, setCargandoLista] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
@@ -42,30 +47,68 @@ export function GestionClientes() {
   const [form, setForm] = useState<ClienteForm>(VACIO);
   const [guardando, setGuardando] = useState(false);
   const [busqueda, setBusqueda] = useState("");
+  // Texto que efectivamente se busca en el servidor (con espera tras dejar de tipear).
+  const [filtro, setFiltro] = useState("");
+  // Descarta respuestas viejas si se pidió otra página/búsqueda mientras tanto.
+  const pedidoActual = useRef(0);
+
+  useEffect(() => {
+    const nuevo = busqueda.trim();
+    if (nuevo === filtro) return;
+    const t = window.setTimeout(() => {
+      // Una búsqueda nueva siempre arranca en la primera página.
+      setFiltro(nuevo);
+      setPagina(1);
+    }, ESPERA_BUSQUEDA_MS);
+    return () => window.clearTimeout(t);
+  }, [busqueda, filtro]);
 
   const cargar = useCallback(async () => {
+    const pedido = ++pedidoActual.current;
     setCargandoLista(true);
     setError(null);
     try {
-      const { data, error } = await supabase()
+      const desde = (pagina - 1) * CLIENTES_POR_PAGINA;
+      let q = supabase()
         .from("clientes")
-        .select("id, nombre, telefono, creado_en, actualizado_en")
-        .order("nombre", { ascending: true });
+        .select("id, nombre, telefono, creado_en, actualizado_en", { count: "exact" })
+        .order("nombre", { ascending: true })
+        .order("id", { ascending: true })
+        .range(desde, desde + CLIENTES_POR_PAGINA - 1);
+      if (filtro) {
+        const patron = `%${escaparLike(filtro)}%`;
+        // Valor entre comillas para el filtro "or" de PostgREST (comas, paréntesis, etc.).
+        const valor = `"${patron.replace(/["\\]/g, "\\$&")}"`;
+        q = q.or(`nombre.ilike.${valor},telefono.ilike.${valor}`);
+      }
+      const { data, error, count } = await q;
       if (error) throw error;
+      if (pedido !== pedidoActual.current) return;
+      const cantidad = count ?? 0;
+      const ultima = Math.max(1, Math.ceil(cantidad / CLIENTES_POR_PAGINA));
+      if (pagina > ultima) {
+        // La página quedó fuera de rango (p. ej. tras eliminar): se va a la última con datos.
+        setPagina(ultima);
+        return;
+      }
       setClientes((data ?? []) as Cliente[]);
+      setTotal(cantidad);
     } catch (e) {
+      if (pedido !== pedidoActual.current) return;
       setError(e instanceof Error ? e.message : "No se pudo cargar clientes.");
     } finally {
-      setCargandoLista(false);
+      if (pedido === pedidoActual.current) setCargandoLista(false);
     }
-  }, []);
+  }, [pagina, filtro]);
 
   useEffect(() => {
-    if (!cargando && esPc) {
+    if (!cargando && esPc && esMaster) {
       const t = window.setTimeout(() => void cargar(), 0);
       return () => window.clearTimeout(t);
     }
-  }, [cargando, esPc, cargar]);
+  }, [cargando, esPc, esMaster, cargar]);
+
+  const totalPaginas = Math.max(1, Math.ceil(total / CLIENTES_POR_PAGINA));
 
   if (cargando) return <PantallaCarga mensaje="Cargando clientes..." />;
 
@@ -160,16 +203,13 @@ export function GestionClientes() {
       const { error } = await supabase().from("clientes").delete().eq("id", c.id);
       if (error) throw error;
       setOk("Cliente eliminado.");
-      void cargar();
+      // Si era el último de la página, se vuelve a la anterior (el efecto recarga).
+      if (clientes.length === 1 && pagina > 1) setPagina((p) => Math.max(1, p - 1));
+      else void cargar();
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo eliminar el cliente.");
     }
   }
-
-  const texto = busqueda.trim().toLowerCase();
-  const filtrados = texto
-    ? clientes.filter((c) => `${c.nombre} ${c.telefono ?? ""}`.toLowerCase().includes(texto))
-    : clientes;
 
   return (
     <div
@@ -204,8 +244,8 @@ export function GestionClientes() {
           </div>
         </div>
         <div className="rounded-xl px-4 py-2 text-center ring-1 ring-white/20" style={{ backgroundColor: "rgb(255 255 255 / 12%)" }}>
-          <p className="text-[24px] font-extrabold leading-none tabular-nums">{cargandoLista && clientes.length === 0 ? "–" : clientes.length}</p>
-          <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/75">Clientes</p>
+          <p className="text-[24px] font-extrabold leading-none tabular-nums">{cargandoLista && clientes.length === 0 ? "–" : total}</p>
+          <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/75">{filtro ? "Coinciden" : "Clientes"}</p>
         </div>
       </div>
 
@@ -314,13 +354,13 @@ export function GestionClientes() {
               </div>
             ))}
           </div>
-        ) : filtrados.length === 0 ? (
+        ) : clientes.length === 0 ? (
           <p className="rounded-xl bg-surface-container-low px-3 py-8 text-center text-body-md text-on-surface-variant">
-            {clientes.length === 0 ? "No hay clientes cargados." : "No hay clientes que coincidan con la búsqueda."}
+            {filtro ? "No hay clientes que coincidan con la búsqueda." : "No hay clientes cargados."}
           </p>
         ) : (
           <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
-            {filtrados.map((c, index) => (
+            {clientes.map((c, index) => (
               <li
                 key={c.id}
                 className={`list-item-in group flex items-center gap-3 rounded-xl border p-3 transition-all duration-200 hover:border-primary/30 hover:shadow-md ${editandoId === c.id ? "border-primary ring-2 ring-primary/15" : "border-outline-variant"}`}
@@ -364,6 +404,34 @@ export function GestionClientes() {
             ))}
           </ul>
         )}
+
+        {total > 0 ? (
+          <nav aria-label="Páginas de clientes" className="mt-md flex items-center justify-between gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => setPagina((p) => Math.max(1, p - 1))}
+              disabled={pagina <= 1 || cargandoLista}
+              className="min-h-[40px] rounded border border-outline-variant px-3 text-[12px] font-bold uppercase tracking-wider text-primary active:scale-95 transition-all disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Anterior
+            </button>
+            <p className="text-center text-[12px] font-bold text-on-surface-variant">
+              Página {Math.min(pagina, totalPaginas)} de {totalPaginas}
+              <span className="block text-[11px] font-normal">
+                {total} cliente{total === 1 ? "" : "s"}
+                {filtro ? " (filtrado)" : ""}
+              </span>
+            </p>
+            <button
+              type="button"
+              onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
+              disabled={pagina >= totalPaginas || cargandoLista}
+              className="min-h-[40px] rounded border border-outline-variant px-3 text-[12px] font-bold uppercase tracking-wider text-primary active:scale-95 transition-all disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Siguiente
+            </button>
+          </nav>
+        ) : null}
       </section>
     </div>
   );
