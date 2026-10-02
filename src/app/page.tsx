@@ -18,7 +18,7 @@ import { Estadisticas } from "@/components/Estadisticas";
 import { usePerfil } from "@/lib/usePerfil";
 import { useEffect, useState } from "react";
 import { Tutorial } from "@/components/Tutorial";
-import { debeMostrarse, iniciarRecorrido } from "@/lib/tutorial";
+import { debeMostrarse, iniciarRecorrido, useListaCargada } from "@/lib/tutorial";
 import { useEstadoSesion } from "@/lib/reautenticacion";
 import { useEnLinea } from "@/lib/useEnLinea";
 
@@ -46,17 +46,20 @@ export default function Home() {
   // (con sesión validada y conexión; ante cualquier duda no aparece).
   const uid = sesion?.user?.id ?? null;
   const estadoSesion = useEstadoSesion();
+  // Arranca recién cuando la lista terminó su primera carga (no sobre las
+  // tarjetas de carga): si no, se salteaban los pasos del informe.
+  const listaCargada = useListaCargada();
   useEffect(() => {
-    if (!uid || ruta.tipo !== "lista" || estadoSesion !== "ok") return;
+    if (!uid || ruta.tipo !== "lista" || estadoSesion !== "ok" || !listaCargada) return;
     let vigente = true;
     const t = window.setTimeout(async () => {
       if (vigente && (await debeMostrarse(uid, "lista")) && vigente) iniciarRecorrido("lista");
-    }, 1500);
+    }, 900);
     return () => {
       vigente = false;
       window.clearTimeout(t);
     };
-  }, [uid, ruta.tipo, estadoSesion]);
+  }, [uid, ruta.tipo, estadoSesion, listaCargada]);
 
   if (cargando || !sesion) {
     return <PantallaCarga mensaje="Cargando..." />;

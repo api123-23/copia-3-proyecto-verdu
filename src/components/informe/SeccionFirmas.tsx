@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import SignaturePad from "signature_pad";
 import { db, prepararBlob } from "@/lib/db";
-import { supabase } from "@/lib/supabase";
+import { urlsFirmadas } from "@/lib/supabase";
 import type { InformeGeneral, TipoArchivo } from "@/lib/types";
 import { Seccion } from "@/components/ui";
 
@@ -151,25 +151,25 @@ function BloqueFirma({
     [informeId, tipo]
   );
   const existente = existentes?.slice().sort((a, b) => b.creado_en.localeCompare(a.creado_en))[0];
+  // undefined = todavía cargando; null = no hay copia local en el dispositivo.
   const registro = useLiveQuery(
-    () => (existente ? db.blobs.get(existente.id) : undefined),
+    async () => (existente ? (await db.blobs.get(existente.id)) ?? null : null),
     [existente]
   );
-  const [remoteUrl, setRemoteUrl] = useState<string | null>(null);
+  const [remota, setRemota] = useState<{ path: string; url: string } | null>(null);
+  const pathRemoto = registro === null ? existente?.url ?? null : null;
+  const remoteUrl = remota && remota.path === pathRemoto ? remota.url : null;
 
   useEffect(() => {
-    if (registro || remoteUrl || !existente?.url) return;
+    if (!pathRemoto) return;
     let cancelado = false;
-    supabase().storage
-      .from("informe-archivos")
-      .createSignedUrl(existente.url, 3600)
-      .then(({ data, error }) => {
-        if (!cancelado && data?.signedUrl) setRemoteUrl(data.signedUrl);
-        if (!cancelado && error) console.warn("[firmas] Error signed URL:", error.message);
-      })
-      .catch((e) => console.warn("[firmas] Error fetching signed URL:", e));
+    // Los pedidos de las dos firmas se juntan en un único lote (createSignedUrls).
+    void urlsFirmadas([pathRemoto]).then((mapa) => {
+      const url = mapa.get(pathRemoto);
+      if (!cancelado && url) setRemota({ path: pathRemoto, url });
+    });
     return () => { cancelado = true; };
-  }, [registro, remoteUrl, existente?.url]);
+  }, [pathRemoto]);
 
   const url = useMemo(() => {
     if (registro) return URL.createObjectURL(registro.blob);

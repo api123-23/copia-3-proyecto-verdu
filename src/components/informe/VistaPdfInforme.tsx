@@ -58,20 +58,165 @@ function fecha(iso: string): string {
   });
 }
 
-// Etiquetas que en pantalla cambian según el tipo de equipo (SeccionValores):
-// se usan antes de caer en CAMPO_LABELS para que el PDF diga lo mismo.
+// Etiquetas del PDF: dicen lo mismo que el formulario en pantalla
+// (SeccionValores), sin los números de ítem. Como el PDF no muestra los
+// subtítulos de la pantalla ("NIVELES", "TEMPERATURA (°C)", "PÉRDIDAS"...),
+// se agrega ese contexto a la etiqueta. Si un campo no está acá se usa
+// CAMPO_LABELS / CAMPO_LABELS_GE.
+const ETIQUETAS_PDF: Partial<Record<keyof ValoresBase, string>> = {
+  horometro: "Horómetro",
+  kilometros: "Kilómetros",
+  aceite_motor: "Nivel aceite motor",
+  aceite_unidad: "Nivel aceite unidad",
+  refrig_radiador: "Nivel refrig. radiador",
+  estado_bateria: "Estado batería",
+  conec_purga: "Conexión de purga",
+  inst_electrica: "Instalación eléctrica",
+  carroceria: "Carrocería",
+  jabalina: "Jabalina",
+  aislacion_suelo: "Aislación de suelo",
+  aceite_caja: "Nivel aceite caja",
+  aceite_diferencial: "Nivel aceite diferencial",
+  aceite_hidraulico: "Nivel aceite hidráulico",
+  aceite_convertidor: "Nivel aceite convertidor",
+  rpm_min: "RPM mín.",
+  rpm_max: "RPM máx.",
+  tension_linea: "Tensión de línea",
+  tension_gen_f1: "Tensión de gen. F1",
+  tension_gen_f2: "Tensión de gen. F2",
+  tension_gen_f3: "Tensión de gen. F3",
+  cons_carga_f1: "Cons. en carga F1",
+  cons_carga_f2: "Cons. en carga F2",
+  cons_carga_f3: "Cons. en carga F3",
+  cons_descarga_f1: "Cons. en descarga F1",
+  cons_descarga_f2: "Cons. en descarga F2",
+  cons_descarga_f3: "Cons. en descarga F3",
+  temp_ambiente: "Temperatura ambiente",
+  temp_refrigerante: "Temperatura refrigerante",
+  pto_rocio: "Punto de rocío",
+  presion_unidad_comp: "Presión unid. comp.",
+  presion_aceite_motor: "Presión aceite motor",
+  circuito_refr_m: "Circuito refr. M.",
+  circuito_despresuriz: "Circuito despresuriz.",
+  circuito_arranque: "Circuito arranque",
+  circuito_seguridad: "Circuito seguridad",
+  circuito_electr: "Circuito eléctrico",
+  tiempo_y_delta: "Tiempo Y-Δ",
+  diferencial: "Diferencial",
+  perdida_aceite_motor: "Pérdida aceite motor",
+  perdida_refrigerante: "Pérdida refrigerante",
+  perdida_aire: "Pérdida aire",
+  perdida_combustible: "Pérdida combustible",
+};
+
+// Etiquetas que en pantalla cambian según el tipo de equipo.
 const ETIQUETAS_PDF_POR_TIPO: Partial<Record<TipoEquipo, Partial<Record<keyof ValoresBase, string>>>> = {
   compresor: {
+    tension_linea: "Tensión de línea (voltaje general)",
     temp_ambiente: "Temperatura de unidad",
     perdida_aceite_motor: "Pérdida de aceite de unidad",
   },
   motocompresor: {
-    perdida_aceite_motor: "Pérdida Aceite Unidad",
+    perdida_aceite_motor: "Pérdida aceite unidad",
+  },
+  secadores: {
+    jabalina: "Conexión de jabalina",
   },
 };
 
+const ETIQUETAS_PDF_GE: Partial<Record<keyof InformeGrupoElectrogeno, string>> = {
+  ge_motor_detenido_aceite_motor: "Nivel de aceite de motor",
+  ge_motor_detenido_agua_radiador: "Nivel de agua radiador y refriger.",
+  ge_motor_detenido_restriccion_aire: "Restricción en el filtro de aire",
+  ge_motor_detenido_tension_correas: "Tensión correas vent. alternador",
+  ge_motor_detenido_estado_baterias: "Estado baterías",
+  ge_motor_detenido_inst_electrica: "Estado inst. eléctrica",
+  ge_motor_detenido_cableado_distrib: "Cableado de distrib. de potencia",
+  ge_motor_detenido_cubo_ventilador: "Cubo ventilador, polea y bomba agua",
+  ge_motor_detenido_ajuste_motor: "Ajuste piezas de montaje de motor",
+  ge_motor_detenido_union_tubo_aire: "Estado uniones y tubo admis. aire",
+  ge_motor_detenido_lineas_combustible: "Conexiones y líneas de combustible",
+  ge_funcionamiento_sistema_arranque: "Sistema de arranque",
+  ge_funcionamiento_mangueras: "Mangueras y conexiones",
+  ge_funcionamiento_presion_aceite: "Presión de aceite",
+  ge_funcionamiento_temp_agua: "Temp. agua motor",
+  ge_funcionamiento_diferencial_temp: "Diferencial de temp. de radiador",
+  ge_funcionamiento_vibraciones: "Vibraciones inusuales",
+  ge_funcionamiento_antivibratorios: "Antivibratorios",
+  ge_funcionamiento_llave_termomagnetica: "Llave termomagnética",
+  ge_funcionamiento_carga_alternador: "Carga alternador",
+  ge_funcionamiento_llave_transferencia: "Llave de transferencia",
+  ge_funcionamiento_rpm_max: "R.P.M. motor máxima",
+  ge_funcionamiento_circ_seguridad: "Funcionamiento circ. seguridad",
+  ge_funcionamiento_ventilacion_aire: "Ventilación de aire generador",
+  ge_funcionamiento_perdidas_aceite: "Pérdidas aceite motor",
+  ge_funcionamiento_perdidas_combustible: "Pérdidas circuito combustible",
+  ge_funcionamiento_restriccion_escape: "Restricc. en el escape",
+  ge_funcionamiento_restriccion_aire: "Restricción entrada y salida de aire",
+  ge_funcionamiento_frecuencia: "Frecuencia (medición)",
+  ge_funcionamiento_tension_linea: "Tensión de línea",
+  ge_funcionamiento_amperaje_f1: "Amperaje fase F1",
+  ge_funcionamiento_amperaje_f2: "Amperaje fase F2",
+  ge_funcionamiento_amperaje_f3: "Amperaje fase F3",
+  ge_funcionamiento_tension_linea_carga: "Tensión de línea con carga",
+  ge_funcionamiento_temp_ambiente: "Temperatura ambiente",
+  ge_funcionamiento_temp_refrigerante: "Temperatura líquido refrigerante",
+  ge_funcionamiento_inspeccion_bateria: "Inspección de batería",
+  ge_funcionamiento_accion_electrico: "Accionamiento de circ. eléctrico",
+};
+
+// Unidades que muestra la pantalla (sufijo, placeholder o título del grupo).
+const UNIDADES_PDF: Partial<Record<keyof ValoresBase, string>> = {
+  horometro: "HRS",
+  kilometros: "KM",
+  tension_linea: "V",
+  tension_gen_f1: "V",
+  tension_gen_f2: "V",
+  tension_gen_f3: "V",
+  cons_carga_f1: "A",
+  cons_carga_f2: "A",
+  cons_carga_f3: "A",
+  cons_descarga_f1: "A",
+  cons_descarga_f2: "A",
+  cons_descarga_f3: "A",
+  temp_ambiente: "°C",
+  temp_refrigerante: "°C",
+};
+
+const UNIDADES_PDF_GE: Partial<Record<keyof InformeGrupoElectrogeno, string>> = {
+  ge_funcionamiento_amperaje_f1: "A",
+  ge_funcionamiento_amperaje_f2: "A",
+  ge_funcionamiento_amperaje_f3: "A",
+  ge_funcionamiento_temp_ambiente: "°C",
+  ge_funcionamiento_temp_refrigerante: "°C",
+};
+
 function etiquetaCampo(tipo: TipoEquipo, campo: keyof ValoresBase): string {
-  return ETIQUETAS_PDF_POR_TIPO[tipo]?.[campo] ?? CAMPO_LABELS[campo];
+  return ETIQUETAS_PDF_POR_TIPO[tipo]?.[campo] ?? ETIQUETAS_PDF[campo] ?? CAMPO_LABELS[campo];
+}
+
+function etiquetaCampoGE(campo: keyof InformeGrupoElectrogeno): string {
+  return ETIQUETAS_PDF_GE[campo] ?? CAMPO_LABELS_GE[campo];
+}
+
+// Números en formato argentino (coma decimal, punto de miles); los enteros
+// quedan limpios ("380", no "380,00"). Solo cambia cómo se imprime.
+function numeroAR(n: number): string {
+  return n.toLocaleString("es-AR", { maximumFractionDigits: 3 });
+}
+
+// Valor con su unidad (solo si hay valor). Los textos libres (horómetro) se
+// imprimen tal cual los escribió el técnico (un "1.234" puede ser de miles);
+// si ya traen letras no se les agrega la unidad.
+function conUnidad(valor: unknown, unidad?: string): unknown {
+  if (valor === null || valor === undefined) return valor;
+  let base: string;
+  if (typeof valor === "number" && Number.isFinite(valor)) base = numeroAR(valor);
+  else if (typeof valor === "string") base = valor.trim();
+  else return valor;
+  if (base === "") return null;
+  if (!unidad || /[a-zA-Z°]/.test(base)) return base;
+  return `${base} ${unidad}`;
 }
 
 function nombreEquipo(tipo: TipoEquipo): string {
@@ -87,11 +232,11 @@ function Bloque({ titulo, children, clase = "" }: { titulo: string; children: Re
   );
 }
 
-function Fila({ etiqueta, valor }: { etiqueta: string; valor: unknown }) {
+function Fila({ etiqueta, valor, unidad }: { etiqueta: string; valor: unknown; unidad?: string }) {
   return (
     <div className="pdf-fila">
       <span>{etiqueta}</span>
-      <strong>{texto(valor)}</strong>
+      <strong>{texto(conUnidad(valor, unidad))}</strong>
     </div>
   );
 }
@@ -102,7 +247,7 @@ function TablaValores({ valores, tipo }: { valores: ValoresBase; tipo: TipoEquip
   return (
     <div className="pdf-tabla-valores">
       {campos.map((campo) => (
-        <Fila key={campo} etiqueta={etiquetaCampo(tipo, campo)} valor={valores[campo]} />
+        <Fila key={campo} etiqueta={etiquetaCampo(tipo, campo)} valor={valores[campo]} unidad={UNIDADES_PDF[campo]} />
       ))}
       {/* Con cantidad impar, una celda vacía cierra el recuadro de la tabla. */}
       {campos.length % 2 === 1 ? <div className="pdf-fila" aria-hidden="true" /> : null}
@@ -118,13 +263,13 @@ function TablaGE({ valores }: { valores: InformeGrupoElectrogeno }) {
       <div>
         <h3>Verificar con motor detenido</h3>
         {detenidos.map((campo) => (
-          <Fila key={campo} etiqueta={CAMPO_LABELS_GE[campo]} valor={valores[campo]} />
+          <Fila key={campo} etiqueta={etiquetaCampoGE(campo)} valor={valores[campo]} unidad={UNIDADES_PDF_GE[campo]} />
         ))}
       </div>
       <div>
         <h3>Verificaciones de funcionamiento</h3>
         {funcionamiento.map((campo) => (
-          <Fila key={campo} etiqueta={CAMPO_LABELS_GE[campo]} valor={valores[campo]} />
+          <Fila key={campo} etiqueta={etiquetaCampoGE(campo)} valor={valores[campo]} unidad={UNIDADES_PDF_GE[campo]} />
         ))}
       </div>
     </div>
@@ -182,7 +327,7 @@ function Cierre({ informe }: { informe: InformeGeneral }) {
   return (
     <>
       <div className="pdf-dos-columnas">
-        <Bloque titulo="Horas trabajadas"><Fila etiqueta="Total" valor={informe.horas_trabajadas === null ? null : `${informe.horas_trabajadas} hs`} /></Bloque>
+        <Bloque titulo="Horas trabajadas"><Fila etiqueta="Total" valor={informe.horas_trabajadas} unidad="hs" /></Bloque>
         <Bloque titulo="Estado de la máquina"><Fila etiqueta="Operativa" valor={informe.maquina_operativa} /></Bloque>
       </div>
       <Bloque titulo="Repuestos">
@@ -276,6 +421,18 @@ function ajustarImagenesSinDeformar(raiz: HTMLElement): void {
     img.style.objectFit = "fill";
     img.style.padding = `${(cajaAlto - ajusteAlto) / 2}px ${(cajaAncho - ajusteAncho) / 2}px`;
   }
+}
+
+// Parte del nombre del archivo: sin acentos ("José Peña" → "Jose-Pena"),
+// solo letras, números y guiones, sin guiones repetidos ni en los extremos.
+function parteNombreArchivo(valor: string, maximo: number): string {
+  return valor
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/gi, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, maximo)
+    .replace(/-+$/g, "");
 }
 
 const A4_ANCHO_MM = 210;
@@ -429,8 +586,9 @@ export function VistaPdfInforme({
             imagen.addEventListener("error", () => resolve(), { once: true });
           });
         }));
-        const equipo = nombreEquipo(informe.tipo_equipo).replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
-        const cliente = (informe.cliente_nombre || "informe").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
+        const equipo = parteNombreArchivo(nombreEquipo(informe.tipo_equipo), 40) || "equipo";
+        const cliente = parteNombreArchivo(informe.cliente_nombre ?? "", 60) || "cliente";
+        const numero = informe.numero_registro === null ? "borrador" : formatNumero(informe.numero_registro);
         ajustarImagenesSinDeformar(hoja);
         const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
         // Cada hoja se dibuja por separado: una sola imagen gigante de todo el
@@ -472,7 +630,7 @@ export function VistaPdfInforme({
           canvas.width = 0;
           canvas.height = 0;
         }
-        pdf.save(`Informe-${formatNumero(informe.numero_registro)}-${equipo}-${cliente}.pdf`);
+        pdf.save(`Informe-${numero}-${equipo}-${cliente}.pdf`);
       } catch (error) {
         console.error("[pdf] No se pudo descargar el informe:", error);
         window.alert("No se pudo generar el PDF. Intentá nuevamente.");

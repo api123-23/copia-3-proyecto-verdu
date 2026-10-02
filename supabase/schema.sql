@@ -224,6 +224,31 @@ create index if not exists idx_informes_tecnico on informes_generales (tecnico_i
 create index if not exists idx_informes_fecha on informes_generales (fecha_hora);
 create index if not exists idx_informes_cliente on informes_generales (cliente_id);
 create index if not exists idx_archivos_informe on informe_archivos (informe_id);
+-- Rendimiento del listado a medida que crecen los datos (solo índices: no
+-- cambian datos ni permisos). El orden por numero_registro usa el índice
+-- único ya existente; fecha_hora usa idx_informes_fecha (también al revés).
+-- Las tablas anexas tienen informe_id como clave primaria (ya indexado).
+-- No se indexa lower(cliente_nombre): el buscador usa ilike '%texto%', que
+-- un btree no puede aprovechar (haría falta pg_trgm).
+create index if not exists idx_informes_tecnico_estado on informes_generales (tecnico_id, estado_firma);
+create index if not exists idx_informes_tecnico_fecha on informes_generales (tecnico_id, fecha_hora desc);
+create index if not exists idx_informes_estado_fecha on informes_generales (estado_firma, fecha_hora desc);
+create index if not exists idx_informes_tipo_fecha on informes_generales (tipo_equipo, fecha_hora desc);
+-- Por si una base vieja quedó sin el unique de numero_registro: índice simple
+-- solo cuando no existe ya un índice que empiece por esa columna.
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_index i
+    join pg_attribute a on a.attrelid = i.indrelid and a.attnum = i.indkey[0]
+    where i.indrelid = 'public.informes_generales'::regclass
+      and a.attname = 'numero_registro'
+  ) then
+    create index if not exists idx_informes_numero on public.informes_generales (numero_registro);
+  end if;
+end;
+$$;
 
 -- INTEGRIDAD: garantiza ON DELETE CASCADE en las tablas dependientes..
 -- create table if not exists NO agrega/repara la FK en tablas ya creadas por
@@ -715,8 +740,8 @@ as $$
       select 1
       from public.informes_generales g
       where g.id = informe
-        and public.rol_actual() = 'tecnico'
-        and g.tecnico_id = auth.uid()
+        and (select public.rol_actual()) = 'tecnico'
+        and g.tecnico_id = (select auth.uid())
         and g.estado_firma <> 'firmado'
     );
 $$;
@@ -1099,8 +1124,8 @@ begin
         left join lateral (
           select count(*)::integer as cantidad
           from public.informes_generales g
-          where (g.fecha_hora at time zone 'America/Argentina/Cordoba') >= m.mes
-            and (g.fecha_hora at time zone 'America/Argentina/Cordoba') < m.mes + interval '1 month'
+          where g.fecha_hora >= (m.mes at time zone 'America/Argentina/Cordoba')
+            and g.fecha_hora < ((m.mes + interval '1 month') at time zone 'America/Argentina/Cordoba')
         ) c on true
       ) q
     ), '[]'::jsonb),
@@ -1113,8 +1138,8 @@ begin
           count(*)::integer as cantidad
         from public.informes_generales g
         left join public.perfiles p on p.id = g.tecnico_id
-        where (g.fecha_hora at time zone 'America/Argentina/Cordoba') >= date_trunc('month', p_mes::timestamp)
-          and (g.fecha_hora at time zone 'America/Argentina/Cordoba') < date_trunc('month', p_mes::timestamp) + interval '1 month'
+        where g.fecha_hora >= (date_trunc('month', p_mes::timestamp) at time zone 'America/Argentina/Cordoba')
+          and g.fecha_hora < ((date_trunc('month', p_mes::timestamp) + interval '1 month') at time zone 'America/Argentina/Cordoba')
         group by g.tecnico_id, p.nombre, p.apellido, p.email
       ) q
     ), '[]'::jsonb),
@@ -1123,8 +1148,8 @@ begin
       from (
         select g.tipo_equipo as tipo, count(*)::integer as cantidad
         from public.informes_generales g
-        where (g.fecha_hora at time zone 'America/Argentina/Cordoba') >= date_trunc('month', p_mes::timestamp)
-          and (g.fecha_hora at time zone 'America/Argentina/Cordoba') < date_trunc('month', p_mes::timestamp) + interval '1 month'
+        where g.fecha_hora >= (date_trunc('month', p_mes::timestamp) at time zone 'America/Argentina/Cordoba')
+          and g.fecha_hora < ((date_trunc('month', p_mes::timestamp) + interval '1 month') at time zone 'America/Argentina/Cordoba')
         group by g.tipo_equipo
       ) q
     ), '[]'::jsonb)
@@ -1185,7 +1210,7 @@ as $$
       select 1
       from public.informes_generales g
       where g.id = informe
-      and g.tecnico_id = auth.uid()
+      and g.tecnico_id = (select auth.uid())
       and g.estado_firma <> 'firmado'
     );
 $$;
@@ -1205,42 +1230,42 @@ create policy perfiles_select on perfiles for select to authenticated
   using (true);
 drop policy if exists perfiles_insert_admin on perfiles;
 create policy perfiles_insert_admin on perfiles for insert to authenticated
-  with check (public.es_admin());
+  with check ((select public.es_admin()));
 drop policy if exists perfiles_update_admin on perfiles;
 create policy perfiles_update_admin on perfiles for update to authenticated
-  using (public.es_admin()) with check (public.es_admin());
+  using ((select public.es_admin())) with check ((select public.es_admin()));
 -- Cualquier usuario puede actualizar sus propios datos (nombre/apellido),
 -- pero NO puede cambiarse el rol.
 drop policy if exists perfiles_update_own on perfiles;
 create policy perfiles_update_own on perfiles for update to authenticated
-  using (id = auth.uid())
-  with check (id = auth.uid() and rol is not distinct from (select rol from perfiles where id = auth.uid()));
+  using (id = (select auth.uid()))
+  with check (id = (select auth.uid()) and rol is not distinct from (select rol from perfiles where id = (select auth.uid())));
 
 drop policy if exists clientes_select on clientes;
 create policy clientes_select on clientes for select to authenticated using (true);
 drop policy if exists clientes_write_admin on clientes;
 create policy clientes_write_admin on clientes for insert to authenticated
-  with check (public.es_admin());
+  with check ((select public.es_admin()));
 drop policy if exists clientes_update_admin on clientes;
 create policy clientes_update_admin on clientes for update to authenticated
-  using (public.es_admin()) with check (public.es_admin());
+  using ((select public.es_admin())) with check ((select public.es_admin()));
 drop policy if exists clientes_delete_admin on clientes;
 create policy clientes_delete_admin on clientes for delete to authenticated
-  using (public.es_admin());
+  using ((select public.es_admin()));
 
 drop policy if exists informes_select on informes_generales;
 create policy informes_select on informes_generales for select to authenticated
-  using (public.rol_actual() in ('admin', 'master') or (tecnico_id = auth.uid() and estado_firma <> 'firmado'));
+  using ((select public.rol_actual()) in ('admin', 'master') or (tecnico_id = (select auth.uid()) and estado_firma <> 'firmado'));
 drop policy if exists informes_insert on informes_generales;
 create policy informes_insert on informes_generales for insert to authenticated
-  with check (public.es_admin() or (public.rol_actual() = 'tecnico' and tecnico_id = auth.uid()));
+  with check ((select public.es_admin()) or ((select public.rol_actual()) = 'tecnico' and tecnico_id = (select auth.uid())));
 drop policy if exists informes_update on informes_generales;
 create policy informes_update on informes_generales for update to authenticated
   using (public.puede_editar_informe(id))
   with check (public.puede_editar_informe(id));
 drop policy if exists informes_delete_admin on informes_generales;
 create policy informes_delete_admin on informes_generales for delete to authenticated
-  using (public.es_admin());
+  using ((select public.es_admin()));
 
 drop policy if exists moto_select on informes_motocompresor;
 create policy moto_select on informes_motocompresor for select to authenticated
@@ -1253,7 +1278,7 @@ create policy moto_update on informes_motocompresor for update to authenticated
   using (public.puede_editar_informe(informe_id));
 drop policy if exists moto_delete on informes_motocompresor;
 create policy moto_delete on informes_motocompresor for delete to authenticated
-  using (public.es_admin());
+  using ((select public.es_admin()));
 
 drop policy if exists comp_select on informes_compresor;
 create policy comp_select on informes_compresor for select to authenticated
@@ -1266,7 +1291,7 @@ create policy comp_update on informes_compresor for update to authenticated
   using (public.puede_editar_informe(informe_id));
 drop policy if exists comp_delete on informes_compresor;
 create policy comp_delete on informes_compresor for delete to authenticated
-  using (public.es_admin());
+  using ((select public.es_admin()));
 
 drop policy if exists veh_select on informes_vehiculos;
 create policy veh_select on informes_vehiculos for select to authenticated
@@ -1279,7 +1304,7 @@ create policy veh_update on informes_vehiculos for update to authenticated
   using (public.puede_editar_informe(informe_id));
 drop policy if exists veh_delete on informes_vehiculos;
 create policy veh_delete on informes_vehiculos for delete to authenticated
-  using (public.es_admin());
+  using ((select public.es_admin()));
 
 drop policy if exists sec_select on informes_secadores;
 create policy sec_select on informes_secadores for select to authenticated
@@ -1292,7 +1317,7 @@ create policy sec_update on informes_secadores for update to authenticated
   using (public.puede_editar_informe(informe_id));
 drop policy if exists sec_delete on informes_secadores;
 create policy sec_delete on informes_secadores for delete to authenticated
-  using (public.es_admin());
+  using ((select public.es_admin()));
 
 drop policy if exists ge_select on informes_grupo_electrogeno;
 create policy ge_select on informes_grupo_electrogeno for select to authenticated
@@ -1305,7 +1330,7 @@ create policy ge_update on informes_grupo_electrogeno for update to authenticate
   using (public.puede_editar_informe(informe_id));
 drop policy if exists ge_delete on informes_grupo_electrogeno;
 create policy ge_delete on informes_grupo_electrogeno for delete to authenticated
-  using (public.es_admin());
+  using ((select public.es_admin()));
 
 drop policy if exists archivos_select on informe_archivos;
 create policy archivos_select on informe_archivos for select to authenticated
@@ -1318,7 +1343,7 @@ create policy archivos_update on informe_archivos for update to authenticated
   using (public.puede_editar_informe(informe_id));
 drop policy if exists archivos_delete on informe_archivos;
 create policy archivos_delete on informe_archivos for delete to authenticated
-  using (public.es_admin());
+  using ((select public.es_admin()));
 
 -- Los informes y sus tablas hijas SOLO se escriben a través de las funciones
 -- sincronizar_informe_completo / guardar_informe_general_sync (security

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, prepararBlob } from "@/lib/db";
-import { supabase } from "@/lib/supabase";
+import { urlsFirmadas } from "@/lib/supabase";
 import { comprimirImagenWebp } from "@/lib/imagen";
 import type { ArchivoLocal, CategoriaFoto } from "@/lib/types";
 import { Label, Seccion } from "@/components/ui";
@@ -18,6 +18,10 @@ const CATEGORIAS: { value: CategoriaFoto; label: string }[] = [
   { value: "horometro", label: "Horómetro" },
   { value: "final", label: "Estado Final" },
 ];
+
+// Las URLs firmadas duran 1 h y la caché las da por vencidas a los 50 min:
+// a los 55 min se piden de nuevo, antes de que dejen de funcionar.
+const RENOVAR_URLS_MS = 55 * 60 * 1000;
 
 const ORDEN_FOTOS: CategoriaFoto[] = ["inicial", "desarrollo", "repuestos", "falla", "horometro", "final"];
 
@@ -80,28 +84,23 @@ function Lightbox({
   );
 }
 
-function FotoItem({ archivo, cerrado }: { archivo: ArchivoLocal; cerrado: boolean }) {
+function FotoItem({
+  archivo,
+  cerrado,
+  urlRemota,
+}: {
+  archivo: ArchivoLocal;
+  cerrado: boolean;
+  /** URL firmada pedida en lote por SeccionFotos (solo si no hay copia local). */
+  urlRemota: string | null;
+}) {
   const registro = useLiveQuery(() => db.blobs.get(archivo.id), [archivo.id]);
-  const [remoteUrl, setRemoteUrl] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (registro || remoteUrl || !archivo.url) return;
-    let cancelado = false;
-    supabase().storage
-      .from("informe-archivos")
-      .createSignedUrl(archivo.url, 3600)
-      .then(({ data, error }) => {
-        if (!cancelado && data?.signedUrl) setRemoteUrl(data.signedUrl);
-        if (!cancelado && error) console.warn("[fotos] Error signed URL:", error.message);
-      })
-      .catch((e) => console.warn("[fotos] Error fetching signed URL:", e));
-    return () => { cancelado = true; };
-  }, [registro, remoteUrl, archivo.url]);
-
+  // Primero la copia local (funciona sin conexión); si no hay, la URL firmada.
   const url = useMemo(() => {
     if (registro) return URL.createObjectURL(registro.blob);
-    return remoteUrl;
-  }, [registro, remoteUrl]);
+    return urlRemota;
+  }, [registro, urlRemota]);
 
   useEffect(
     () => () => {
@@ -180,6 +179,34 @@ export default function SeccionFotos({
     () => db.archivos.where("informe_id").equals(informeId).filter((a) => a.tipo === "foto").toArray(),
     [informeId]
   );
+  // Fotos que tienen copia local (offline): esas se muestran desde el
+  // dispositivo y no se le pide nada al servidor.
+  const idsConBlobLocal = useLiveQuery(
+    async () => new Set(await db.blobs.where("id").anyOf((fotos ?? []).map((f) => f.id)).primaryKeys()),
+    [fotos]
+  );
+  // Rutas en el servidor de las fotos sin copia local: se firman TODAS juntas
+  // con un único pedido (antes era un pedido por miniatura).
+  const clavePathsRemotos = fotos && idsConBlobLocal
+    ? fotos.filter((f) => f.url && !idsConBlobLocal.has(f.id)).map((f) => f.url as string).sort().join("\n")
+    : "";
+  const [urlsRemotas, setUrlsRemotas] = useState<Record<string, string>>({});
+  const [rondaUrls, setRondaUrls] = useState(0);
+
+  useEffect(() => {
+    if (!clavePathsRemotos) return;
+    let cancelado = false;
+    void urlsFirmadas(clavePathsRemotos.split("\n")).then((mapa) => {
+      if (cancelado || mapa.size === 0) return;
+      setUrlsRemotas((previas) => ({ ...previas, ...Object.fromEntries(mapa) }));
+    });
+    const renovar = setTimeout(() => setRondaUrls((r) => r + 1), RENOVAR_URLS_MS);
+    return () => {
+      cancelado = true;
+      clearTimeout(renovar);
+    };
+  }, [clavePathsRemotos, rondaUrls]);
+
   const fotosOrdenadas = fotos?.slice().sort((a, b) => {
     const categoriaA = ORDEN_FOTOS.indexOf(a.categoria ?? "inicial");
     const categoriaB = ORDEN_FOTOS.indexOf(b.categoria ?? "inicial");
@@ -314,7 +341,12 @@ export default function SeccionFotos({
           {fotosOrdenadas && fotosOrdenadas.length > 0 ? (
             <div className="flex flex-wrap gap-sm justify-center">
               {fotosOrdenadas.map((f) => (
-                <FotoItem key={f.id} archivo={f} cerrado={cerrado} />
+                <FotoItem
+                  key={f.id}
+                  archivo={f}
+                  cerrado={cerrado}
+                  urlRemota={f.url && !idsConBlobLocal?.has(f.id) ? urlsRemotas[f.url] ?? null : null}
+                />
               ))}
             </div>
           ) : null}

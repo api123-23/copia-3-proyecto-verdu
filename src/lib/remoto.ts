@@ -46,14 +46,97 @@ function normalizar(f: FilaServidor): InformeGeneral {
   };
 }
 
-export async function listarRemotos(): Promise<InformeGeneral[]> {
-  const { data, error } = await supabase()
-    .from("informes_generales")
-    .select("*")
-    .order("fecha_hora", { ascending: false });
-  if (error) throw error;
+// ---- Listado paginado (pantalla principal) ----
+
+export const INFORMES_POR_PAGINA = 30;
+
+/** Filtros del listado; se aplican en el servidor sobre TODOS los informes. */
+export type FiltrosListado = {
+  /** Número exacto (ver numeroDeFiltro). null: sin filtro. */
+  numero: number | null;
+  /** Día "AAAA-MM-DD" en hora argentina. "": sin filtro. */
+  fecha: string;
+  cliente: string;
+  tecnicoId: string;
+  tipoEquipo: string;
+};
+
+export type PaginaRemota = { informes: InformeGeneral[]; total: number };
+
+// Solo lo que muestra la lista (tabla de PC y tarjetas). La descarga y la vista
+// PDF traen el informe completo aparte (traerInformeRemoto). Estas filas son un
+// resumen: NUNCA se guardan en el celular.
+const COLUMNAS_LISTADO =
+  "id, numero_registro, cliente_nombre, tecnico_id, fecha_hora, tipo_equipo, estado_firma, creado_en, actualizado_en";
+
+const NUMERO_MAXIMO = 2147483647; // numero_registro es int
+
+/** "000123", "№ 123" → 123. null: sin filtro (vacío o solo ceros).
+ *  -1: un número que no puede existir (no trae nada). */
+export function numeroDeFiltro(texto: string): number | null {
+  const digitos = texto.replace(/\D/g, "").replace(/^0+/, "");
+  if (!digitos) return null;
+  const n = Number(digitos);
+  return digitos.length > 10 || n > NUMERO_MAXIMO ? -1 : n;
+}
+
+const MS_DIA = 24 * 60 * 60 * 1000;
+const DESFASE_ARGENTINA_MS = 3 * 60 * 60 * 1000; // America/Argentina/Cordoba: UTC-3 todo el año
+
+/** Rango [inicio, fin) en UTC del día "AAAA-MM-DD" en hora argentina. */
+export function rangoDiaArgentina(fecha: string): [string, string] | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return null;
+  const inicio = new Date(`${fecha}T00:00:00-03:00`);
+  if (Number.isNaN(inicio.getTime())) return null;
+  return [inicio.toISOString(), new Date(inicio.getTime() + MS_DIA).toISOString()];
+}
+
+/** Día "AAAA-MM-DD" en hora argentina de un instante ISO. */
+export function diaArgentina(iso: string): string {
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return "";
+  return new Date(t - DESFASE_ARGENTINA_MS).toISOString().slice(0, 10);
+}
+
+function consultaListado(filtros: FiltrosListado, soloContar: boolean) {
+  let q = soloContar
+    ? supabase().from("informes_generales").select("id", { count: "exact", head: true })
+    : supabase().from("informes_generales").select(COLUMNAS_LISTADO, { count: "exact" });
+  if (filtros.numero !== null) q = q.eq("numero_registro", filtros.numero);
+  const rango = filtros.fecha ? rangoDiaArgentina(filtros.fecha) : null;
+  if (rango) q = q.gte("fecha_hora", rango[0]).lt("fecha_hora", rango[1]);
+  const cliente = filtros.cliente.trim();
+  // %, _ y \ se buscan como texto literal.
+  if (cliente) q = q.ilike("cliente_nombre", `%${cliente.replace(/[\\%_]/g, "\\$&")}%`);
+  if (filtros.tecnicoId) q = q.eq("tecnico_id", filtros.tecnicoId);
+  if (filtros.tipoEquipo) q = q.eq("tipo_equipo", filtros.tipoEquipo);
+  return q;
+}
+
+/** Una página del listado (30 informes) + el total que cumple los filtros.
+ *  Mismo orden que la lista: número de registro descendente (sin número al
+ *  final), después fecha descendente y el id como desempate estable. Lo que
+ *  ve cada usuario lo restringe RLS en el servidor. */
+export async function listarRemotos(pagina: number, filtros: FiltrosListado): Promise<PaginaRemota> {
+  const desde = (Math.max(1, Math.floor(pagina)) - 1) * INFORMES_POR_PAGINA;
+  const { data, error, count } = await consultaListado(filtros, false)
+    .order("numero_registro", { ascending: false, nullsFirst: false })
+    .order("fecha_hora", { ascending: false })
+    .order("id", { ascending: false })
+    .range(desde, desde + INFORMES_POR_PAGINA - 1);
+  if (error) {
+    // Página fuera de rango (p. ej. se borraron informes): se informa el total
+    // para que la lista vuelva a una página válida.
+    if (error.code === "PGRST103") {
+      const { count: total, error: errorTotal } = await consultaListado(filtros, true);
+      if (errorTotal) throw errorTotal;
+      return { informes: [], total: total ?? 0 };
+    }
+    throw error;
+  }
   if (!data) throw new Error("Supabase no devolvió los informes.");
-  return (data as FilaServidor[]).map(normalizar);
+  const informes = (data as unknown as FilaServidor[]).map(normalizar);
+  return { informes, total: count ?? desde + informes.length };
 }
 
 export async function traerInformeRemoto(id: string): Promise<boolean> {

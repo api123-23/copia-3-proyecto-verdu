@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/lib/db";
-import { listarRemotos } from "@/lib/remoto";
+import { INFORMES_POR_PAGINA, diaArgentina, listarRemotos, numeroDeFiltro, type FiltrosListado } from "@/lib/remoto";
+import { marcarListaCargada } from "@/lib/tutorial";
 import { supabase } from "@/lib/supabase";
 import { fetchAutenticado } from "@/lib/fetchAutenticado";
 import type { InformeGeneral } from "@/lib/types";
@@ -77,6 +78,14 @@ function estadoFirmaClase(inf: InformeGeneral): string {
   return inf.estado_firma === "firmado" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-800";
 }
 
+/** Si la página pedida quedó fuera de rango, la última página válida (si no, null). */
+function paginaCorregida(pagina: number, total: number): number | null {
+  const ultima = Math.max(1, Math.ceil(total / INFORMES_POR_PAGINA));
+  return pagina > ultima ? ultima : null;
+}
+
+type ResultadoPagina = { clave: string; informes: InformeGeneral[]; total: number };
+
 function formatoFecha(iso: string): string {
   return new Date(iso).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
@@ -89,7 +98,10 @@ export function ListaInformes() {
     () => db.informes.where("estado_sync").notEqual("sincronizado").toArray(),
     []
   );
-  const [remotos, setRemotos] = useState<InformeGeneral[]>([]);
+  // Página del servidor (30 informes) y la consulta (página + filtros) a la que corresponde.
+  const [resultado, setResultado] = useState<ResultadoPagina | null>(null);
+  const [falloClave, setFalloClave] = useState<string | null>(null);
+  const [pagina, setPagina] = useState(1);
   const [remotosCargados, setRemotosCargados] = useState(false);
   const [online, setOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
   const [actualizando, setActualizando] = useState(false);
@@ -107,6 +119,19 @@ export function ListaInformes() {
   const [filtroCliente, setFiltroCliente] = useState("");
   const [filtroTecnico, setFiltroTecnico] = useState("");
   const [filtroEquipo, setFiltroEquipo] = useState("");
+
+  // Los filtros se aplican en el servidor sobre TODOS los informes.
+  const numeroFiltro = numeroDeFiltro(filtroNumero);
+  const clienteFiltro = filtroCliente.trim();
+  const claveConsulta = JSON.stringify([pagina, numeroFiltro, filtroFecha, clienteFiltro, filtroTecnico, filtroEquipo]);
+  const filtrosServidor: FiltrosListado = {
+    numero: numeroFiltro,
+    fecha: filtroFecha,
+    cliente: clienteFiltro,
+    tecnicoId: filtroTecnico,
+    tipoEquipo: filtroEquipo,
+  };
+  const primeraConsultaHecha = useRef(false);
 
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 768px)");
@@ -187,7 +212,8 @@ export function ListaInformes() {
       if (!(await intentarSync())) {
         throw new Error("No se pudo completar la sincronización antes de actualizar.");
       }
-      const lista = await listarRemotos();
+      const clave = claveConsulta;
+      const r = await listarRemotos(pagina, filtrosServidor);
       await db.transaction(
         "rw",
         [
@@ -223,9 +249,12 @@ export function ListaInformes() {
           await db.eliminados.bulkDelete(eliminadosDescartables);
         }
       );
-      setRemotos(lista);
-      if (lista.length > 0) {
-        const id = lista[0].id;
+      setResultado({ clave, ...r });
+      setFalloClave(null);
+      const corregida = paginaCorregida(pagina, r.total);
+      if (corregida !== null) setPagina(corregida);
+      if (r.informes.length > 0) {
+        const id = r.informes[0].id;
         setResaltadoId(id);
         window.setTimeout(() => setResaltadoId(null), 2800);
       }
@@ -247,48 +276,97 @@ export function ListaInformes() {
     };
   }, []);
 
+  // Trae (y refresca) solo la página actual con los filtros actuales.
   useEffect(() => {
     if (cargando || !sesion || !online) return;
     let activo = true;
     let ultimo = 0;
+    const filtros: FiltrosListado = {
+      numero: numeroFiltro,
+      fecha: filtroFecha,
+      cliente: clienteFiltro,
+      tecnicoId: filtroTecnico,
+      tipoEquipo: filtroEquipo,
+    };
     const refrescar = () => {
       const ahora = Date.now();
       if (ahora - ultimo < 2000) return;
       ultimo = ahora;
-      void listarRemotos().then((r) => {
-        if (activo) setRemotos(r);
+      void listarRemotos(pagina, filtros).then((r) => {
+        if (!activo) return;
+        setResultado({ clave: claveConsulta, ...r });
+        setFalloClave(null);
+        const corregida = paginaCorregida(pagina, r.total);
+        if (corregida !== null) setPagina(corregida);
       }).catch((error) => {
         console.error("[lista] No se pudieron actualizar los informes:", error);
+        if (activo) setFalloClave(claveConsulta);
       }).finally(() => {
         if (activo) setRemotosCargados(true);
       });
     };
-    refrescar();
+    // La primera vez se consulta al instante; al cambiar filtros o página se
+    // espera un momento (mientras se escribe no se consulta en cada tecla).
+    const t = window.setTimeout(refrescar, primeraConsultaHecha.current ? 350 : 0);
+    primeraConsultaHecha.current = true;
     window.addEventListener("verdu-sync", refrescar);
     window.addEventListener("focus", refrescar);
     const onVis = () => { if (document.visibilityState === "visible") refrescar(); };
     document.addEventListener("visibilitychange", onVis);
     return () => {
       activo = false;
+      window.clearTimeout(t);
       window.removeEventListener("verdu-sync", refrescar);
       window.removeEventListener("focus", refrescar);
       document.removeEventListener("visibilitychange", onVis);
     };
-  }, [cargando, sesion, online]);
+  }, [cargando, sesion, online, pagina, numeroFiltro, filtroFecha, clienteFiltro, filtroTecnico, filtroEquipo, claveConsulta]);
+
+  // Aviso para el tutorial: la lista terminó su primera carga.
+  const primeraCargaLista = !cargando && !!locales && (!online || !sesion || remotosCargados);
+  useEffect(() => {
+    if (!primeraCargaLista) return;
+    marcarListaCargada(true);
+    return () => marcarListaCargada(false);
+  }, [primeraCargaLista]);
 
   if (cargando || !locales) return <PantallaCarga mensaje="Cargando informes..." />;
+
+  const resultadoVigente = resultado?.clave === claveConsulta ? resultado : null;
+  // Mientras llega otra página o filtro se sigue viendo lo anterior (atenuado).
+  const cargandoPagina = online && !!sesion && !resultadoVigente && falloClave !== claveConsulta;
+  const falloPagina = online && !resultadoVigente && falloClave === claveConsulta;
+  const remotosVisibles = resultadoVigente?.informes ?? (cargandoPagina ? resultado?.informes ?? [] : []);
+  const totalServidor = resultadoVigente?.total ?? (cargandoPagina ? resultado?.total ?? 0 : 0);
+  const totalPaginas = Math.max(1, Math.ceil(totalServidor / INFORMES_POR_PAGINA));
 
   const pendientesLocales = locales.filter((l) =>
     l.estado_sync !== "sincronizado" && (esMaster || esObservador || l.estado_firma !== "firmado" || !l.listo_para_enviar)
   );
 
+  // Borradores y pendientes viven en el equipo: se filtran acá (con los mismos
+  // criterios que el servidor) y se muestran siempre en la página 1.
+  const clienteFiltroMin = clienteFiltro.toLowerCase();
+  const localesFiltrados = pendientesLocales.filter((inf) => {
+    if (numeroFiltro !== null && inf.numero_registro !== numeroFiltro) return false;
+    if (filtroFecha && diaArgentina(inf.fecha_hora) !== filtroFecha) return false;
+    if (clienteFiltroMin && !(inf.cliente_nombre || "").toLowerCase().includes(clienteFiltroMin)) return false;
+    if (filtroTecnico && inf.tecnico_id !== filtroTecnico) return false;
+    if (filtroEquipo && inf.tipo_equipo !== filtroEquipo) return false;
+    return true;
+  });
+  const idsLocales = new Set(pendientesLocales.map((l) => l.id));
+
   const informesMap = new Map<string, InformeGeneral>();
   if (online) {
-    for (const r of remotos) informesMap.set(r.id, r);
+    // La copia local (con cambios sin subir) reemplaza a la del servidor.
+    for (const r of remotosVisibles) if (!idsLocales.has(r.id)) informesMap.set(r.id, r);
   }
-  for (const l of pendientesLocales) informesMap.set(l.id, l);
+  if (pagina === 1 || !online) {
+    for (const l of localesFiltrados) informesMap.set(l.id, l);
+  }
   const esBorradorLocal = (inf: InformeGeneral) => inf.estado_sync !== "sincronizado" && !inf.listo_para_enviar;
-  let informes = [...informesMap.values()].sort((a, b) => {
+  const informes = [...informesMap.values()].sort((a, b) => {
     // Los borradores van primero (el más reciente arriba).
     const borradorA = esBorradorLocal(a);
     const borradorB = esBorradorLocal(b);
@@ -317,44 +395,18 @@ export function ListaInformes() {
     return tecnicoNombre.get(id) ?? (online && cargandoTecnicos ? "…" : id.slice(0, 8));
   }
 
-  const idsLocales = new Set(pendientesLocales.map((l) => l.id));
   const etiquetaTipo = new Map(TIPOS_EQUIPO.map((t) => [t.value as string, t.label]));
 
-  const filtroNumeroTrim = filtroNumero.trim().toLowerCase();
-  const filtroClienteTrim = filtroCliente.trim().toLowerCase();
-  if (
-    filtroNumeroTrim ||
-    filtroFecha ||
-    filtroClienteTrim ||
-    filtroTecnico ||
-    filtroEquipo
-  ) {
-    informes = informes.filter((inf) => {
-      if (filtroNumeroTrim) {
-        const numStr = (inf.numero_registro ?? "").toString().toLowerCase();
-        if (!numStr.includes(filtroNumeroTrim)) return false;
-      }
-      if (filtroFecha) {
-        const local = new Date(inf.fecha_hora);
-        const y = local.getFullYear();
-        const m = String(local.getMonth() + 1).padStart(2, "0");
-        const d = String(local.getDate()).padStart(2, "0");
-        if (`${y}-${m}-${d}` !== filtroFecha) return false;
-      }
-      if (filtroClienteTrim) {
-        if (!(inf.cliente_nombre || "").toLowerCase().includes(filtroClienteTrim)) return false;
-      }
-      if (filtroTecnico) {
-        if (inf.tecnico_id !== filtroTecnico) return false;
-      }
-      if (filtroEquipo) {
-        if (inf.tipo_equipo !== filtroEquipo) return false;
-      }
-      return true;
-    });
-  }
+  const tieneFiltros = !!(filtroNumero.trim() || filtroFecha || clienteFiltro || filtroTecnico || filtroEquipo);
+  // Total: lo del servidor + lo creado en este equipo que todavía no subió.
+  const totalMostrado = online
+    ? totalServidor + localesFiltrados.filter((l) => l.numero_registro === null).length
+    : informes.length;
 
-  const tieneFiltros = !!(filtroNumeroTrim || filtroFecha || filtroClienteTrim || filtroTecnico || filtroEquipo);
+  function irAPagina(n: number) {
+    setPagina(Math.min(Math.max(1, n), totalPaginas));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   function limpiarFiltros() {
     setFiltroNumero("");
@@ -362,6 +414,7 @@ export function ListaInformes() {
     setFiltroCliente("");
     setFiltroTecnico("");
     setFiltroEquipo("");
+    setPagina(1);
   }
 
   const filtroBarClass = "filter-control bg-surface-container-low/60 border border-outline-variant rounded-lg px-2 py-1.5 text-[13px] h-[32px] w-full focus:outline-none focus:ring-2 focus:ring-primary";
@@ -389,7 +442,7 @@ export function ListaInformes() {
     );
   }
 
-  if (informes.length === 0 && !tieneFiltros) {
+  if (informes.length === 0 && !tieneFiltros && pagina === 1 && !cargandoPagina && !falloPagina) {
     return (
       <div>
          <div className="mx-4 md:mx-0 my-sm p-xl bg-white border border-outline-variant rounded-lg text-center">
@@ -448,7 +501,7 @@ export function ListaInformes() {
               inputMode="numeric"
               placeholder="Ej: 000123"
               value={filtroNumero}
-              onChange={(e) => setFiltroNumero(e.target.value)}
+              onChange={(e) => { setFiltroNumero(e.target.value); setPagina(1); }}
               className={filtroBarClass}
             />
           </div>
@@ -457,7 +510,7 @@ export function ListaInformes() {
             <input
               type="date"
               value={filtroFecha}
-              onChange={(e) => setFiltroFecha(e.target.value)}
+              onChange={(e) => { setFiltroFecha(e.target.value); setPagina(1); }}
               className={filtroBarClass}
             />
           </div>
@@ -468,7 +521,7 @@ export function ListaInformes() {
               list="filtro-clientes"
               placeholder="Escribí o elegí..."
               value={filtroCliente}
-              onChange={(e) => setFiltroCliente(e.target.value)}
+              onChange={(e) => { setFiltroCliente(e.target.value); setPagina(1); }}
               className={filtroBarClass}
             />
             <datalist id="filtro-clientes">
@@ -481,7 +534,7 @@ export function ListaInformes() {
             <label className="text-[11px] font-bold text-on-surface-variant block mb-0.5">Técnico</label>
             <select
               value={filtroTecnico}
-              onChange={(e) => setFiltroTecnico(e.target.value)}
+              onChange={(e) => { setFiltroTecnico(e.target.value); setPagina(1); }}
               className={filtroBarClass}
             >
               <option value="">Todos</option>
@@ -496,7 +549,7 @@ export function ListaInformes() {
             <label className="text-[11px] font-bold text-on-surface-variant block mb-0.5">Equipo</label>
             <select
               value={filtroEquipo}
-              onChange={(e) => setFiltroEquipo(e.target.value)}
+              onChange={(e) => { setFiltroEquipo(e.target.value); setPagina(1); }}
               className={filtroBarClass}
             >
               <option value="">Todos</option>
@@ -530,7 +583,7 @@ export function ListaInformes() {
       ) : null}
       <div className="flex items-center justify-between">
         <p className="text-[12px] font-bold text-on-surface-variant hidden md:block">
-          {informes.length} informe{informes.length === 1 ? "" : "s"}
+          {totalMostrado} informe{totalMostrado === 1 ? "" : "s"}
           {tieneFiltros ? " (filtrado)" : ""}
         </p>
         <button
@@ -555,7 +608,19 @@ export function ListaInformes() {
 
       {panelFiltros}
 
-      {informes.length === 0 && tieneFiltros ? (
+      {falloPagina ? (
+        <div className="rounded-lg border border-error bg-error-container px-3 py-2 text-[12px] text-error">
+          No se pudieron traer los informes del servidor. Revisá la conexión y tocá Actualizar.
+        </div>
+      ) : null}
+
+      {informes.length === 0 && cargandoPagina ? (
+        <div className="p-lg bg-white border border-outline-variant rounded-lg text-center" role="status">
+          <p className="text-body-lg text-on-surface-variant">Buscando informes…</p>
+        </div>
+      ) : null}
+
+      {informes.length === 0 && tieneFiltros && !cargandoPagina && !falloPagina ? (
         <div className="p-lg bg-white border border-outline-variant rounded-lg text-center">
           <p className="text-body-lg text-on-surface-variant">
             No hay informes que coincidan con los filtros.
@@ -571,7 +636,7 @@ export function ListaInformes() {
       ) : null}
 
       {/* Vista PC: tabla de ancho completo */}
-      <div className="hidden lg:block overflow-x-auto">
+      <div className={`hidden lg:block overflow-x-auto transition-opacity ${cargandoPagina ? "opacity-60" : ""}`} aria-busy={cargandoPagina}>
         <table className="w-full border-collapse bg-white border border-outline-variant rounded-lg shadow-sm">
           <thead>
             <tr className="text-left text-[11px] uppercase tracking-wider text-on-surface-variant border-b border-outline-variant">
@@ -688,7 +753,7 @@ export function ListaInformes() {
       </div>
 
       {/* Vista móvil: tarjetas */}
-      <div className="space-y-sm lg:hidden">
+      <div className={`space-y-sm lg:hidden transition-opacity ${cargandoPagina ? "opacity-60" : ""}`} aria-busy={cargandoPagina}>
          {informes.map((inf, index) => {
           const tipo = etiquetaTipo.get(inf.tipo_equipo) ?? inf.tipo_equipo;
           const esLocal = idsLocales.has(inf.id);
@@ -796,6 +861,34 @@ export function ListaInformes() {
           );
         })}
       </div>
+
+      {online && totalServidor > 0 ? (
+        <nav aria-label="Páginas de informes" className="flex items-center justify-between gap-2 pt-1">
+          <button
+            type="button"
+            onClick={() => irAPagina(pagina - 1)}
+            disabled={pagina <= 1}
+            className="min-h-[40px] rounded border border-outline-variant px-3 text-[12px] font-bold uppercase tracking-wider text-primary active:scale-95 transition-all disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Anterior
+          </button>
+          <p className="text-center text-[12px] font-bold text-on-surface-variant">
+            Página {Math.min(pagina, totalPaginas)} de {totalPaginas}
+            <span className="block text-[11px] font-normal">
+              {totalMostrado} informe{totalMostrado === 1 ? "" : "s"}
+              {tieneFiltros ? " (filtrado)" : ""}
+            </span>
+          </p>
+          <button
+            type="button"
+            onClick={() => irAPagina(pagina + 1)}
+            disabled={pagina >= totalPaginas}
+            className="min-h-[40px] rounded border border-outline-variant px-3 text-[12px] font-bold uppercase tracking-wider text-primary active:scale-95 transition-all disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Siguiente
+          </button>
+        </nav>
+      ) : null}
     </div>
   );
 }

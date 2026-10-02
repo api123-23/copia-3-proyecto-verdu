@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { navegar } from "@/lib/hashRuta";
+import { usePerfil } from "@/lib/usePerfil";
 import {
   enviarPendientes,
   marcarVisto,
@@ -48,6 +49,7 @@ type Caja = { top: number; left: number; width: number; height: number };
 
 export function Tutorial({ uid }: { uid: string | null }) {
   const activo = useRecorridoActivo();
+  const { esObservador } = usePerfil();
   const [pasos, setPasos] = useState<Paso[]>([]);
   const [indice, setIndice] = useState(0);
   const [caja, setCaja] = useState<Caja | null>(null);
@@ -62,6 +64,12 @@ export function Tutorial({ uid }: { uid: string | null }) {
     window.addEventListener("online", alConectar);
     return () => window.removeEventListener("online", alConectar);
   }, [uid]);
+
+  // El observador no puede abrir la carga de informes: un repaso pedido que
+  // quedó pendiente no tiene adónde seguir y se descarta.
+  useEffect(() => {
+    if (esObservador) pedirRepasoInforme(false);
+  }, [esObservador]);
 
   // Al iniciar un recorrido se arma la lista con los pasos que aplican.
   const [recorridoPrevio, setRecorridoPrevio] = useState(activo);
@@ -112,8 +120,9 @@ export function Tutorial({ uid }: { uid: string | null }) {
     const { recorrido, repaso } = activo;
     terminarRecorrido();
     if (repaso) {
-      // Repaso desde el menú: después de la pantalla principal sigue el informe.
-      if (!salteado && recorrido === "lista") {
+      // Repaso desde el menú: después de la pantalla principal sigue el informe
+      // (el observador no carga informes: para él termina acá).
+      if (!salteado && recorrido === "lista" && !esObservador) {
         pedirRepasoInforme(true);
         navegar("#/informe/nuevo");
       } else {
@@ -123,7 +132,7 @@ export function Tutorial({ uid }: { uid: string | null }) {
       return;
     }
     if (uid) void marcarVisto(uid, salteado ? ["lista", "informe"] : [recorrido]);
-  }, [activo, uid]);
+  }, [activo, uid, esObservador]);
 
   useEffect(() => {
     if (!activo) return;

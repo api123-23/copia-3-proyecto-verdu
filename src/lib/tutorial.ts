@@ -121,3 +121,25 @@ export function repasoInformePendiente(): boolean {
     return false;
   }
 }
+
+// ---- La lista de informes terminó su primera carga ----
+// El recorrido de la pantalla principal espera a que la lista termine de cargar
+// (sin esto arrancaba sobre las tarjetas de carga, salteaba los pasos del
+// informe y quedaba marcado como visto sin haberse mostrado completo).
+let listaCargada = false;
+const oyentesLista = new Set<() => void>();
+export function marcarListaCargada(cargada: boolean) {
+  if (listaCargada === cargada) return;
+  listaCargada = cargada;
+  oyentesLista.forEach((o) => o());
+}
+export function useListaCargada(): boolean {
+  return useSyncExternalStore(
+    (o) => {
+      oyentesLista.add(o);
+      return () => oyentesLista.delete(o);
+    },
+    () => listaCargada,
+    () => false
+  );
+}
