@@ -381,6 +381,7 @@ end $$;
 
 -- VEHÍCULOS: inspección de batería pasa a Ok/Mal (legacy si/no/alto/bajo)
 select public.dropar_checks_de_columna('informes_vehiculos', 'estado_bateria');
+-- seguro: convierte valores viejos (si/no) y conserva intactos los válidos (ok/mal).
 update informes_vehiculos
 set estado_bateria = case
   when lower(trim(estado_bateria)) = 'si' then 'ok'
@@ -393,6 +394,7 @@ alter table informes_vehiculos add constraint informes_vehiculos_estado_bateria_
 
 -- MOTODES: batería también pasa a Ok/Mal
 select public.dropar_checks_de_columna('informes_motocompresor', 'estado_bateria');
+-- seguro: convierte valores viejos (si/no) y conserva intactos los válidos (ok/mal/no_tiene).
 update informes_motocompresor
 set estado_bateria = case
   when lower(trim(estado_bateria)) = 'si' then 'ok'
@@ -424,6 +426,7 @@ alter table informes_compresor drop column if exists tension_linea_f3;
 
 -- MOTORCOMPRESOR: aceite unidad pasa a ok/bajo/alto (legacy si/no)
 select public.dropar_checks_de_columna('informes_motocompresor', 'aceite_unidad');
+-- seguro: solo cambia los valores viejos si/no; cualquier otro valor queda igual.
 update informes_motocompresor set aceite_unidad = case
   when aceite_unidad = 'si' then 'ok'
   when aceite_unidad = 'no' then 'bajo'
@@ -435,6 +438,7 @@ alter table informes_motocompresor add constraint informes_motocompresor_aceite_
 -- de unidad es un control diferente y se conserva.
 alter table informes_compresor drop column if exists aceite_unidad;
 select public.dropar_checks_de_columna('informes_compresor', 'perdida_aceite_unidad');
+-- seguro: conserva intactos los valores válidos (si/no).
 update informes_compresor set perdida_aceite_unidad = case
   when lower(trim(perdida_aceite_unidad)) = 'si' then 'si'
   when lower(trim(perdida_aceite_unidad)) = 'no' then 'no'
@@ -489,17 +493,30 @@ update informes_grupo_electrogeno set ge_funcionamiento_perdidas_aceite = case
 alter table informes_grupo_electrogeno add constraint informes_grupo_electrogeno_ge_funcionamiento_perdidas_aceite_check
   check (ge_funcionamiento_perdidas_aceite in ('si', 'no'));
 
--- GE: amperaje de fases pasa a numérico
-select public.dropar_checks_de_columna('informes_grupo_electrogeno', 'ge_funcionamiento_amperaje_f1');
-select public.dropar_checks_de_columna('informes_grupo_electrogeno', 'ge_funcionamiento_amperaje_f2');
-select public.dropar_checks_de_columna('informes_grupo_electrogeno', 'ge_funcionamiento_amperaje_f3');
-update informes_grupo_electrogeno set
-  ge_funcionamiento_amperaje_f1 = null,
-  ge_funcionamiento_amperaje_f2 = null,
-  ge_funcionamiento_amperaje_f3 = null;
-alter table informes_grupo_electrogeno alter column ge_funcionamiento_amperaje_f1 type numeric(10, 2) using ge_funcionamiento_amperaje_f1::numeric;
-alter table informes_grupo_electrogeno alter column ge_funcionamiento_amperaje_f2 type numeric(10, 2) using ge_funcionamiento_amperaje_f2::numeric;
-alter table informes_grupo_electrogeno alter column ge_funcionamiento_amperaje_f3 type numeric(10, 2) using ge_funcionamiento_amperaje_f3::numeric;
+-- GE: amperaje de fases pasa a numérico (migración vieja, de texto a número).
+-- IMPORTANTE: solo se convierte si la columna todavía NO es numérica, y nunca se
+-- vacían valores. (Antes había acá un "update ... set amperaje = null" sin
+-- condición que borraba los amperajes de TODOS los informes cada vez que se
+-- ejecutaba este archivo.)
+do $$
+declare
+  col text;
+begin
+  foreach col in array array['ge_funcionamiento_amperaje_f1', 'ge_funcionamiento_amperaje_f2', 'ge_funcionamiento_amperaje_f3'] loop
+    if exists (
+      select 1 from information_schema.columns
+      where table_schema = 'public' and table_name = 'informes_grupo_electrogeno'
+        and column_name = col and data_type <> 'numeric'
+    ) then
+      perform public.dropar_checks_de_columna('informes_grupo_electrogeno', col);
+      -- Texto que no es un número válido no se puede convertir: queda vacío.
+      execute format(
+        'alter table public.informes_grupo_electrogeno alter column %I type numeric(10, 2) using (case when trim(%I::text) ~ ''^-?[0-9]+([.,][0-9]+)?$'' then replace(trim(%I::text), '','', ''.'')::numeric else null end)',
+        col, col, col
+      );
+    end if;
+  end loop;
+end $$;
 
 -- GE: inspección de batería pasa a Ok/Mal (legacy si/no)
 select public.dropar_checks_de_columna('informes_grupo_electrogeno', 'ge_funcionamiento_inspeccion_bateria');
@@ -838,6 +855,7 @@ declare
   numero integer;
   tabla text;
   columnas_update text;
+  desconocidos text;
 begin
   if uid is null then
     raise exception 'Sesión no autenticada' using errcode = '42501';
@@ -883,6 +901,19 @@ begin
     numero := public.tomar_numero_informe();
   end if;
 
+  -- Ningún dato se descarta en silencio: si llega un campo que la base no
+  -- tiene, se rechaza el envío (el informe queda en el celular con el error a
+  -- la vista) en lugar de guardar el informe sin ese dato.
+  select string_agg(k, ', ') into desconocidos
+  from jsonb_object_keys(p_informe) k
+  where not exists (
+    select 1 from information_schema.columns c
+    where c.table_schema = 'public' and c.table_name = 'informes_generales' and c.column_name = k
+  );
+  if desconocidos is not null then
+    raise exception 'La base no tiene estos datos del informe: %', desconocidos using errcode = '22023';
+  end if;
+
   p_informe := jsonb_set(p_informe, '{numero_registro}', to_jsonb(numero), true);
   p_informe := jsonb_set(p_informe, '{tecnico_id}', to_jsonb(tecnico), true);
   if exists (
@@ -922,6 +953,15 @@ begin
     -- Los valores técnicos se guardan SIEMPRE en el informe que se sincroniza
     -- (nunca en otro, aunque el pedido traiga otro informe_id).
     p_valores := jsonb_set(p_valores, '{informe_id}', to_jsonb((p_informe->>'id')::uuid), true);
+    select string_agg(k, ', ') into desconocidos
+    from jsonb_object_keys(p_valores) k
+    where not exists (
+      select 1 from information_schema.columns c
+      where c.table_schema = 'public' and c.table_name = tabla and c.column_name = k
+    );
+    if desconocidos is not null then
+      raise exception 'La base no tiene estos valores técnicos: %', desconocidos using errcode = '22023';
+    end if;
     select string_agg(format('%1$I = EXCLUDED.%1$I', column_name), ', ' order by ordinal_position)
       into columnas_update
     from information_schema.columns

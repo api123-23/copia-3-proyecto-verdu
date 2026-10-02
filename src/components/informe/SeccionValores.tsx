@@ -5,6 +5,7 @@ import { aplica, valoresVaciosGE } from "@/lib/informes";
 import {
   OPCIONES_BAJA_ALTA,
   CampoNumero,
+  InputNumero,
   GrupoTitulo,
   ItemSelect,
   ItemSelectFull,
@@ -81,14 +82,11 @@ function SeccionValoresGE({
               {(["ge_funcionamiento_amperaje_f1", "ge_funcionamiento_amperaje_f2", "ge_funcionamiento_amperaje_f3"] as const).map((campo, i) => (
                 <div key={campo} data-campo={campo} data-validation-label={`Amperaje F${i + 1}`} className="flex-1 flex items-center gap-1">
                   <span className="text-[10px]">F{i + 1}</span>
-                  <input
+                  <InputNumero
                     className="input-technical w-full h-[22px] py-0 px-1 text-[11px] text-center text-data-mono font-data-mono"
-                    type="number"
-                    inputMode="decimal"
-                    onWheel={(e) => e.currentTarget.blur()}
                     placeholder="A"
-                    value={valoresGE[campo] ?? ""}
-                    onChange={(e) => setGE(campo)(e.target.value === "" ? null : Number(e.target.value))}
+                    valor={valoresGE[campo] ?? null}
+                    onChange={(v) => setGE(campo)(v)}
                   />
                 </div>
               ))}
@@ -97,26 +95,20 @@ function SeccionValoresGE({
           <ItemSelectFull campo="ge_funcionamiento_tension_linea_carga" etiqueta="21. Tensión de línea con carga" opciones={OPCIONES_BAJA_ALTA} valor={valoresGE.ge_funcionamiento_tension_linea_carga} onChange={setGE("ge_funcionamiento_tension_linea_carga")} />
           <div data-campo="ge_funcionamiento_temp_ambiente" data-validation-label="22. Temperatura ambiente" className="flex justify-between items-center bg-surface-container-low p-1.5 rounded">
             <span className="text-body-md font-body-md text-[12px]">22. Temperatura ambiente</span>
-            <input
+            <InputNumero
               className="input-technical w-16 h-[22px] py-0 px-1 text-[11px] text-center text-data-mono font-data-mono"
-              type="number"
-              inputMode="decimal"
-              onWheel={(e) => e.currentTarget.blur()}
               placeholder="°C"
-              value={valoresGE.ge_funcionamiento_temp_ambiente ?? ""}
-              onChange={(e) => onChangeGE({ ge_funcionamiento_temp_ambiente: e.target.value === "" ? null : Number(e.target.value) })}
+              valor={valoresGE.ge_funcionamiento_temp_ambiente ?? null}
+              onChange={(v) => onChangeGE({ ge_funcionamiento_temp_ambiente: v })}
             />
           </div>
            <div data-campo="ge_funcionamiento_temp_refrigerante" data-validation-label="23. Temperatura líquido refrigerante" className="flex justify-between items-center bg-surface-container-low p-1.5 rounded">
              <span className="text-body-md font-body-md text-[12px]">23. Temperatura líquido refrigerante</span>
-             <input
+             <InputNumero
                className="input-technical w-16 h-[22px] py-0 px-1 text-[11px] text-center text-data-mono font-data-mono"
-               type="number"
-               inputMode="decimal"
-               onWheel={(e) => e.currentTarget.blur()}
                placeholder="°C"
-               value={valoresGE.ge_funcionamiento_temp_refrigerante ?? ""}
-               onChange={(e) => onChangeGE({ ge_funcionamiento_temp_refrigerante: e.target.value === "" ? null : Number(e.target.value) })}
+               valor={valoresGE.ge_funcionamiento_temp_refrigerante ?? null}
+               onChange={(v) => onChangeGE({ ge_funcionamiento_temp_refrigerante: v })}
              />
            </div>
            <ItemSelectFull campo="ge_funcionamiento_inspeccion_bateria" etiqueta="24. Inspección de batería" opciones={OPCIONES_OK_MAL} valor={valoresGE.ge_funcionamiento_inspeccion_bateria} onChange={setGE("ge_funcionamiento_inspeccion_bateria")} />
@@ -158,7 +150,6 @@ export default function SeccionValores({
   const esCompresor = tipo === "compresor";
   const esMotocompresor = tipo === "motocompresor";
   const esVehiculo = tipo === "vehiculos" || tipo === "maquinas_viales";
-  const esMaquinaVial = tipo === "maquinas_viales";
 
   const bloqueDetenido =
     aplica(tipo, "horometro") ||
@@ -231,16 +222,13 @@ export default function SeccionValores({
               {aplica(tipo, "conec_purga") ? (
                    <ItemSelect campo="conec_purga" className={esSecadores ? "field-mobile-wide" : ""} etiqueta={esSecadores ? "Conexión de purga" : "Conec. Purga"} opciones={OPCIONES_SI_NO} valor={valores.conec_purga} onChange={set("conec_purga")} />
               ) : null}
-              {esVehiculo ? (
+              {/* Cada campo se muestra solo si se guarda para este equipo (CAMPOS_POR_TIPO). */}
+              {aplica(tipo, "aceite_caja") || aplica(tipo, "aceite_diferencial") || aplica(tipo, "aceite_hidraulico") || aplica(tipo, "aceite_convertidor") ? (
                 <>
-                  <ItemSelect campo="aceite_caja" etiqueta="Aceite Caja" opciones={OPCIONES_OPTIMO_ALTO_BAJO} valor={valores.aceite_caja} onChange={set("aceite_caja")} />
-                  <ItemSelect campo="aceite_diferencial" etiqueta="Aceite Diferencial" opciones={OPCIONES_OPTIMO_ALTO_BAJO} valor={valores.aceite_diferencial} onChange={set("aceite_diferencial")} />
-                  {esMaquinaVial ? (
-                    <>
-                      <ItemSelect campo="aceite_hidraulico" etiqueta="Aceite Hidráulico" opciones={OPCIONES_OPTIMO_ALTO_BAJO} valor={valores.aceite_hidraulico} onChange={set("aceite_hidraulico")} />
-                      <ItemSelect campo="aceite_convertidor" etiqueta="Aceite Convertidor" opciones={OPCIONES_OPTIMO_ALTO_BAJO} valor={valores.aceite_convertidor} onChange={set("aceite_convertidor")} />
-                    </>
-                  ) : null}
+                  {aplica(tipo, "aceite_caja") ? <ItemSelect campo="aceite_caja" etiqueta="Aceite Caja" opciones={OPCIONES_OPTIMO_ALTO_BAJO} valor={valores.aceite_caja} onChange={set("aceite_caja")} /> : null}
+                  {aplica(tipo, "aceite_diferencial") ? <ItemSelect campo="aceite_diferencial" etiqueta="Aceite Diferencial" opciones={OPCIONES_OPTIMO_ALTO_BAJO} valor={valores.aceite_diferencial} onChange={set("aceite_diferencial")} /> : null}
+                  {aplica(tipo, "aceite_hidraulico") ? <ItemSelect campo="aceite_hidraulico" etiqueta="Aceite Hidráulico" opciones={OPCIONES_OPTIMO_ALTO_BAJO} valor={valores.aceite_hidraulico} onChange={set("aceite_hidraulico")} /> : null}
+                  {aplica(tipo, "aceite_convertidor") ? <ItemSelect campo="aceite_convertidor" etiqueta="Aceite Convertidor" opciones={OPCIONES_OPTIMO_ALTO_BAJO} valor={valores.aceite_convertidor} onChange={set("aceite_convertidor")} /> : null}
                 </>
               ) : null}
             </div> : null}
@@ -265,10 +253,10 @@ export default function SeccionValores({
         {bloqueMarcha ? (
           <div className="pt-sm border-t border-outline-variant">
             <SubTitulo>Con Motor en Marcha</SubTitulo>
-            {aplica(tipo, "rpm_min") ? (
+            {aplica(tipo, "rpm_min") || aplica(tipo, "rpm_max") ? (
               <div className="grid grid-cols-2 gap-sm mb-sm border-b border-outline-variant pb-sm">
-                <CampoNumero campo="rpm_min" etiqueta="RPM Min" valor={valores.rpm_min} onChange={set("rpm_min")} />
-                <CampoNumero campo="rpm_max" etiqueta="RPM Max" valor={valores.rpm_max} onChange={set("rpm_max")} />
+                {aplica(tipo, "rpm_min") ? <CampoNumero campo="rpm_min" etiqueta="RPM Min" valor={valores.rpm_min} onChange={set("rpm_min")} /> : null}
+                {aplica(tipo, "rpm_max") ? <CampoNumero campo="rpm_max" etiqueta="RPM Max" valor={valores.rpm_max} onChange={set("rpm_max")} /> : null}
               </div>
             ) : null}
             {aplica(tipo, "tension_linea") ? (

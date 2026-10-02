@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { InformeGeneral } from "@/lib/types";
 import { TIPOS_EQUIPO } from "@/lib/informes";
 import { supabase } from "@/lib/supabase";
-import { Label, Seccion } from "@/components/ui";
+import { InputNumero, Label, Seccion } from "@/components/ui";
 import { Icono } from "@/components/Icono";
 
 type PatchInforme = Partial<InformeGeneral>;
@@ -355,15 +355,11 @@ export function SeccionHoras({
         <Label>
           Total Horas Trabajadas <span className="text-error">*</span>
         </Label>
-        <input
+        <InputNumero
           className="input-technical w-32 text-data-mono font-data-mono h-[28px]"
           placeholder="0.0"
-          type="number"
-          inputMode="decimal"
-          onWheel={(e) => e.currentTarget.blur()}
-          step="0.1"
-          value={informe.horas_trabajadas ?? ""}
-          onChange={(e) => onChange({ horas_trabajadas: e.target.value === "" ? null : Number(e.target.value) })}
+          valor={informe.horas_trabajadas ?? null}
+          onChange={(v) => onChange({ horas_trabajadas: v })}
         />
       </div>
     </Seccion>

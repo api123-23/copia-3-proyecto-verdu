@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 export function Seccion({
   titulo,
@@ -216,6 +216,80 @@ export const OPCIONES_BAJA_ALTA = [
   { value: "alta", label: "Alta" },
 ];
 
+// Patrón de texto permitido mientras se escribe: signo opcional, dígitos y un
+// único separador decimal ("." o ","). Así "12," o "-" no se borran a mitad.
+const PATRON_NUMERO = /^-?\d*([.,]\d*)?$/;
+
+// Convierte el texto del usuario a número (coma → punto). "" / "-" / no finito → null.
+function parsearNumero(texto: string): number | null {
+  const t = texto.trim().replace(",", ".");
+  if (t === "" || t === "-" || t === "." || t === "-.") return null;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : null;
+}
+
+// Texto a mostrar para un valor externo (los del servidor pueden llegar como "85.50").
+function textoDeValor(valor: number | string | null): string {
+  return valor === null || valor === undefined ? "" : String(valor);
+}
+
+// Valor externo normalizado a número para compararlo con lo que se está escribiendo.
+function numeroDeValor(valor: number | string | null): number | null {
+  if (valor === null || valor === undefined) return null;
+  if (typeof valor === "number") return Number.isFinite(valor) ? valor : null;
+  return parsearNumero(valor);
+}
+
+/**
+ * Input numérico tolerante a la coma decimal (teclado iPhone en español).
+ * Usa type="text" + inputMode="decimal": con type="number" el navegador
+ * reporta "" al escribir "12,5" y se perdía el dato en silencio.
+ */
+export function InputNumero({
+  valor,
+  onChange,
+  className,
+  placeholder,
+  "aria-label": ariaLabel,
+}: {
+  valor: number | string | null;
+  onChange: (v: number | null) => void;
+  className?: string;
+  placeholder?: string;
+  "aria-label"?: string;
+}) {
+  const [texto, setTexto] = useState(() => textoDeValor(valor));
+  const [valorPrevio, setValorPrevio] = useState(valor);
+
+  // Si el valor externo cambia (informe cargado, reset) y no coincide con lo
+  // escrito, se sincroniza el texto. Se compara durante el render (sin useEffect).
+  if (valor !== valorPrevio) {
+    setValorPrevio(valor);
+    if (numeroDeValor(valor) !== parsearNumero(texto)) {
+      setTexto(textoDeValor(valor));
+    }
+  }
+
+  return (
+    <input
+      className={className}
+      type="text"
+      inputMode="decimal"
+      autoComplete="off"
+      placeholder={placeholder}
+      aria-label={ariaLabel}
+      value={texto}
+      onChange={(e) => {
+        const nuevo = e.target.value;
+        // Se ignoran las teclas que no forman un número válido.
+        if (!PATRON_NUMERO.test(nuevo)) return;
+        setTexto(nuevo);
+        onChange(parsearNumero(nuevo));
+      }}
+    />
+  );
+}
+
 export function CampoNumero({
   etiqueta,
   valor,
@@ -237,14 +311,21 @@ export function CampoNumero({
     <div data-campo={campo} data-validation-label={etiqueta || undefined}>
        {etiqueta ? <Label>{etiqueta}</Label> : null}
       <div className="relative">
-        <input
-          className={`input-technical text-data-mono font-data-mono h-[28px] ${centrado ? "text-center px-1" : ""} ${sufijo ? "pr-12" : ""}`}
-          type={texto ? "text" : "number"}
-          inputMode={texto ? "text" : "decimal"}
-          onWheel={texto ? undefined : (e) => e.currentTarget.blur()}
-          value={valor ?? ""}
-          onChange={(e) => onChange(e.target.value === "" ? null : texto ? e.target.value : Number(e.target.value))}
-        />
+        {texto ? (
+          <input
+            className={`input-technical text-data-mono font-data-mono h-[28px] ${centrado ? "text-center px-1" : ""} ${sufijo ? "pr-12" : ""}`}
+            type="text"
+            inputMode="text"
+            value={valor ?? ""}
+            onChange={(e) => onChange(e.target.value === "" ? null : e.target.value)}
+          />
+        ) : (
+          <InputNumero
+            className={`input-technical text-data-mono font-data-mono h-[28px] ${centrado ? "text-center px-1" : ""} ${sufijo ? "pr-12" : ""}`}
+            valor={valor}
+            onChange={onChange}
+          />
+        )}
         {sufijo ? (
           <span className="absolute right-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-label-caps font-label-caps">
             {sufijo}

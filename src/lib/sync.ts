@@ -324,9 +324,9 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
 
     const archivosOk = await db.archivos.where("informe_id").equals(informe.id).toArray();
     const firmaTecnico =
-      archivosOk.find((a) => a.tipo === "firma_tecnico")?.url ?? informe.firma_tecnico_url;
+      archivosOk.find((a) => a.tipo === "firma_tecnico")?.url ?? null;
     const firmaCliente =
-      archivosOk.find((a) => a.tipo === "firma_cliente")?.url ?? informe.firma_cliente_url;
+      archivosOk.find((a) => a.tipo === "firma_cliente")?.url ?? null;
 
     const payload = {
       id: informe.id,

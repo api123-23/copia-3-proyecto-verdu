@@ -39,6 +39,7 @@ function texto(valor: unknown): string {
     no: "No",
     ok: "Ok",
     mal: "Mal",
+    no_tiene: "No tiene",
     bajo: "Bajo",
     alta: "Alta",
     alto: "Alto",
@@ -55,6 +56,22 @@ function fecha(iso: string): string {
     month: "2-digit",
     year: "numeric",
   });
+}
+
+// Etiquetas que en pantalla cambian según el tipo de equipo (SeccionValores):
+// se usan antes de caer en CAMPO_LABELS para que el PDF diga lo mismo.
+const ETIQUETAS_PDF_POR_TIPO: Partial<Record<TipoEquipo, Partial<Record<keyof ValoresBase, string>>>> = {
+  compresor: {
+    temp_ambiente: "Temperatura de unidad",
+    perdida_aceite_motor: "Pérdida de aceite de unidad",
+  },
+  motocompresor: {
+    perdida_aceite_motor: "Pérdida Aceite Unidad",
+  },
+};
+
+function etiquetaCampo(tipo: TipoEquipo, campo: keyof ValoresBase): string {
+  return ETIQUETAS_PDF_POR_TIPO[tipo]?.[campo] ?? CAMPO_LABELS[campo];
 }
 
 function nombreEquipo(tipo: TipoEquipo): string {
@@ -85,7 +102,7 @@ function TablaValores({ valores, tipo }: { valores: ValoresBase; tipo: TipoEquip
   return (
     <div className="pdf-tabla-valores">
       {campos.map((campo) => (
-        <Fila key={campo} etiqueta={CAMPO_LABELS[campo]} valor={valores[campo]} />
+        <Fila key={campo} etiqueta={etiquetaCampo(tipo, campo)} valor={valores[campo]} />
       ))}
       {/* Con cantidad impar, una celda vacía cierra el recuadro de la tabla. */}
       {campos.length % 2 === 1 ? <div className="pdf-fila" aria-hidden="true" /> : null}
