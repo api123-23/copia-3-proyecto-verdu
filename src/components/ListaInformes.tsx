@@ -93,7 +93,7 @@ function formatoFecha(iso: string): string {
 
 export function ListaInformes() {
   const { cargando, sesion } = useSesion(true);
-  const { esMaster, esObservador } = usePerfil();
+  const { esMaster, esObservador, perfil } = usePerfil();
   const enLinea = useEnLinea();
   const locales = useLiveQuery(
     () => db.informes.where("estado_sync").notEqual("sincronizado").toArray(),
@@ -383,6 +383,13 @@ export function ListaInformes() {
   const tecnicoNombre = new Map<string, string>();
   for (const t of tecnicos) {
     tecnicoNombre.set(t.id, t.nombre || t.apellido ? `${t.nombre ?? ""} ${t.apellido ?? ""}`.trim() : t.id.slice(0, 8));
+  }
+  // Sin conexión la lista de técnicos no se puede pedir: los informes propios
+  // muestran el nombre de la cuenta (guardado en el celular), no el id.
+  const miUid = sesion?.user.id;
+  const miNombre = `${perfil?.nombre ?? ""} ${perfil?.apellido ?? ""}`.trim() || perfil?.email;
+  if (miUid && miNombre && (!tecnicoNombre.has(miUid) || tecnicoNombre.get(miUid) === miUid.slice(0, 8))) {
+    tecnicoNombre.set(miUid, miNombre);
   }
   // Técnicos que figuran en informes pero no tienen perfil: igual se pueden filtrar.
   const opcionesTecnico = [...tecnicos];
