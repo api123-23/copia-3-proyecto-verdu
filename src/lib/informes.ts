@@ -320,6 +320,7 @@ export const CAMPOS_GE: (keyof InformeGrupoElectrogeno)[] = [
   "ge_funcionamiento_amperaje_f3",
   "ge_funcionamiento_tension_linea_carga",
   "ge_funcionamiento_temp_ambiente",
+  "ge_funcionamiento_temp_refrigerante",
   "ge_funcionamiento_inspeccion_bateria",
   "ge_funcionamiento_accion_electrico",
 ];
@@ -402,8 +403,8 @@ export function normalizarValores(
       if (typeof valor === "string") {
         const limpio = valor.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         if (limpio === "ok" || limpio === "optimo") ge[campo] = "optimo";
-        else if (limpio === "baja") ge[campo] = "baja";
-        else if (limpio === "alta") ge[campo] = "alta";
+        else if (limpio === "baja" || limpio === "bajo") ge[campo] = "baja";
+        else if (limpio === "alta" || limpio === "alto") ge[campo] = "alta";
         else if (valor !== "") ge[campo] = null;
       }
     }

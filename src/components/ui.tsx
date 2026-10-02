@@ -179,6 +179,13 @@ export const OPCIONES_OPTIMO_BAJO_ALTO = [
   { value: "alto", label: "Alto" },
 ];
 
+// Frecuencia y tensión de línea del grupo electrógeno: la base guarda baja/alta.
+export const OPCIONES_OPTIMO_BAJA_ALTA = [
+  { value: "optimo", label: "Óptimo" },
+  { value: "baja", label: "Baja" },
+  { value: "alta", label: "Alta" },
+];
+
 export const OPCIONES_OPTIMO_ALTO_BAJO = [
   { value: "optimo", label: "Óptimo" },
   { value: "alto", label: "Alto" },

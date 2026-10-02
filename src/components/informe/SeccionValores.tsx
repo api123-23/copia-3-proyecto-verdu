@@ -16,6 +16,7 @@ import {
   OPCIONES_OPTIMO_ALTO_BAJO,
   OPCIONES_OK_NO,
   OPCIONES_OPTIMO_BAJO_ALTO,
+  OPCIONES_OPTIMO_BAJA_ALTA,
   OPCIONES_SI_NO,
   OPCIONES_TIEMPO_Y_DELTA,
   Seccion,
@@ -72,8 +73,8 @@ function SeccionValoresGE({
           <ItemSelectFull campo="ge_funcionamiento_perdidas_combustible" etiqueta="15. Pérdidas circuito combustible" opciones={OPCIONES_SI_NO} valor={valoresGE.ge_funcionamiento_perdidas_combustible} onChange={setGE("ge_funcionamiento_perdidas_combustible")} />
           <ItemSelectFull campo="ge_funcionamiento_restriccion_escape" etiqueta="16. Restricc. en el escape" opciones={OPCIONES_SI_NO} valor={valoresGE.ge_funcionamiento_restriccion_escape} onChange={setGE("ge_funcionamiento_restriccion_escape")} />
           <ItemSelectFull campo="ge_funcionamiento_restriccion_aire" etiqueta="17. Restricción en entrada y salida de aire" opciones={OPCIONES_SI_NO} valor={valoresGE.ge_funcionamiento_restriccion_aire} onChange={setGE("ge_funcionamiento_restriccion_aire")} />
-           <ItemSelectFull campo="ge_funcionamiento_frecuencia" etiqueta="18. Frecuencia (medición)" opciones={OPCIONES_OPTIMO_BAJO_ALTO} valor={valoresGE.ge_funcionamiento_frecuencia} onChange={setGE("ge_funcionamiento_frecuencia")} />
-           <ItemSelectFull campo="ge_funcionamiento_tension_linea" etiqueta="19. Tensión de línea" opciones={OPCIONES_OPTIMO_BAJO_ALTO} valor={valoresGE.ge_funcionamiento_tension_linea} onChange={setGE("ge_funcionamiento_tension_linea")} />
+           <ItemSelectFull campo="ge_funcionamiento_frecuencia" etiqueta="18. Frecuencia (medición)" opciones={OPCIONES_OPTIMO_BAJA_ALTA} valor={valoresGE.ge_funcionamiento_frecuencia} onChange={setGE("ge_funcionamiento_frecuencia")} />
+           <ItemSelectFull campo="ge_funcionamiento_tension_linea" etiqueta="19. Tensión de línea" opciones={OPCIONES_OPTIMO_BAJA_ALTA} valor={valoresGE.ge_funcionamiento_tension_linea} onChange={setGE("ge_funcionamiento_tension_linea")} />
           <div className="flex flex-col gap-1 bg-surface-container-low p-1.5 rounded">
             <span className="text-body-md font-body-md text-[12px]">20. Amperaje Fases</span>
             <div className="flex gap-2">

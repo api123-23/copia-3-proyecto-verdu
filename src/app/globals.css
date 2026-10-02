@@ -177,7 +177,7 @@
   .field-status-ok, .field-status-si { background: #eaf8f0; box-shadow: inset 3px 0 0 #32a36f; }
   .field-status-mal, .field-status-no { background: #fff0ef; box-shadow: inset 3px 0 0 #c84b45; }
   .field-status-vsd { background: #eaf2fb; box-shadow: inset 3px 0 0 #2f6db3; }
-  .field-status-bajo, .field-status-alto, .field-status-optimo { background: #fff8e5; box-shadow: inset 3px 0 0 #d19a21; }
+  .field-status-bajo, .field-status-alto, .field-status-baja, .field-status-alta, .field-status-optimo { background: #fff8e5; box-shadow: inset 3px 0 0 #d19a21; }
   .field-binary.field-status-si { background: #dcf7e8; border-color: #45af78; box-shadow: inset 4px 0 0 #23945f; }
   .field-binary.field-status-no { background: #ffe4e1; border-color: #d56b62; box-shadow: inset 4px 0 0 #ba1a1a; }
   .field-binary.field-status-si .select-small,
@@ -434,6 +434,8 @@ html.dark .signature-image { background: white !important; filter: invert(1); }
   .section-values-standard .field-status-no,
   .section-values-standard .field-status-bajo,
   .section-values-standard .field-status-alto,
+  .section-values-standard .field-status-baja,
+  .section-values-standard .field-status-alta,
   .section-values-standard .field-status-optimo,
   .section-values-standard .field-status-empty {
     min-width: 0;
@@ -447,6 +449,8 @@ html.dark .signature-image { background: white !important; filter: invert(1); }
   .section-values-standard .field-status-no > span,
   .section-values-standard .field-status-bajo > span,
   .section-values-standard .field-status-alto > span,
+  .section-values-standard .field-status-baja > span,
+  .section-values-standard .field-status-alta > span,
   .section-values-standard .field-status-optimo > span,
   .section-values-standard .field-status-empty > span {
     min-width: 0;

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { borrarCopiasSincronizadas } from "@/lib/remoto";
-import { usePerfil } from "@/lib/usePerfil";
+import { usePerfil, type PerfilActual } from "@/lib/usePerfil";
 import { limpiarSesionCache } from "@/lib/useSesion";
 import { contarPendientes } from "@/lib/reautenticacion";
 import { iniciarRecorrido } from "@/lib/tutorial";
@@ -149,7 +149,9 @@ export function MenuPerfil({ sesion }: { sesion: Session | null }) {
           ) : modo === "clave" ? (
             <FormCambiarClave onListo={() => setModo(null)} />
           ) : modo === "datos" ? (
-            <FormDatos onListo={() => { setModo(null); refrescar(); }} />
+            // Se arma recién con el perfil cargado: así los campos muestran los
+            // datos actuales y guardar uno no borra el otro.
+            <FormDatos key={perfil ? "con-perfil" : "sin-perfil"} perfil={perfil} onListo={() => { setModo(null); refrescar(); }} />
           ) : (
             <>
               <div className="flex flex-col gap-1">
@@ -223,8 +225,7 @@ export function MenuPerfil({ sesion }: { sesion: Session | null }) {
   );
 }
 
-function FormDatos({ onListo }: { onListo: () => void }) {
-  const { perfil } = usePerfil();
+function FormDatos({ perfil, onListo }: { perfil: PerfilActual; onListo: () => void }) {
   const [nombre, setNombre] = useState(perfil?.nombre ?? "");
   const [apellido, setApellido] = useState(perfil?.apellido ?? "");
   const [error, setError] = useState<string | null>(null);
@@ -234,6 +235,7 @@ function FormDatos({ onListo }: { onListo: () => void }) {
   async function guardar(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!perfil) return;
     if (!nombre.trim() && !apellido.trim()) {
       setError("Completá al menos un campo.");
       return;
@@ -295,7 +297,7 @@ function FormDatos({ onListo }: { onListo: () => void }) {
           <div className="flex gap-1">
             <button
               type="submit"
-              disabled={cargando}
+              disabled={cargando || !perfil}
               className="flex-1 bg-primary text-on-primary rounded-lg px-md py-1.5 text-[13px] font-bold uppercase tracking-wider disabled:opacity-50"
             >
               {cargando ? "Guardando..." : "Guardar"}
