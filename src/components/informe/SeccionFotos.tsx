@@ -5,6 +5,8 @@ import { createPortal } from "react-dom";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, prepararBlob } from "@/lib/db";
 import { urlsFirmadas } from "@/lib/supabase";
+import { useDescargasPendientes } from "@/lib/descargas";
+import { useEnLinea } from "@/lib/useEnLinea";
 import { comprimirImagenWebp } from "@/lib/imagen";
 import type { ArchivoLocal, CategoriaFoto } from "@/lib/types";
 import { Label, Seccion } from "@/components/ui";
@@ -109,6 +111,7 @@ function FotoItem({
     [registro, url]
   );
   const [abierta, setAbierta] = useState(false);
+  const enLinea = useEnLinea();
   const categoria = CATEGORIAS.find((c) => c.value === archivo.categoria)?.label ?? "";
   return (
     <div className="relative">
@@ -119,7 +122,15 @@ function FotoItem({
           className="h-20 w-20 object-cover rounded border border-outline-variant cursor-pointer photo-thumb-in hover:scale-105 hover:shadow-lg transition-all duration-300"
           onClick={() => setAbierta(true)}
         />
-      ) : null}
+      ) : (
+        // La foto todavía no llegó (se está bajando) o no hay señal para traerla.
+        <div
+          role="status"
+          className={`h-20 w-20 rounded border border-outline-variant bg-surface-container flex items-center justify-center text-center text-[10px] leading-tight text-on-surface-variant px-1${enLinea ? " animate-pulse" : ""}`}
+        >
+          {enLinea ? "Cargando…" : "Sin conexión"}
+        </div>
+      )}
       <span className="block text-[10px] text-on-surface-variant mt-xs">{categoria}</span>
       {!cerrado ? (
         <button
@@ -181,6 +192,8 @@ export default function SeccionFotos({
   );
   // Fotos que tienen copia local (offline): esas se muestran desde el
   // dispositivo y no se le pide nada al servidor.
+  // Las que se están bajando al celular no se piden aparte (se bajarían dos veces).
+  const descargando = useDescargasPendientes();
   const idsConBlobLocal = useLiveQuery(
     async () => new Set(await db.blobs.where("id").anyOf((fotos ?? []).map((f) => f.id)).primaryKeys()),
     [fotos]
@@ -188,7 +201,7 @@ export default function SeccionFotos({
   // Rutas en el servidor de las fotos sin copia local: se firman TODAS juntas
   // con un único pedido (antes era un pedido por miniatura).
   const clavePathsRemotos = fotos && idsConBlobLocal
-    ? fotos.filter((f) => f.url && !idsConBlobLocal.has(f.id)).map((f) => f.url as string).sort().join("\n")
+    ? fotos.filter((f) => f.url && !idsConBlobLocal.has(f.id) && !descargando.has(f.id)).map((f) => f.url as string).sort().join("\n")
     : "";
   const [urlsRemotas, setUrlsRemotas] = useState<Record<string, string>>({});
   const [rondaUrls, setRondaUrls] = useState(0);

@@ -5,6 +5,8 @@ import { useLiveQuery } from "dexie-react-hooks";
 import SignaturePad from "signature_pad";
 import { db, prepararBlob } from "@/lib/db";
 import { urlsFirmadas } from "@/lib/supabase";
+import { useDescargasPendientes } from "@/lib/descargas";
+import { useEnLinea } from "@/lib/useEnLinea";
 import type { InformeGeneral, TipoArchivo } from "@/lib/types";
 import { Seccion } from "@/components/ui";
 
@@ -157,7 +159,10 @@ function BloqueFirma({
     [existente]
   );
   const [remota, setRemota] = useState<{ path: string; url: string } | null>(null);
-  const pathRemoto = registro === null ? existente?.url ?? null : null;
+  const descargando = useDescargasPendientes();
+  const enLinea = useEnLinea();
+  // Mientras se baja al celular no se pide aparte (se bajaría dos veces).
+  const pathRemoto = registro === null && existente && !descargando.has(existente.id) ? existente.url ?? null : null;
   const remoteUrl = remota && remota.path === pathRemoto ? remota.url : null;
 
   useEffect(() => {
@@ -228,6 +233,24 @@ function BloqueFirma({
             alt={titulo}
             className="signature-image h-20 flex-1 object-contain bg-white rounded border border-outline-variant"
           />
+          <button
+            type="button"
+            className="text-body-md text-on-surface-variant underline px-2 py-1 min-h-[44px]"
+            onClick={limpiar}
+          >
+            Rehacer
+          </button>
+        </div>
+      ) : existente?.url ? (
+        // Firma guardada en el servidor que todavía no llegó: nunca se muestra
+        // como "sin firma" (tocar ahí la reemplazaría).
+        <div className="flex items-center gap-sm">
+          <div
+            role="status"
+            className={`h-20 flex-1 bg-white rounded border border-outline-variant flex items-center justify-center text-on-surface-variant text-body-md${enLinea ? " animate-pulse" : ""}`}
+          >
+            {enLinea ? "Cargando firma…" : "Firma guardada (se ve con conexión)"}
+          </div>
           <button
             type="button"
             className="text-body-md text-on-surface-variant underline px-2 py-1 min-h-[44px]"

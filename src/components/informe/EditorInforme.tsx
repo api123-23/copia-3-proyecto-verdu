@@ -19,6 +19,7 @@ import {
 } from "@/lib/informes";
 import { bloquearInformeSync, desbloquearInformeSync, intentarSync } from "@/lib/sync";
 import { Icono } from "@/components/Icono";
+import { descargarArchivosFaltantes } from "@/lib/descargas";
 import { actualizadoEnServidor, copiaLocalVigente, descartarCopiaLocal, traerInformeRemoto } from "@/lib/remoto";
 import { EVENTO_GUARDAR_ANTES_DE_RECARGAR, type EsperarGuardado } from "@/lib/recarga";
 import { navegar } from "@/lib/hashRuta";
@@ -157,7 +158,7 @@ export function EditorInforme({ id }: { id: string }) {
         }
       }
       if (!inf && (typeof navigator === "undefined" || navigator.onLine)) {
-        const traido = await traerInformeRemoto(id).catch(() => false);
+        const traido = await traerInformeRemoto(id, { esperarArchivos: false }).catch(() => false);
         if (traido) inf = await db.informes.get(id).catch(() => undefined);
       }
       if (!inf) {
@@ -182,6 +183,9 @@ export function EditorInforme({ id }: { id: string }) {
       setInforme(inf);
       setValores(val);
       setValoresGE(anexaGE);
+      // Fotos/firmas ya subidas que este celular todavía no tiene (p. ej. se
+      // salió antes de que terminaran de bajar): se completan en segundo plano.
+      if (typeof navigator === "undefined" || navigator.onLine) void descargarArchivosFaltantes(inf.id);
     })();
     return () => {
       activo = false;

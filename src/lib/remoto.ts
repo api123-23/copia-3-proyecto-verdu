@@ -1,10 +1,9 @@
-import { db, prepararBlob } from "./db";
+import { db } from "./db";
+import { descargarArchivosFaltantes } from "./descargas";
 import { supabase } from "./supabase";
 import { normalizarValores } from "./informes";
 import { tablaAnexa } from "./sync";
 import type { CategoriaFoto, InformeGeneral, InformeGrupoElectrogeno, TipoEquipo, ValoresBase } from "./types";
-
-const BUCKET = "informe-archivos";
 
 type FilaServidor = Record<string, unknown>;
 
@@ -139,7 +138,7 @@ export async function listarRemotos(pagina: number, filtros: FiltrosListado): Pr
   return { informes, total: count ?? desde + informes.length };
 }
 
-export async function traerInformeRemoto(id: string): Promise<boolean> {
+export async function traerInformeRemoto(id: string, opciones: { esperarArchivos?: boolean } = {}): Promise<boolean> {
   const { data, error } = await supabase()
     .from("informes_generales")
     .select("*")
@@ -221,17 +220,10 @@ export async function traerInformeRemoto(id: string): Promise<boolean> {
     }
   );
 
-  for (const a of archivosMeta) {
-    const idArchivo = String(a.id);
-    const tieneBlob = await db.blobs.get(idArchivo);
-    if (tieneBlob) continue;
-    try {
-      const { data: descargado } = await supabase().storage.from(BUCKET).download(String(a.url));
-      if (descargado) await db.blobs.put(await prepararBlob(idArchivo, descargado));
-    } catch {
-      /* FotoItem usa signed URL como fallback */
-    }
-  }
+  // Fotos y firmas: el editor no las espera (se abre con los datos y las
+  // imágenes llegan de a poco); el resto, como antes, espera a que bajen.
+  const descarga = descargarArchivosFaltantes(id);
+  if (opciones.esperarArchivos !== false) await descarga;
 
   return true;
 }
