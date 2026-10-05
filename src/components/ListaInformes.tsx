@@ -34,10 +34,11 @@ const BADGE_EN_ESPERA = { label: "En espera (sin señal)", clase: "bg-surface-co
 
 const ESTADOS_EN_CURSO = new Set(["pendiente", "subiendo_imagenes", "imagenes_ok"]);
 
-function badgeSync(inf: InformeGeneral, enLinea: boolean): { label: string; clase: string } {
+function badgeSync(inf: InformeGeneral, enLinea: boolean, avance?: string): { label: string; clase: string } {
   if (!inf.listo_para_enviar) return BADGE_BORRADOR;
   const estado = BADGE_SYNC[inf.estado_sync] ? inf.estado_sync : "pendiente";
   if (!enLinea && ESTADOS_EN_CURSO.has(estado)) return BADGE_EN_ESPERA;
+  if (estado === "subiendo_imagenes" && avance) return { ...BADGE_SYNC[estado], label: `Subiendo fotos y firmas ${avance}` };
   return BADGE_SYNC[estado];
 }
 
@@ -99,6 +100,18 @@ export function ListaInformes() {
     () => db.informes.where("estado_sync").notEqual("sincronizado").toArray(),
     []
   );
+  // Avance de la subida ("3 de 7"): cada archivo queda con su ruta al terminar de subirse.
+  const avanceSubida = useLiveQuery(async () => {
+    const ids = (locales ?? []).filter((i) => i.estado_sync === "subiendo_imagenes").map((i) => i.id);
+    const avance = new Map<string, string>();
+    if (ids.length === 0) return avance;
+    const archivos = await db.archivos.where("informe_id").anyOf(ids).toArray();
+    for (const id of ids) {
+      const delInforme = archivos.filter((a) => a.informe_id === id);
+      if (delInforme.length) avance.set(id, `${delInforme.filter((a) => a.url).length} de ${delInforme.length}`);
+    }
+    return avance;
+  }, [locales]);
   // Página del servidor (30 informes) y la consulta (página + filtros) a la que corresponde.
   const [resultado, setResultado] = useState<ResultadoPagina | null>(null);
   const [falloClave, setFalloClave] = useState<string | null>(null);
@@ -663,7 +676,7 @@ export function ListaInformes() {
              {informes.map((inf, index) => {
               const tipo = etiquetaTipo.get(inf.tipo_equipo) ?? inf.tipo_equipo;
               const esLocal = idsLocales.has(inf.id);
-              const sync = esLocal ? badgeSync(inf, enLinea) : null;
+              const sync = esLocal ? badgeSync(inf, enLinea, avanceSubida?.get(inf.id)) : null;
               const esBorradorPc = esLocal && !inf.listo_para_enviar;
               return (
                 <tr
@@ -766,7 +779,7 @@ export function ListaInformes() {
          {informes.map((inf, index) => {
           const tipo = etiquetaTipo.get(inf.tipo_equipo) ?? inf.tipo_equipo;
           const esLocal = idsLocales.has(inf.id);
-          const sync = esLocal ? badgeSync(inf, enLinea) : null;
+          const sync = esLocal ? badgeSync(inf, enLinea, avanceSubida?.get(inf.id)) : null;
           const esBorrador = esLocal && !inf.listo_para_enviar;
           const fecha = formatoFecha(inf.fecha_hora);
           return (
