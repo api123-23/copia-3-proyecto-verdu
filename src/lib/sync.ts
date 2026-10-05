@@ -2,6 +2,7 @@ import { db } from "./db";
 import { supabase } from "./supabase";
 import { CAMPOS_GE, cargarAnexa, cargarAnexaGE, construirAnexa, normalizarValores } from "./informes";
 import { estadoSesionActual, pedirVerificacionSesion } from "./reautenticacion";
+import { registrarError } from "./registroErrores";
 import type { ArchivoLocal, InformeGeneral, TipoEquipo, ValoresBase } from "./types";
 
 const BUCKET = "informe-archivos";
@@ -305,6 +306,7 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
       if (!registro) {
         if (await descartarArchivoPerdido(informe.id, archivo)) {
           console.error(`Sync ${informe.id}: falta la imagen local del archivo ${archivo.id}; el informe volvió a borrador.`);
+          registrarError("archivo", `Falta la imagen local del archivo ${archivo.id} (${archivo.tipo}); el informe volvió a borrador`, informe.id);
           return;
         }
         // El editor reemplazó o borró este archivo mientras tanto: se sigue
@@ -475,6 +477,7 @@ async function sincronizarInforme(informeOriginal: InformeGeneral) {
   } catch (e) {
     const mensaje = mensajeDe(e);
     console.error(`Sync ${informe.id}:`, mensaje);
+    registrarError("sync", mensaje, informe.id);
     if (/jwt|token|not authorized|unauthorized|401|permission denied|row-level security/i.test(mensaje)) {
       pedirVerificacionSesion();
     }

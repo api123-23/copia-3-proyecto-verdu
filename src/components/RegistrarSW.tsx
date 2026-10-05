@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { recargarGuardando } from "@/lib/recarga";
+import { enviarErroresPendientes, registrarError } from "@/lib/registroErrores";
 
 const INTERVALO_BUSQUEDA_MS = 30 * 60 * 1000;
 
@@ -41,16 +42,23 @@ export function RegistrarSW() {
     // Solo cuando falta un archivo de la propia app (pasa tras publicar una
     // versión nueva). Un corte de red común ("Failed to fetch") NO recarga:
     // eso interrumpía al técnico en medio de una firma.
-    const recargarSiFallaChunk = (mensaje: string) => {
-      if (!/ChunkLoadError|Failed to load chunk|Loading chunk|dynamically imported module|Importing a module script failed/i.test(mensaje)) return;
+    const recargarSiFallaChunk = (mensaje: string, error?: unknown) => {
+      if (!/ChunkLoadError|Failed to load chunk|Loading chunk|dynamically imported module|Importing a module script failed/i.test(mensaje)) {
+        // Cualquier otro error inesperado queda registrado (ver registroErrores).
+        registrarError("app", error ?? mensaje);
+        return;
+      }
       if (sessionStorage.getItem("verdu-recargando") === "1") return;
       sessionStorage.setItem("verdu-recargando", "1");
       void recargarGuardando();
     };
     const onRejection = (e: PromiseRejectionEvent) => {
-      recargarSiFallaChunk(String(e.reason?.message ?? e.reason ?? ""));
+      recargarSiFallaChunk(String(e.reason?.message ?? e.reason ?? ""), e.reason);
     };
-    const onError = (e: ErrorEvent) => recargarSiFallaChunk(e.message ?? "");
+    const onError = (e: ErrorEvent) => recargarSiFallaChunk(e.message ?? "", e.error);
+    // Errores guardados sin señal (o de una sesión anterior): se mandan ahora y al volver la conexión.
+    void enviarErroresPendientes();
+    window.addEventListener("online", enviarErroresPendientes);
     window.addEventListener("unhandledrejection", onRejection);
     window.addEventListener("error", onError);
     const limpiarMarca = () => sessionStorage.removeItem("verdu-recargando");
@@ -62,6 +70,7 @@ export function RegistrarSW() {
       window.removeEventListener("load", registrar);
       document.removeEventListener("visibilitychange", buscarActualizacion);
       window.removeEventListener("unhandledrejection", onRejection);
+      window.removeEventListener("online", enviarErroresPendientes);
       window.removeEventListener("error", onError);
       window.removeEventListener("load", limpiarMarca);
     };

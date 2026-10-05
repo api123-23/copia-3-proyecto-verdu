@@ -1414,3 +1414,39 @@ create policy storage_update on storage.objects for update to authenticated
 drop policy if exists storage_delete on storage.objects;
 create policy storage_delete on storage.objects for delete to authenticated
   using (bucket_id = 'informe-archivos');
+
+-- ============================================================
+-- Errores de la app: los celulares registran fallas (envíos que no se
+-- pudieron completar, fotos perdidas, errores inesperados) para detectarlas
+-- sin que el técnico tenga que avisar. Tabla NUEVA e independiente: no toca
+-- informes ni ninguna otra tabla. Cada usuario solo puede AGREGAR errores
+-- propios y ver los suyos; el master los ve todos; nadie los edita ni borra
+-- desde la app.
+-- No guarda datos de clientes ni del contenido de los informes.
+-- ============================================================
+create table if not exists public.errores_app (
+  id bigint generated always as identity primary key,
+  creado_en timestamptz not null default now(),
+  usuario_id uuid default auth.uid(),
+  origen text not null default 'app' check (origen in ('app', 'sync', 'archivo')),
+  mensaje text not null check (char_length(mensaje) between 1 and 500),
+  pantalla text check (char_length(pantalla) <= 200),
+  informe_id uuid,
+  version text check (char_length(version) <= 40),
+  dispositivo text check (char_length(dispositivo) <= 300)
+);
+create index if not exists idx_errores_app_creado on public.errores_app (creado_en desc);
+
+alter table public.errores_app enable row level security;
+revoke all on table public.errores_app from anon;
+revoke update, delete, truncate on table public.errores_app from authenticated;
+grant select, insert on table public.errores_app to authenticated;
+
+drop policy if exists errores_app_insert_propio on public.errores_app;
+create policy errores_app_insert_propio on public.errores_app for insert to authenticated
+  with check (usuario_id = (select auth.uid()));
+-- (Ver los propios evita que el insert falle si el servidor devuelve la fila guardada.)
+drop policy if exists errores_app_select_master on public.errores_app;
+drop policy if exists errores_app_select on public.errores_app;
+create policy errores_app_select on public.errores_app for select to authenticated
+  using (usuario_id = (select auth.uid()) or (select public.rol_actual()) = 'master');
