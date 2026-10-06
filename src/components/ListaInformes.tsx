@@ -74,6 +74,29 @@ async function descartarBorrador(id: string): Promise<void> {
 }
 
 type Tecnico = { id: string; nombre: string | null; apellido: string | null; rol: string };
+
+// Lista de técnicos guardada en el celular (por cuenta): los nombres se ven al
+// instante y sin señal, aunque el pedido al servidor tarde o falle.
+const claveTecnicos = (uid: string) => `verdu-tecnicos-${uid}`;
+function leerTecnicosGuardados(uid: string): Tecnico[] {
+  try {
+    const lista = JSON.parse(localStorage.getItem(claveTecnicos(uid)) ?? "[]");
+    return Array.isArray(lista) ? lista : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Corta la espera: un pedido colgado (señal mala, app en segundo plano) no deja la pantalla esperando para siempre. */
+function conLimite<T>(promesa: PromiseLike<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = window.setTimeout(() => reject(new Error("El servidor tardó demasiado")), ms);
+    Promise.resolve(promesa).then(
+      (v) => { window.clearTimeout(t); resolve(v); },
+      (e) => { window.clearTimeout(t); reject(e); }
+    );
+  });
+}
 type ClienteL = { id: string; nombre: string };
 
 function estadoFirmaClase(inf: InformeGeneral): string {
@@ -126,6 +149,15 @@ export function ListaInformes() {
 
   const [esPc, setEsPc] = useState(false);
   const [tecnicos, setTecnicos] = useState<Tecnico[]>([]);
+  const [reintentoTecnicos, setReintentoTecnicos] = useState(0);
+  const falloTecnicosRef = useRef(false);
+  const uidSesion = sesion?.user.id ?? null;
+  const [tecnicosGuardadosDe, setTecnicosGuardadosDe] = useState<string | null>(null);
+  if (uidSesion && tecnicosGuardadosDe !== uidSesion) {
+    setTecnicosGuardadosDe(uidSesion);
+    const guardados = leerTecnicosGuardados(uidSesion);
+    if (guardados.length) setTecnicos((actuales) => (actuales.length ? actuales : guardados));
+  }
   const [clientes, setClientes] = useState<ClienteL[]>([]);
 
   const [filtroNumero, setFiltroNumero] = useState("");
@@ -184,7 +216,7 @@ export function ListaInformes() {
         const porId = new Map<string, Tecnico>();
 
         try {
-          const res = await fetchAutenticado("/api/tecnicos");
+          const res = await conLimite(fetchAutenticado("/api/tecnicos"), 8000);
           if (res.ok) {
             const body = (await res.json()) as { tecnicos?: { id: string; nombre: string | null; apellido: string | null }[] };
             for (const t of body.tecnicos ?? []) {
@@ -197,9 +229,9 @@ export function ListaInformes() {
 
         if (porId.size === 0) {
           try {
-            const { data } = await supabase()
+            const { data } = await conLimite(supabase()
               .from("perfiles")
-              .select("id, email, nombre, apellido, rol");
+              .select("id, email, nombre, apellido, rol"), 8000);
             for (const t of (data ?? []) as (Tecnico & { email?: string | null })[]) {
               porId.set(t.id, { ...t, nombre: t.nombre ?? t.email ?? null });
             }
@@ -208,16 +240,31 @@ export function ListaInformes() {
           }
         }
 
-        if (!activo) return;
-        setTecnicos([...porId.values()]);
+        falloTecnicosRef.current = porId.size === 0;
+        if (!activo || porId.size === 0) return; // si falló se conserva lo guardado
+        const lista = [...porId.values()];
+        setTecnicos(lista);
+        try {
+          const { data: sesionActual } = await supabase().auth.getSession();
+          const uid = sesionActual.session?.user.id;
+          if (uid) localStorage.setItem(claveTecnicos(uid), JSON.stringify(lista));
+        } catch {
+          /* sin almacenamiento: solo se pierde el atajo */
+        }
       } finally {
         if (activo) setCargandoTecnicos(false);
       }
     })();
+    // Si no se pudieron traer, se reintenta al volver la app a primer plano.
+    const alVolver = () => {
+      if (document.visibilityState === "visible" && falloTecnicosRef.current) setReintentoTecnicos((n) => n + 1);
+    };
+    document.addEventListener("visibilitychange", alVolver);
     return () => {
       activo = false;
+      document.removeEventListener("visibilitychange", alVolver);
     };
-  }, [online]);
+  }, [online, reintentoTecnicos]);
 
   async function actualizar() {
     if (actualizando) return;
