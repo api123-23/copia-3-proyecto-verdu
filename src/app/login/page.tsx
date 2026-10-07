@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { isAuthRetryableFetchError } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { Label } from "@/components/ui";
 import { LogoTipo } from "@/components/LogoTipo";
@@ -20,7 +21,13 @@ export default function LoginPage() {
     const { data, error } = await supabase().auth.signInWithPassword({ email, password });
     if (error || !data.user) {
       setCargando(false);
-      setError("Credenciales inválidas o usuario inexistente.");
+      // Solo un rechazo del servidor (4xx) significa email o contraseña mal; sin
+      // señal, servidor caído (5xx) o sin respuesta es un problema de conexión.
+      const estado = error?.status ?? 0;
+      const esConexion = !navigator.onLine || (error && (isAuthRetryableFetchError(error) || estado === 0 || estado >= 500));
+      setError(esConexion
+        ? "No se pudo conectar con el servidor. Revisá la señal y probá de nuevo."
+        : "Credenciales inválidas o usuario inexistente.");
       return;
     }
     // Se carga recién al ingresar: usa la base local (Dexie) para revisar

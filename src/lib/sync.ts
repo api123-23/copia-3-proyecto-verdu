@@ -21,6 +21,7 @@ function conVariacion(ms: number): number {
 let timer: ReturnType<typeof setTimeout> | null = null;
 let corriendo = false;
 let syncEnCurso: Promise<boolean> | null = null;
+let repetirSync = false;
 const informesEnEdicion = new Set<string>();
 // Liberadores de los Web Locks "editar-informe-<id>" que toma esta pestaña. El
 // Set de arriba solo lo ve esta pestaña; el lock lo ven todas (otra pestaña con
@@ -169,7 +170,14 @@ function programarReintento() {
 }
 
 export function intentarSync(): Promise<boolean> {
-  if (syncEnCurso) return syncEnCurso;
+  if (syncEnCurso) {
+    // La pasada en curso pudo arrancar antes de algo que cambia el resultado
+    // (p. ej. con la sesión todavía "vencida" justo antes de re-ingresar la
+    // contraseña): al terminar se hace una pasada más.
+    repetirSync = true;
+    return syncEnCurso;
+  }
+  repetirSync = false;
   syncEnCurso = (async () => {
     if (corriendo) return true;
     // Con la sesión vencida no se intenta subir: los informes esperan al
@@ -194,6 +202,7 @@ export function intentarSync(): Promise<boolean> {
     return false;
   }).finally(() => {
     syncEnCurso = null;
+    if (repetirSync) void intentarSync();
   });
   return syncEnCurso;
 }

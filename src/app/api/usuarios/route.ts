@@ -116,16 +116,37 @@ export async function POST(req: Request) {
     email_confirm: true,
   });
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    const yaExiste = /already (been )?registered|already exists/i.test(error.message);
+    return NextResponse.json(
+      { error: yaExiste ? "Ya existe un usuario con ese email." : error.message },
+      { status: 400 }
+    );
   }
 
   const uid = data.user?.id;
   if (uid) {
+    // Con tiempo máximo: si el servidor no responde, se trata como error y se deshace.
     const { error: perfilError } = await admin
       .from("perfiles")
-      .upsert({ id: uid, rol, email, nombre, apellido });
+      .upsert({ id: uid, rol, email, nombre, apellido })
+      .abortSignal(AbortSignal.timeout(20_000));
     if (perfilError) {
       console.error("[usuarios] error al asignar rol:", perfilError.message);
+      // Se deshace el alta (el usuario recién creado no tiene informes; su perfil
+      // se borra en cascada) para que no quede un técnico sin el rol ni el nombre
+      // elegidos y se pueda reintentar con el mismo email.
+      const { error: deshacerError } = await admin.auth.admin.deleteUser(uid);
+      if (deshacerError) {
+        console.error("[usuarios] no se pudo deshacer el alta:", deshacerError.message);
+        return NextResponse.json(
+          { error: "El usuario quedó creado pero sin el rol ni el nombre elegidos. Borralo de la lista y volvé a crearlo." },
+          { status: 500 }
+        );
+      }
+      return NextResponse.json(
+        { error: "No se pudo guardar el rol del usuario, así que no se creó. Reintentá en unos segundos." },
+        { status: 500 }
+      );
     }
   }
 

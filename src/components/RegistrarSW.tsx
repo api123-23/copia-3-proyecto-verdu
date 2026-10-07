@@ -5,6 +5,7 @@ import { recargarGuardando } from "@/lib/recarga";
 import { enviarErroresPendientes, registrarError } from "@/lib/registroErrores";
 
 const INTERVALO_BUSQUEDA_MS = 30 * 60 * 1000;
+const RECARGA_MINIMA_MS = 60 * 1000;
 
 export function RegistrarSW() {
   const [hayVersionNueva, setHayVersionNueva] = useState(false);
@@ -48,8 +49,12 @@ export function RegistrarSW() {
         registrarError("app", error ?? mensaje);
         return;
       }
-      if (sessionStorage.getItem("verdu-recargando") === "1") return;
-      sessionStorage.setItem("verdu-recargando", "1");
+      // Freno anti-bucle: como mucho una recarga por minuto. (Antes era una marca
+      // que no siempre se borraba y dejaba de recargar en publicaciones siguientes.)
+      let ultima = 0;
+      try { ultima = Number(sessionStorage.getItem("verdu-recargando")) || 0; } catch { /* sin storage */ }
+      if (Date.now() - ultima < RECARGA_MINIMA_MS) return;
+      try { sessionStorage.setItem("verdu-recargando", String(Date.now())); } catch { /* sin storage */ }
       void recargarGuardando();
     };
     const onRejection = (e: PromiseRejectionEvent) => {
@@ -61,8 +66,6 @@ export function RegistrarSW() {
     window.addEventListener("online", enviarErroresPendientes);
     window.addEventListener("unhandledrejection", onRejection);
     window.addEventListener("error", onError);
-    const limpiarMarca = () => sessionStorage.removeItem("verdu-recargando");
-    window.addEventListener("load", limpiarMarca);
 
     return () => {
       navigator.serviceWorker.removeEventListener("controllerchange", alCambiarVersion);
@@ -72,7 +75,6 @@ export function RegistrarSW() {
       window.removeEventListener("unhandledrejection", onRejection);
       window.removeEventListener("online", enviarErroresPendientes);
       window.removeEventListener("error", onError);
-      window.removeEventListener("load", limpiarMarca);
     };
   }, []);
 
