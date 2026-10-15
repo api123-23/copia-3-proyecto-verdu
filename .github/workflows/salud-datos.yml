@@ -1,0 +1,45 @@
+# Revisión diaria de salud de los datos (solo lectura). Si encuentra problemas,
+# abre un aviso (issue) mencionando al dueño del repositorio: GitHub manda el mail.
+# Si la revisión no se puede hacer, la tarea falla y GitHub también avisa por mail.
+name: Salud de datos
+
+on:
+  schedule:
+    - cron: "0 1 * * *" # 22:00 de Argentina (01:00 UTC)
+  workflow_dispatch:
+    inputs:
+      desde:
+        description: "Revisar informes cambiados desde esta fecha (ej. 2000-01-01 para todo). Vacío = últimas 36 h."
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Revisar los datos
+        id: revision
+        env:
+          SUPABASE_URL: https://agjhbmhisnwkmyxvyvdl.supabase.co
+          SUPABASE_SALUD_KEY: ${{ secrets.SUPABASE_SALUD_KEY }}
+          DESDE: ${{ github.event.inputs.desde }}
+          AVISAR_A: ${{ github.repository_owner }}
+        run: node scripts/salud-datos.mjs informe-salud.md
+      - name: Avisar si hay problemas
+        if: steps.revision.outputs.cantidad != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANTIDAD: ${{ steps.revision.outputs.cantidad }}
+        run: |
+          gh issue create \
+            --title "Salud de datos: $CANTIDAD problema(s) ($(TZ=America/Argentina/Buenos_Aires date +%d/%m/%Y))" \
+            --body-file informe-salud.md

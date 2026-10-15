@@ -1450,3 +1450,69 @@ drop policy if exists errores_app_select_master on public.errores_app;
 drop policy if exists errores_app_select on public.errores_app;
 create policy errores_app_select on public.errores_app for select to authenticated
   using (usuario_id = (select auth.uid()) or (select public.rol_actual()) = 'master');
+
+-- ---------------------------------------------------------------------------
+-- Revisión de salud de los datos (solo lectura). La corre una tarea diaria de
+-- GitHub con la clave del servidor y avisa por mail si encuentra algo. Busca
+-- incoherencias que no son "errores" para la app (como el informe N.º 48:
+-- firma del cliente presente con el informe "sin firma") y archivos anotados
+-- que no llegaron a Storage. Revisa los informes cambiados desde p_desde.
+create or replace function public.revisar_salud_datos(p_desde timestamptz default now() - interval '36 hours')
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  with inf as (
+    select * from public.informes_generales where actualizado_en >= p_desde
+  ),
+  arch as (
+    select a.* from public.informe_archivos a join inf on inf.id = a.informe_id
+  ),
+  hallazgos as (
+    select 'Firma del cliente presente pero figura sin firma' as problema, inf.numero_registro as numero,
+           inf.id, inf.cliente_nombre as cliente, null::text as detalle
+    from inf where inf.firma_cliente_url is not null and inf.estado_firma <> 'firmado'
+    union all
+    select 'Figura firmado pero no tiene firma del cliente', inf.numero_registro, inf.id, inf.cliente_nombre, null
+    from inf where inf.estado_firma = 'firmado' and inf.firma_cliente_url is null
+    union all
+    select 'Más de una firma del mismo tipo', inf.numero_registro, inf.id, inf.cliente_nombre,
+           format('%s: %s copias', a.tipo, count(*))
+    from inf join arch a on a.informe_id = inf.id
+    where a.tipo in ('firma_cliente', 'firma_tecnico')
+    group by inf.numero_registro, inf.id, inf.cliente_nombre, a.tipo
+    having count(*) > 1
+    union all
+    select 'La firma que usa el PDF no está entre los archivos del informe', inf.numero_registro, inf.id, inf.cliente_nombre,
+           case when inf.firma_cliente_url is not null
+                 and not exists (select 1 from arch where arch.informe_id = inf.id and arch.tipo = 'firma_cliente' and arch.url = inf.firma_cliente_url)
+                then 'firma del cliente' else 'firma del técnico' end
+    from inf
+    where (inf.firma_cliente_url is not null
+           and not exists (select 1 from arch where arch.informe_id = inf.id and arch.tipo = 'firma_cliente' and arch.url = inf.firma_cliente_url))
+       or (inf.firma_tecnico_url is not null
+           and not exists (select 1 from arch where arch.informe_id = inf.id and arch.tipo = 'firma_tecnico' and arch.url = inf.firma_tecnico_url))
+    union all
+    select 'Archivo anotado que no está en Storage (posible pérdida en la subida)', inf.numero_registro, inf.id, inf.cliente_nombre,
+           format('%s %s', a.tipo, a.url)
+    from inf join arch a on a.informe_id = inf.id
+    where not exists (select 1 from storage.objects o where o.bucket_id = 'informe-archivos' and o.name = a.url)
+    union all
+    select 'Menos de 3 fotos', inf.numero_registro, inf.id, inf.cliente_nombre,
+           format('%s fotos', (select count(*) from arch where arch.informe_id = inf.id and arch.tipo = 'foto'))
+    from inf
+    where inf.tipo_equipo <> 'extraordinarios'
+      and (select count(*) from arch where arch.informe_id = inf.id and arch.tipo = 'foto') < 3
+  )
+  select coalesce(
+    jsonb_agg(jsonb_build_object('problema', problema, 'numero', numero, 'informe_id', id,
+                                 'cliente', cliente, 'detalle', detalle)
+              order by numero nulls last, problema),
+    '[]'::jsonb)
+  from hallazgos;
+$$;
+
+revoke all on function public.revisar_salud_datos(timestamptz) from public, anon, authenticated;
+grant execute on function public.revisar_salud_datos(timestamptz) to service_role;
