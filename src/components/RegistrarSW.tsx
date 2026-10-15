@@ -9,6 +9,7 @@ const RECARGA_MINIMA_MS = 60 * 1000;
 
 export function RegistrarSW() {
   const [hayVersionNueva, setHayVersionNueva] = useState(false);
+  const [actualizando, setActualizando] = useState(false);
 
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
@@ -79,26 +80,39 @@ export function RegistrarSW() {
   }, []);
 
   if (!hayVersionNueva) return null;
+  // Bloquea toda la pantalla: la única salida es actualizar (los cambios se
+  // publican fuera del horario de trabajo).
   return (
     <div
-      className="pointer-events-none fixed inset-x-0 z-[95] flex justify-center px-3"
-      style={{ top: "calc(env(safe-area-inset-top, 0px) + 3.6rem)" }}
-      role="status"
-      aria-live="polite"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/75 px-6 backdrop-blur-sm"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="aviso-version-titulo"
+      aria-describedby="aviso-version-texto"
     >
-      <div className="aviso-version pointer-events-auto flex max-w-md items-center gap-3 rounded-2xl bg-primary py-2 pl-3 pr-2 text-on-primary shadow-xl shadow-black/30">
-        <span className="relative flex h-2.5 w-2.5 shrink-0" aria-hidden="true">
+      <div className="aviso-version flex w-full max-w-sm flex-col items-center gap-4 rounded-2xl bg-primary px-6 py-8 text-center text-on-primary shadow-2xl shadow-black/40">
+        <span className="relative flex h-4 w-4" aria-hidden="true">
           <span className="absolute inset-0 animate-ping rounded-full bg-sky-300/70" />
-          <span className="relative h-2.5 w-2.5 rounded-full bg-sky-300" />
+          <span className="relative h-4 w-4 rounded-full bg-sky-300" />
         </span>
-        <span className="text-[12.5px] font-bold leading-tight">Hay una nueva versión de la app</span>
+        <h2 id="aviso-version-titulo" className="text-xl font-extrabold leading-tight [text-wrap:balance]">
+          Hay una nueva versión de la app
+        </h2>
+        <p id="aviso-version-texto" className="text-sm leading-snug text-on-primary/85">
+          Tocá Actualizar para seguir. Lo que estabas cargando queda guardado.
+        </p>
         <button
           type="button"
+          autoFocus
+          disabled={actualizando}
           // Lo cargado en un informe se guarda antes de recargar.
-          onClick={() => void recargarGuardando()}
-          className="rounded-xl bg-white px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-wider text-primary shadow-sm transition-transform active:scale-95"
+          onClick={() => {
+            setActualizando(true);
+            void recargarGuardando();
+          }}
+          className="mt-2 w-full rounded-xl bg-white py-3.5 text-base font-extrabold uppercase tracking-wider text-primary shadow-md transition-transform active:scale-95 disabled:opacity-70"
         >
-          Actualizar
+          {actualizando ? "Actualizando…" : "Actualizar"}
         </button>
       </div>
     </div>
