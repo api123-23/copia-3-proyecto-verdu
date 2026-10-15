@@ -16,12 +16,15 @@ function ModalFirma({
   onCerrar,
 }: {
   titulo: string;
-  onConfirmar: (blob: Blob) => void;
+  onConfirmar: (blob: Blob) => Promise<void>;
   onCerrar: () => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const padRef = useRef<SignaturePad | null>(null);
   const [puedeConfirmar, setPuedeConfirmar] = useState(false);
+  // Un toque de más mientras se comprime y guarda creaba otra copia de la firma.
+  const guardandoRef = useRef(false);
+  const [guardando, setGuardando] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onCerrar(); };
@@ -73,14 +76,25 @@ function ModalFirma({
 
   function confirmar() {
     const canvas = canvasRef.current;
-    if (!canvas || !padRef.current || padRef.current.isEmpty()) return;
+    if (guardandoRef.current || !canvas || !padRef.current || padRef.current.isEmpty()) return;
+    guardandoRef.current = true;
+    setGuardando(true);
+    // Si se guarda bien la ventana se cierra; si falla, se puede volver a confirmar.
+    const liberar = () => {
+      guardandoRef.current = false;
+      setGuardando(false);
+    };
+    const entregar = (blob: Blob) => {
+      onConfirmar(blob).catch(liberar);
+    };
     canvas.toBlob((blob) => {
       if (blob) {
-        onConfirmar(blob);
+        entregar(blob);
         return;
       }
       canvas.toBlob((blobPng) => {
-        if (blobPng) onConfirmar(blobPng);
+        if (blobPng) entregar(blobPng);
+        else liberar();
       }, "image/png");
     }, "image/webp");
   }
@@ -119,11 +133,11 @@ function ModalFirma({
             </button>
             <button
               type="button"
-              disabled={!puedeConfirmar}
+              disabled={!puedeConfirmar || guardando}
               className="bg-primary text-on-primary rounded-lg px-md py-1.5 text-title-md font-bold uppercase tracking-wider hover:bg-primary-container transition-colors disabled:opacity-40"
               onClick={confirmar}
             >
-              Confirmar
+              {guardando ? "Guardando…" : "Confirmar"}
             </button>
           </div>
         </div>
@@ -192,10 +206,10 @@ function BloqueFirma({
     const id = crypto.randomUUID();
     const registroBlob = await prepararBlob(id, blob);
     await db.transaction("rw", [db.archivos, db.blobs], async () => {
-      for (const anterior of existentes ?? []) {
-        await db.archivos.delete(anterior.id);
-        await db.blobs.delete(anterior.id);
-      }
+      // Se borran las firmas de este tipo que haya AHORA, no las de cuando se
+      // abrió la ventana: así nunca quedan copias, aunque el informe esté abierto
+      // a la vez en el navegador y en la app instalada.
+      await borrarFirmas();
       await db.blobs.put(registroBlob);
       await db.archivos.put({
         id,
@@ -211,13 +225,25 @@ function BloqueFirma({
     onConfirmar?.();
   }
 
+  // Se llama dentro de una transacción sobre archivos y blobs.
+  async function borrarFirmas() {
+    const actuales = await db.archivos
+      .where("informe_id")
+      .equals(informeId)
+      .filter((a) => a.tipo === tipo)
+      .toArray();
+    for (const anterior of actuales) {
+      await db.archivos.delete(anterior.id);
+      await db.blobs.delete(anterior.id);
+    }
+  }
+
   async function limpiar() {
     if (!existente) return;
     if (!window.confirm("¿Eliminar esta firma?")) return;
-    await db.transaction("rw", [db.archivos, db.blobs], async () => {
-      await db.archivos.delete(existente.id);
-      await db.blobs.delete(existente.id);
-    });
+    // Todas las copias: si quedaba alguna, la firma seguía a la vista con el
+    // informe marcado "sin firma".
+    await db.transaction("rw", [db.archivos, db.blobs], borrarFirmas);
     onEliminar?.();
   }
 

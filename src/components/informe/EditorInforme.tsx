@@ -88,6 +88,8 @@ export function EditorInforme({ id }: { id: string }) {
   const [fallo, setFallo] = useState(false);
   const [intento, setIntento] = useState(0);
   const [enviando, setEnviando] = useState(false);
+  // Bloqueo inmediato: el estado de React tarda un render y dejaba pasar un segundo toque.
+  const enviandoRef = useRef(false);
   const [generandoInforme, setGenerandoInforme] = useState(false);
   const [redactandoIA, setRedactandoIA] = useState(false);
   const [toast, setToast] = useState<{ mensaje: string; tipo: "exito" | "error" | "info" } | null>(null);
@@ -343,9 +345,24 @@ export function EditorInforme({ id }: { id: string }) {
   }
 
   async function enviar() {
-    if (enviando) return;
+    if (enviandoRef.current) return;
+    enviandoRef.current = true;
+    setEnviando(true);
+    let enviado = false;
+    try {
+      enviado = await enviarInforme();
+    } finally {
+      // Si se envió, el botón queda bloqueado hasta volver a la lista.
+      if (!enviado) {
+        enviandoRef.current = false;
+        setEnviando(false);
+      }
+    }
+  }
+
+  async function enviarInforme(): Promise<boolean> {
     const { informe: inf, valores: val, valoresGE: ge } = estadoRef.current;
-    if (!inf) return;
+    if (!inf) return false;
     const faltantes: Faltante[] = [];
     if (inf.tipo_equipo === "extraordinarios") {
       if (!inf.observaciones?.trim()) faltantes.push({ campo: "observaciones", etiqueta: "Trabajos realizados / Observaciones" });
@@ -375,7 +392,7 @@ export function EditorInforme({ id }: { id: string }) {
       const { elemento, nombres } = ubicarFaltantes(faltantes);
       if (elemento) resaltar(elemento);
       mostrarToast({ mensaje: `Faltan: ${nombres.slice(0, 3).join(", ")}${nombres.length > 3 ? ` y ${nombres.length - 3} más` : ""}`, tipo: "error" });
-      return;
+      return false;
     }
     // Si otra persona modificó el informe en el servidor después de abrirlo,
     // se avisa antes de reemplazar sus cambios.
@@ -385,10 +402,9 @@ export function EditorInforme({ id }: { id: string }) {
         const seguir = window.confirm(
           "Otra persona modificó este informe después de que lo abriste. Si enviás, tus cambios reemplazan los suyos. ¿Enviar igual?"
         );
-        if (!seguir) return;
+        if (!seguir) return false;
       }
     }
-    setEnviando(true);
     try {
       if (guardadoTimerRef.current) {
         clearTimeout(guardadoTimerRef.current);
@@ -423,10 +439,10 @@ export function EditorInforme({ id }: { id: string }) {
          permitirSalida.current = true;
          navegar("#/" );
        }, 700);
+      return true;
     } catch {
       mostrarToast({ mensaje: "No se pudo guardar el informe. Reintentá.", tipo: "error" });
-    } finally {
-      setEnviando(false);
+      return false;
     }
   }
 
