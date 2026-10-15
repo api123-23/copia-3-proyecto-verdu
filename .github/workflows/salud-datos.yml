@@ -29,7 +29,7 @@ jobs:
       - name: Revisar los datos
         id: revision
         env:
-          SUPABASE_URL: https://agjhbmhisnwkmyxvyvdl.supabase.co
+          SUPABASE_URL: https://qenuwpcvsthlztqoyudx.supabase.co
           SUPABASE_SALUD_KEY: ${{ secrets.SUPABASE_SALUD_KEY }}
           DESDE: ${{ github.event.inputs.desde }}
           AVISAR_A: ${{ github.repository_owner }}
