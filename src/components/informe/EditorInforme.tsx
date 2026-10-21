@@ -378,7 +378,7 @@ export function EditorInforme({ id }: { id: string }) {
       } else {
         for (const campo of CAMPOS_POR_TIPO[inf.tipo_equipo]) {
           if (
-            (inf.tipo_equipo === "vehiculos" && (campo === "horometro" || campo === "kilometros")) ||
+            ((inf.tipo_equipo === "vehiculos" || inf.tipo_equipo === "maquinas_viales") && (campo === "horometro" || campo === "kilometros")) ||
             (inf.tipo_equipo === "secadores" && campo === "horometro")
           ) continue;
           if (inf.tipo_equipo === "vehiculos" && ["aceite_caja", "aceite_diferencial"].includes(campo)) continue;
